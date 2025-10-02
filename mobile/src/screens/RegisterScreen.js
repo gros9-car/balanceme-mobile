@@ -71,6 +71,7 @@ export default function RegisterScreen({ navigation }) {
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
+  console.log('Hola hola');
 
   const handleSubmit = async () => {
     if (!validateForm()) {
