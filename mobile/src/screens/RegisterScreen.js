@@ -14,7 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { auth, db } from './firebase/config';
@@ -85,6 +85,8 @@ export default function RegisterScreen({ navigation }) {
         formData.email.trim(),
         formData.password,
       );
+
+      await updateProfile(credential.user, { displayName: formData.name.trim() });
 
       await setDoc(doc(db, 'users', credential.user.uid), {
         name: formData.name.trim(),
