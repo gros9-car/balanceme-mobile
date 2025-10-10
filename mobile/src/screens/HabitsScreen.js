@@ -66,12 +66,12 @@ const habitAgentProfiles = {
     summary: 'Tu plan refleja conciencia sobre la alimentacion.',
     tips: [
       'Anota como te sientes despues de comer para identificar patrones.',
-      'AcompaÃƒÂ±a tus comidas con pausas de respiracion para digerir mejor.',
+      'Acompaña tus comidas con pausas de respiracion para digerir mejor.',
     ],
   },
   mindfulness: {
     keywords: ['medit', 'respir', 'gratitud', 'diario', 'afirmacion', 'mindfulness', 'atencion plena', 'oracion'],
-    summary: 'EstÃƒÂ¡s cultivando la presencia y el bienestar emocional.',
+    summary: 'Está cultivando la presencia y el bienestar emocional.',
     tips: [
       'AÃƒÂ±ade tres respiraciones profundas antes de comenzar tus actividades clave.',
       'Registra una frase que resuma la calma que obtuviste.',
@@ -107,7 +107,7 @@ const fallbackAgentResponse = {
   summary: 'Gracias por compartir tus habitos. Mantener registros te ayuda a ver tu progreso.',
   tips: [
     'Agrega detalles sobre como te sentiste antes y despues de cada habito.',
-    'Incluye un micro-habito que puedas repetir maÃƒÂ±ana para sostener la racha.',
+    'Incluye un micro-habito que puedas repetir mañana para sostener la racha.',
   ],
 };
 
