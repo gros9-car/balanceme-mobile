@@ -183,7 +183,7 @@ export default function JournalScreen({ navigation }) {
             </View>
           </View>
           {hasTodayEntry ? (
-            <Text style={[styles.infoText, { color: colors.subText }]}>Ya registraste una nota hoy. Vuelve maÃ±ana para seguir documentando tu proceso.</Text>
+            <Text style={[styles.infoText, { color: colors.subText }]}>Ya registraste una nota hoy. Vuelve mañana para seguir documentando tu proceso.</Text>
           ) : (
             <Text style={[styles.infoText, { color: colors.subText }]}>Escribe lo que sientes, en que pensaste o algo que agradeces.</Text>
           )}
