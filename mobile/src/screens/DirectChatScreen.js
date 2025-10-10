@@ -264,7 +264,7 @@ export default function DirectChatScreen({ navigation, route }) {
     }
     Alert.alert(
       "Eliminar chat",
-      `Esta accion borrara el historial con ${resolvedFriendName}.`,
+      `Esta acción borrará el historial con ${resolvedFriendName}.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
