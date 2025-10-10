@@ -22,6 +22,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Renderiza una fila informativa del perfil si existe un valor para mostrar.
 const ProfileRow = ({ icon, label, value, colors }) => {
   if (!value) {
     return null;
@@ -40,6 +41,7 @@ const ProfileRow = ({ icon, label, value, colors }) => {
   );
 };
 
+// Pantalla de perfil que sincroniza datos del usuario y permite editar nombre y foto.
 export default function ProfileScreen({ navigation }) {
   const { colors, effectiveTheme } = useTheme();
   const user = auth.currentUser;
@@ -62,6 +64,7 @@ export default function ProfileScreen({ navigation }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
+    // Descarga los datos guardados en Firestore y sincroniza nombre/foto locales.
     let isMounted = true;
 
     const fetchUserProfile = async () => {
@@ -103,9 +106,11 @@ export default function ProfileScreen({ navigation }) {
   }, [user?.uid, user?.photoURL, fallbackName]);
 
   useEffect(() => {
+    // Mantiene el input en modo edición alineado al nombre oficial.
     setPendingName(profileName);
   }, [profileName]);
 
+  // Obtiene la fecha de creación de la cuenta en formato local.
   const joinDate = useMemo(() => {
     const creationTime = user?.metadata?.creationTime;
     if (!creationTime) {
@@ -118,6 +123,7 @@ export default function ProfileScreen({ navigation }) {
   const moodText = effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu dia';
   const avatarLetter = profileName?.charAt(0)?.toUpperCase() ?? '?';
 
+  // Guarda el nuevo nombre tanto en Firestore como en Firebase Auth.
   const handleSaveName = async () => {
     const normalized = pendingName.trim();
     if (!user?.uid) {
@@ -145,11 +151,13 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  // Cancela el modo edición y restaura el valor original.
   const handleCancelNameEdit = () => {
     setPendingName(profileName);
     setIsEditingName(false);
   };
 
+  // Permite seleccionar una imagen, subirla a Storage y actualizar el avatar.
   const handlePickImage = async () => {
     if (!user?.uid) {
       return;

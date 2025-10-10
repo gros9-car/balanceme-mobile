@@ -4,6 +4,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../screens/firebase/config";
 import { sendLocalNotification } from "./useNotificationSetup";
 
+// Escucha cambios en solicitudes de amistad para avisar al usuario.
 export const useFriendRequestNotifications = ({ enabled, userUid }) => {
   const previousPending = useRef(new Set());
   const didLoad = useRef(false);

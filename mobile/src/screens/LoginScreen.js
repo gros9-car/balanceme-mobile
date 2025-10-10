@@ -17,6 +17,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Pantalla de inicio de sesión que valida credenciales y entra a la app.
 export default function LoginScreen({ navigation }) {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
@@ -25,6 +26,7 @@ export default function LoginScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Evalúa entradas, intenta autenticar y maneja errores comunes.
   const handleLogin = async () => {
     const newErrors = {};
     const emailTrim = email.trim();

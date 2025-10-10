@@ -51,6 +51,7 @@ const keywordResponses = [
   },
 ];
 
+// Determina la respuesta empática del bot según palabras clave o plantillas aleatorias.
 const generateBotMessage = (input) => {
   const text = input.trim().toLowerCase();
   if (!text) {
@@ -66,6 +67,7 @@ const generateBotMessage = (input) => {
   return `${template} ¿Deseas que pensemos en un pequeño paso a seguir?`;
 };
 
+// Renderiza una burbuja de mensaje adaptada al remitente actual.
 const MessageBubble = ({ item, colors }) => {
   const isUser = item.role === 'user';
   const bubbleStyle = isUser ? styles.userBubble : [styles.botBubble, { backgroundColor: colors.muted }];
@@ -91,6 +93,7 @@ const MessageBubble = ({ item, colors }) => {
   );
 };
 
+// Chat de apoyo anónimo que simula respuestas empáticas instantáneas.
 export default function SupportChatScreen({ navigation }) {
   const { colors } = useTheme();
   const [messages, setMessages] = useState([
@@ -102,6 +105,7 @@ export default function SupportChatScreen({ navigation }) {
   ]);
   const [draft, setDraft] = useState('');
 
+  // Agrega el mensaje del usuario y la respuesta generada del bot.
   const handleSend = () => {
     const trimmed = draft.trim();
     if (!trimmed) {

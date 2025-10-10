@@ -13,6 +13,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Crea el canal de notificaciones requerido en Android una sola vez.
 const ensureAndroidChannel = async () => {
   if (Platform.OS !== "android") {
     return;
@@ -32,6 +33,7 @@ const ensureAndroidChannel = async () => {
   await ensureChannelPromise;
 };
 
+// Solicita permisos de notificaciones manejando los estados de iOS y Android.
 const requestPermissionsAsync = async () => {
   const settings = await Notifications.getPermissionsAsync();
   if (
@@ -49,6 +51,7 @@ const requestPermissionsAsync = async () => {
   return permissionGranted;
 };
 
+// Envía una notificación local asegurando permisos y canal.
 export const sendLocalNotification = async ({ title, body, data }) => {
   if (!permissionGranted) {
     const granted = await requestPermissionsAsync();
@@ -70,6 +73,7 @@ export const sendLocalNotification = async ({ title, body, data }) => {
   });
 };
 
+// Hook que inicializa permisos de notificación y expone su estado.
 export const useNotificationSetup = () => {
   const [hasPermission, setHasPermission] = useState(null);
 

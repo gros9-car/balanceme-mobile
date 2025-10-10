@@ -20,6 +20,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Pantalla de recuperación que valida el correo y envía el enlace de restablecimiento.
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
@@ -28,6 +29,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [successVisible, setSuccessVisible] = useState(false);
   const emailInputRef = useRef(null);
 
+  // Revisa el correo y solicita a Firebase el envío del email de reinicio.
   const handleReset = async () => {
     const trimmed = email.trim();
     const nextErrors = {};
@@ -71,6 +73,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
   };
 
+  // Cierra el modal web y regresa a la pantalla de inicio de sesión.
   const closeModal = () => {
     setSuccessVisible(false);
     navigation?.navigate?.('Login');

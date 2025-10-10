@@ -32,8 +32,10 @@ import {
 import { auth, db } from "./firebase/config";
 import { useTheme } from "../context/ThemeContext";
 
+// Genera un identificador de chat único ordenando ambos UID.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
 
+// Convierte un timestamp de Firestore en una hora legible.
 const formatDateTime = (timestamp) => {
   try {
     return timestamp.toDate().toLocaleTimeString();
@@ -42,6 +44,7 @@ const formatDateTime = (timestamp) => {
   }
 };
 
+// Obtiene un perfil simplificado priorizando nombre y correo.
 const deriveProfile = (data = {}) => {
   const nameCandidate = typeof data.name === "string" ? data.name.trim() : "";
   const displayCandidate =
@@ -55,6 +58,7 @@ const deriveProfile = (data = {}) => {
   };
 };
 
+// Renderiza cada burbuja de mensaje adaptándose al remitente actual.
 const MessageRow = ({ item, colors, currentUser }) => {
   const isUser = item.senderId === currentUser;
   const bubbleStyle = isUser
@@ -102,6 +106,7 @@ const MessageRow = ({ item, colors, currentUser }) => {
   );
 };
 
+// Chat directo entre dos usuarios que valida amistad y sincroniza mensajes.
 export default function DirectChatScreen({ navigation, route }) {
   const friendUid = route.params?.friendUid;
   const friendName = route.params?.friendName ?? "Amigo";
@@ -130,6 +135,7 @@ export default function DirectChatScreen({ navigation, route }) {
   const listRef = useRef(null);
 
   useEffect(() => {
+    // Verifica en Firestore que la amistad esté aceptada antes de habilitar el chat.
     const verifyFriendship = async () => {
       if (!user?.uid || !friendUid) {
         setAllowed(false);
@@ -149,6 +155,7 @@ export default function DirectChatScreen({ navigation, route }) {
   }, [user?.uid, friendUid]);
 
   useEffect(() => {
+    // Escucha cambios del perfil del amigo para mantener nombre y correo actualizados.
     if (!friendUid) {
       return undefined;
     }
@@ -165,6 +172,7 @@ export default function DirectChatScreen({ navigation, route }) {
   }, [friendUid]);
 
   useEffect(() => {
+    // Suscribe la colección de mensajes para recibir actualizaciones en tiempo real.
     if (!user?.uid || !friendUid) {
       return undefined;
     }
@@ -184,6 +192,7 @@ export default function DirectChatScreen({ navigation, route }) {
     return unsubscribe;
   }, [user?.uid, friendUid]);
 
+  // Publica un mensaje si ambos usuarios son válidos y hay texto.
   const handleSend = async () => {
     const trimmed = draft.trim();
     if (!trimmed || !user?.uid || !friendUid) {
@@ -206,6 +215,7 @@ export default function DirectChatScreen({ navigation, route }) {
     }
   };
 
+  // Elimina todos los mensajes del chat iterando en lotes seguros.
   const deleteChatMessages = async () => {
     if (!user?.uid || !friendUid) {
       return 0;
@@ -236,6 +246,7 @@ export default function DirectChatScreen({ navigation, route }) {
     return removed;
   };
 
+  // Ejecuta la eliminación completa del historial y notifica al usuario.
   const handleDeleteChat = async () => {
     if (!user?.uid || !friendUid || deleting) {
       return;
@@ -258,6 +269,7 @@ export default function DirectChatScreen({ navigation, route }) {
     }
   };
 
+  // Solicita confirmación antes de borrar el historial para ambos.
   const confirmDeleteChat = () => {
     if (!user?.uid || !friendUid || deleting) {
       return;

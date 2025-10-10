@@ -30,14 +30,17 @@ import { auth, db } from "./firebase/config";
 
 import { useTheme } from "../context/ThemeContext";
 
+// Traduce estados de amistad en etiquetas legibles para la UI.
 const statusLabels = {
   accepted: "Amigos",
 
   pending: "Pendiente",
 };
 
+// Normaliza un correo para compararlo sin espacios ni mayúsculas.
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
+// Construye un perfil básico aun cuando falten campos en Firestore.
 const deriveProfile = (data = {}) => {
   const nameCandidate = typeof data.name === "string" ? data.name.trim() : "";
 
@@ -60,6 +63,7 @@ const deriveProfile = (data = {}) => {
   };
 };
 
+// Pantalla social que administra solicitudes, amistades y acceso al chat directo.
 export default function SocialScreen({ navigation }) {
   const { colors } = useTheme();
 
@@ -85,6 +89,7 @@ export default function SocialScreen({ navigation }) {
 
   const [removingFriendId, setRemovingFriendId] = useState(null);
 
+  // Suscribe al perfil del contacto para reflejar cambios en tiempo real.
   const attachProfileListener = (uid) => {
     if (!uid || subscriptionsRef.current[uid]) {
       return;
@@ -101,6 +106,7 @@ export default function SocialScreen({ navigation }) {
     );
   };
 
+  // Cancela los listeners de perfiles que ya no están asociados.
   const detachProfileListeners = (uidList) => {
     const list = Array.isArray(uidList) ? uidList : [uidList];
 
@@ -129,6 +135,7 @@ export default function SocialScreen({ navigation }) {
     });
   };
 
+  // Define un nombre visible aunque falte el displayName en Firebase.
   const displayName = useMemo(() => {
     if (user?.displayName?.trim()) {
       return user.displayName.trim();
@@ -142,6 +149,7 @@ export default function SocialScreen({ navigation }) {
   }, [user?.displayName, user?.email]);
 
   useEffect(
+    // Limpia todos los suscriptores al desmontar la pantalla.
     () => () => {
       Object.values(subscriptionsRef.current).forEach((unsubscribe) =>
         unsubscribe?.(),
@@ -153,6 +161,7 @@ export default function SocialScreen({ navigation }) {
   );
 
   useEffect(() => {
+    // Escucha los cambios en las amistades del usuario para actualizar listados.
     if (!user?.uid) {
       setConnections({ friends: [], incoming: [], outgoing: [] });
 
@@ -232,14 +241,16 @@ export default function SocialScreen({ navigation }) {
     );
 
     return unsubscribe;
-  }, [user?.uid]);
+}, [user?.uid]);
 
+  // Crea o actualiza el documento de amistad para ambos usuarios.
   const ensureFriendDoc = async (ownerUid, targetUid, payload) => {
     const ref = doc(db, "users", ownerUid, "friendships", targetUid);
 
     await setDoc(ref, payload, { merge: true });
   };
 
+  // Busca un usuario por correo y prepara el resultado para enviar solicitud.
   const handleSearch = async () => {
     const email = normalizeEmail(searchEmail);
 
@@ -298,6 +309,7 @@ export default function SocialScreen({ navigation }) {
     }
   };
 
+  // Registra la solicitud de amistad para ambos perfiles.
   const sendRequest = async (target) => {
     if (!user?.uid) {
       navigation?.replace?.("Login");
@@ -338,6 +350,7 @@ export default function SocialScreen({ navigation }) {
     }
   };
 
+  // Marca como aceptada la solicitud entrante y sincroniza ambos lados.
   const acceptRequest = async (friend) => {
     if (!user?.uid) {
       return;
@@ -368,6 +381,7 @@ export default function SocialScreen({ navigation }) {
     }
   };
 
+  // Elimina la relación de amistad y limpia los listeners asociados.
   const performRemoveFriend = async (friend) => {
     if (!user?.uid) {
       return;
@@ -395,6 +409,7 @@ export default function SocialScreen({ navigation }) {
     }
   };
 
+  // Pide confirmación antes de borrar definitivamente la amistad.
   const confirmRemoveFriend = (friend) => {
     const nameToShow = friend.name ?? "tu contacto";
 
@@ -415,6 +430,7 @@ export default function SocialScreen({ navigation }) {
     );
   };
 
+  // Abre el chat directo utilizando la información más reciente del perfil.
   const navigateToChat = (friend) => {
     const profile = profiles[friend.uid] ?? {};
 

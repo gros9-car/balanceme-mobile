@@ -37,6 +37,7 @@ const paletteByMode = {
   dark: darkPalette,
 };
 
+// Arma el tema de React Navigation reutilizando la paleta definida para el modo actual.
 const createNavigationTheme = (mode, palette) => {
   const base = mode === 'dark' ? NavigationDarkTheme : NavigationDefaultTheme;
   return {
@@ -54,6 +55,7 @@ const createNavigationTheme = (mode, palette) => {
   };
 };
 
+// Sincroniza la preferencia de tema, calcula la paleta y la comparte via contexto.
 export const ThemeProvider = ({ children }) => {
   const systemScheme = useColorScheme() ?? 'light';
   const [theme, setTheme] = useState('system');
@@ -80,6 +82,7 @@ export const ThemeProvider = ({ children }) => {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
+// Expone el contexto de tema y garantiza su uso dentro del proveedor.
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

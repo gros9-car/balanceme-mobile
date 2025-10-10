@@ -26,12 +26,14 @@ import {
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Normaliza una fecha al inicio del día para comparaciones consistentes.
 const startOfDay = (value) => {
   const normalized = new Date(value);
   normalized.setHours(0, 0, 0, 0);
   return normalized;
 };
 
+// Convierte fechas a un string legible manejando posibles errores.
 const formatDate = (date) => {
   try {
     return date.toLocaleDateString();
@@ -40,6 +42,7 @@ const formatDate = (date) => {
   }
 };
 
+// Pantalla de diario personal que sincroniza entradas y permite registrar una nota diaria.
 export default function JournalScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -61,6 +64,7 @@ export default function JournalScreen({ navigation }) {
   }), [horizontalPadding, width]);
 
   useEffect(() => {
+    // Escucha cambios en las últimas entradas para mostrar el diario actualizado.
     if (!user?.uid) {
       setEntries([]);
       setHasTodayEntry(false);
@@ -102,6 +106,7 @@ export default function JournalScreen({ navigation }) {
     return unsubscribe;
   }, [user?.uid]);
 
+  // Guarda una nueva entrada diaria validando sesión, contenido y límite de registros.
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesion requerida', 'Inicia sesion para escribir en tu diario.');

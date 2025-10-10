@@ -20,6 +20,7 @@ import { addDoc, collection, limit, onSnapshot, orderBy, query, serverTimestamp,
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Garantiza fechas legibles incluso si el timestamp es inválido.
 const formatTimestamp = (value) => {
   try {
     return value.toDate().toLocaleString();
@@ -28,6 +29,7 @@ const formatTimestamp = (value) => {
   }
 };
 
+// Deriva un perfil simple para mostrar autor y correo en el foro.
 const deriveProfile = (data) => {
   const nameCandidate =
     (typeof data?.name === 'string' && data.name.trim()) ||
@@ -40,6 +42,7 @@ const deriveProfile = (data) => {
   };
 };
 
+// Foro comunitario que permite publicar mensajes y ver aportes recientes.
 export default function HelpForumScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -73,10 +76,12 @@ export default function HelpForumScreen({ navigation }) {
   }), [horizontalPadding, width]);
 
   useEffect(() => () => {
+    // Limpia las suscripciones a perfiles cuando se desmonta la pantalla.
     Object.values(profileSubscriptions.current).forEach((unsubscribe) => unsubscribe?.());
     profileSubscriptions.current = {};
   }, []);
 
+  // Escucha los cambios del perfil de un usuario y cachea su info.
   const attachProfileListener = (uid) => {
     if (!uid || profileSubscriptions.current[uid]) {
       return;
@@ -88,6 +93,7 @@ export default function HelpForumScreen({ navigation }) {
   };
 
   useEffect(() => {
+    // Recupera los mensajes más recientes del foro y vincula los perfiles involucrados.
     const forumRef = collection(db, 'forumPosts');
     const forumQuery = query(forumRef, orderBy('createdAt', 'desc'), limit(200));
 
@@ -121,6 +127,7 @@ export default function HelpForumScreen({ navigation }) {
     return unsubscribe;
   }, []);
 
+  // Publica un nuevo mensaje en el foro si el usuario está autenticado.
   const handleSend = async () => {
     const trimmed = draft.trim();
     if (!trimmed) {

@@ -10,8 +10,10 @@ import {
 import { db } from "../screens/firebase/config";
 import { sendLocalNotification } from "./useNotificationSetup";
 
+// Genera el identificador de chat privado en base a los UID ordenados.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
 
+// Monitorea los chats aceptados para enviar notificaciones de mensajes nuevos.
 export const useMessageNotifications = ({ enabled, userUid }) => {
   const subscriptionsRef = useRef({});
   const friendStateRef = useRef(new Map());

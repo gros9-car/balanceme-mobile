@@ -19,6 +19,7 @@ import { auth, db } from './firebase/config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 
+// Pantalla principal que muestra resumen diario y accesos a herramientas clave.
 const emojiCodePoints = {
   happy: 0x1f60a,
   calm: 0x1f60c,
@@ -138,6 +139,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
 
+// Recupera registros recientes para calcular la racha e identificar el último estado.
 useEffect(() => {
   if (!user?.uid) {
     setCurrentStreak(0);
@@ -153,6 +155,7 @@ useEffect(() => {
     return normalized;
   };
 
+  // Resume los registros recientes y calcula estadísticas básicas.
   const fetchMoodSummary = async () => {
     try {
       const moodsRef = collection(db, 'users', user.uid, 'moods');
@@ -230,6 +233,7 @@ useEffect(() => {
   };
 }, [user?.uid]);
 
+  // Controla la animación del menú lateral y su visibilidad.
   const toggleMenu = () => {
     if (menuVisible) {
       Animated.timing(slideAnim, {
@@ -247,6 +251,7 @@ useEffect(() => {
     }).start();
   };
 
+  // Cierra la sesión del usuario y devuelve a la pantalla de login.
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -256,6 +261,7 @@ useEffect(() => {
     }
   };
 
+  // Navega según la opción seleccionada y maneja acciones especiales como logout.
   const handleMenuOption = (target) => {
     toggleMenu();
     if (!target) {
@@ -274,6 +280,7 @@ useEffect(() => {
     }, 260);
   };
 
+  // Convierte el último estado de ánimo guardado en su emoji correspondiente.
   const moodEmoji = useMemo(() => {
     const codePoint = emojiCodePoints[lastMood] ?? 0x1f642;
     return String.fromCodePoint(codePoint);

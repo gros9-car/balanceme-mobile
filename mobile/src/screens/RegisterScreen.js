@@ -20,6 +20,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Pantalla de registro que maneja formulario, validaciones y creación de cuentas.
 export default function RegisterScreen({ navigation }) {
   const { colors } = useTheme();
   const [formData, setFormData] = useState({
@@ -34,6 +35,7 @@ export default function RegisterScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
+  // Actualiza el campo editado y limpia su error si existía.
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -41,6 +43,7 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
+  // Aplica validaciones básicas sobre nombre, correo y contraseñas.
   const validateForm = () => {
     const nextErrors = {};
 
@@ -73,6 +76,7 @@ export default function RegisterScreen({ navigation }) {
   };
   console.log('Hola hola');
 
+  // Crea la cuenta en Firebase Auth y guarda el perfil en Firestore.
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -116,6 +120,7 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
+  // Oculta el modal web y regresa a la pantalla de inicio de sesión.
   const closeSuccessModal = () => {
     setSuccessVisible(false);
     navigation?.navigate?.('Login');

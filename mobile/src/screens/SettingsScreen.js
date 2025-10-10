@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
 
+// Tarjeta de selección que permite elegir el modo de color deseado.
 const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) => {
   const borderColor = isActive ? colors.accent : colors.muted;
   const backgroundColor = isActive ? colors.accent : colors.surface;
@@ -38,9 +39,11 @@ const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) =>
   );
 };
 
+// Pantalla de ajustes enfocada en cambiar el tema de la aplicación.
 export default function SettingsScreen({ navigation }) {
   const { colors, theme, setTheme, effectiveTheme } = useTheme();
 
+  // Genera una etiqueta amigable del modo actual de tema.
   const currentModeLabel = useMemo(() => {
     if (theme === 'system') {
       return effectiveTheme === 'dark' ? 'Sistema (oscuro)' : 'Sistema (claro)';
@@ -48,6 +51,7 @@ export default function SettingsScreen({ navigation }) {
     return theme === 'dark' ? 'Oscuro' : 'Claro';
   }, [theme, effectiveTheme]);
 
+  // Actualiza la preferencia de tema elegida por el usuario.
   const handleThemeChange = (mode) => {
     setTheme(mode);
   };

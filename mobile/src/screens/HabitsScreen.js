@@ -26,6 +26,7 @@ import {
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
+// Normaliza una fecha para comparar días sin considerar horas.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const startOfDay = (value) => {
@@ -34,6 +35,7 @@ const startOfDay = (value) => {
   return normalized;
 };
 
+// Convierte fechas a texto manejando fallos silenciosos.
 const formatDate = (date) => {
   try {
     return date.toLocaleDateString();
@@ -109,6 +111,7 @@ const fallbackAgentResponse = {
   ],
 };
 
+// Analiza el texto de hábitos para generar un resumen y sugerencias.
 const analyzeHabitsEntry = (text) => {
   const normalized = text.toLowerCase();
   const scores = {};
@@ -154,6 +157,7 @@ const analyzeHabitsEntry = (text) => {
   };
 };
 
+// Pantalla de hábitos que registra actividades diarias y ofrece sugerencias del agente.
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -175,6 +179,7 @@ export default function HabitsScreen({ navigation }) {
   }), [horizontalPadding, width]);
 
   useEffect(() => {
+    // Escucha los últimos registros para mostrar historial y validar el límite diario.
     if (!user?.uid) {
       setEntries([]);
       setHasTodayEntry(false);
@@ -217,6 +222,7 @@ export default function HabitsScreen({ navigation }) {
     return unsubscribe;
   }, [user?.uid]);
 
+  // Guarda la entrada del día y guarda el análisis generado automáticamente.
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesion requerida', 'Inicia sesion para registrar tus habitos.');

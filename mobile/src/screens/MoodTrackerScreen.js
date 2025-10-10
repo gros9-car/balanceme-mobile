@@ -120,6 +120,7 @@ const tagDescriptions = {
   grounding: 'anclarte al presente',
 };
 
+// Analiza la selección de emojis para decidir sugerencias y un resumen del estado.
 const buildAgentResponse = (selectedNames) => {
   if (!selectedNames.length) {
     return { suggestions: [], summary: '' };
@@ -178,6 +179,7 @@ const buildAgentResponse = (selectedNames) => {
   return { suggestions: suggestions.slice(0, 3), summary };
 };
 
+// Pantalla para registrar el estado de ánimo y recibir recomendaciones personalizadas.
 export default function MoodTrackerScreen({ navigation }) {
   const { colors } = useTheme();
   const [selectedEmojis, setSelectedEmojis] = useState([]);
@@ -190,6 +192,7 @@ export default function MoodTrackerScreen({ navigation }) {
   const user = auth.currentUser;
 
   useEffect(() => {
+    // Recupera el último registro para respetar el periodo de enfriamiento.
     if (!user?.uid) {
       setCooldownEndsAt(null);
       setLastSavedAt(null);
@@ -243,6 +246,7 @@ export default function MoodTrackerScreen({ navigation }) {
     };
   }, [user?.uid]);
 
+  // Alterna la selección de emojis aplicando límites y validaciones.
   const toggleEmoji = (name) => {
     setSelectedEmojis((prev) => {
       if (prev.includes(name)) {
@@ -278,6 +282,7 @@ export default function MoodTrackerScreen({ navigation }) {
     return `Podras registrar un nuevo estado en ${hours} h ${minutes.toString().padStart(2, '0')} min.`;
   }, [cooldownEndsAt]);
 
+  // Guarda el estado de ánimo y las sugerencias generadas en Firestore.
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesion requerida', 'Inicia sesion para registrar tu estado de animo.');
