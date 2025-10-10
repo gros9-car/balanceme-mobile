@@ -31,9 +31,9 @@ export default function LoginScreen({ navigation }) {
     const newErrors = {};
     const emailTrim = email.trim();
     if (!emailTrim) newErrors.email = 'El correo es requerido';
-    else if (!/\S+@\S+\.\S+/.test(emailTrim)) newErrors.email = 'Correo invalido';
-    if (!password) newErrors.password = 'La contrasena es requerida';
-    else if (password.length < 6) newErrors.password = 'La contrasena debe tener al menos 6 caracteres';
+    else if (!/\S+@\S+\.\S+/.test(emailTrim)) newErrors.email = 'Correo inválido';
+    if (!password) newErrors.password = 'La contraseña es requerida';
+    else if (password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
@@ -41,11 +41,11 @@ export default function LoginScreen({ navigation }) {
       setIsLoading(true);
       await signInWithEmailAndPassword(auth, emailTrim, password);
       setIsLoading(false);
-      Alert.alert('Bienvenido', 'Inicio de sesion exitoso');
+      Alert.alert('Bienvenido', 'Inicio de sesión exitoso');
       navigation.navigate('Home');
     } catch (error) {
       setIsLoading(false);
-      let msg = 'No pudimos iniciar sesion.';
+      let msg = 'No pudimos iniciar sesión.';
       const mapped = {};
       switch (error.code) {
         case 'auth/invalid-email':
@@ -56,19 +56,19 @@ export default function LoginScreen({ navigation }) {
           break;
         case 'auth/wrong-password':
         case 'auth/invalid-credential':
-          mapped.password = 'Contrasena incorrecta';
+          mapped.password = 'Contraseña incorrecta';
           break;
         case 'auth/too-many-requests':
-          msg = 'Demasiados intentos. Intenta mas tarde.';
+          msg = 'Demasiados intentos. Intenta más tarde.';
           break;
         case 'auth/network-request-failed':
-          msg = 'Problema de red. Revisa tu conexion.';
+          msg = 'Problema de red. Revisa tu conexión.';
           break;
         default:
           break;
       }
       if (Object.keys(mapped).length) setErrors(mapped);
-      if (!Object.keys(mapped).length || msg !== 'No pudimos iniciar sesion.') {
+      if (!Object.keys(mapped).length || msg !== 'No pudimos iniciar sesión.') {
         Alert.alert('Error', msg);
       }
     }

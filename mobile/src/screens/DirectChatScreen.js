@@ -258,8 +258,8 @@ export default function DirectChatScreen({ navigation, route }) {
       Alert.alert(
         "Chat eliminado",
         deletedCount
-          ? "Se borro el historial completo para ambos usuarios."
-          : "No habia mensajes en esta conversacion.",
+          ? "Se borró el historial completo para ambos usuarios."
+          : "No había mensajes en esta conversación.",
         [{ text: "Aceptar", onPress: () => navigation.goBack() }],
       );
     } catch (error) {

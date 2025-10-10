@@ -134,7 +134,7 @@ export default function HelpForumScreen({ navigation }) {
       return;
     }
     if (!user?.uid) {
-      Alert.alert('Sesion requerida', 'Necesitas iniciar sesion para participar.');
+      Alert.alert('Sesión requerida', 'Necesitas iniciar sesión para participar.');
       navigation?.replace?.('Login');
       return;
     }
@@ -191,7 +191,7 @@ export default function HelpForumScreen({ navigation }) {
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
-                placeholder={user ? 'Escribe un mensaje para la comunidad...' : 'Inicia sesion para participar'}
+                placeholder={user ? 'Escribe un mensaje para la comunidad...' : 'Inicia sesión para participar'}
                 placeholderTextColor={colors.subText}
                 editable={Boolean(user)}
                 style={[styles.input, { color: colors.text, borderColor: colors.muted }]}

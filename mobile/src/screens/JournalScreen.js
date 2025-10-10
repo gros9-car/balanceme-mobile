@@ -109,7 +109,7 @@ export default function JournalScreen({ navigation }) {
   // Guarda una nueva entrada diaria validando sesión, contenido y límite de registros.
   const handleSave = async () => {
     if (!user?.uid) {
-      Alert.alert('Sesion requerida', 'Inicia sesion para escribir en tu diario.');
+      Alert.alert('Sesión requerida', 'Inicia sesión para escribir en tu diario.');
       navigation?.replace?.('Login');
       return;
     }
@@ -121,7 +121,7 @@ export default function JournalScreen({ navigation }) {
     }
 
     if (hasTodayEntry) {
-      Alert.alert('Registro existente', 'Solo puedes registrar una nota por dia.');
+      Alert.alert('Registro existente', 'Solo puedes registrar una nota por día.');
       return;
     }
 
@@ -190,7 +190,7 @@ export default function JournalScreen({ navigation }) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Escribe aqui..."
+            placeholder="Escribe aquí..."
             placeholderTextColor={colors.subText}
             multiline
             textAlignVertical="top"

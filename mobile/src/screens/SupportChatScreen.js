@@ -18,9 +18,9 @@ import { useTheme } from '../context/ThemeContext';
 const botName = 'Balancito';
 
 const supportiveTemplates = [
-  'Gracias por compartirlo. Estoy aqui para escucharte.',
+  'Gracias por compartirlo. Estoy aquí para escucharte.',
   'Respira profundo unos segundos. Estoy contigo en esto.',
-  'Lo que sientes es valido. Estoy aqui para acompañarte.',
+  'Lo que sientes es válido. Estoy aquí para acompañarte.',
 ];
 
 const keywordResponses = [
@@ -32,7 +32,7 @@ const keywordResponses = [
   {
     keywords: ['estres', 'estresado', 'estresada', 'agotado', 'agotada', 'presion'],
     reply:
-      'Parece que cargas mucha presión. Quizá puedas hacer una pausa breve y relajar hombros y mandíbula. ¿Qué te ayudaría a liberar un poco de tensión hoy?',
+      'Parece que cargas mucha presión. Quizás puedas hacer una pausa breve y relajar hombros y mandíbula. ¿Qué te ayudaría a liberar un poco de tensión hoy?',
   },
   {
     keywords: ['triste', 'deprim', 'llorar', 'solo', 'sola', 'malo'],
@@ -100,7 +100,7 @@ export default function SupportChatScreen({ navigation }) {
     {
       id: 'intro',
       role: 'bot',
-      text: `Hola, soy ${botName}. Gracias por acercarte. Cuéntame, ¿en qué te gustaría trabajar hoy?`,
+      text: `Hola, soy ${botName}. Gracias por acercarte. Cuéntame, ¿En qué te gustaría trabajar hoy?`,
     },
   ]);
   const [draft, setDraft] = useState('');

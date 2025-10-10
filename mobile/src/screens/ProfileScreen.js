@@ -120,7 +120,7 @@ export default function ProfileScreen({ navigation }) {
     return date.toLocaleDateString();
   }, [user?.metadata?.creationTime]);
 
-  const moodText = effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu dia';
+  const moodText = effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu día';
   const avatarLetter = profileName?.charAt(0)?.toUpperCase() ?? '?';
 
   // Guarda el nuevo nombre tanto en Firestore como en Firebase Auth.
@@ -130,7 +130,7 @@ export default function ProfileScreen({ navigation }) {
       return;
     }
     if (!normalized) {
-      Alert.alert('Nombre requerido', 'Ingresa un nombre valido.');
+      Alert.alert('Nombre requerido', 'Ingresa un nombre válido.');
       return;
     }
     if (normalized === profileName) {
@@ -165,7 +165,7 @@ export default function ProfileScreen({ navigation }) {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permisos requeridos', 'Necesitamos acceso a tus imagenes para cambiar la foto de perfil.');
+      Alert.alert('Permisos requeridos', 'Necesitamos acceso a tus imágenes para cambiar la foto de perfil.');
       return;
     }
 
