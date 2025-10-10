@@ -11,6 +11,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -165,6 +166,7 @@ export default function ProfileScreen({ navigation }) {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
+      base64: Platform.OS === 'web',
     });
 
     if (result.canceled) {
@@ -179,19 +181,35 @@ export default function ProfileScreen({ navigation }) {
 
     setUploadingPhoto(true);
     try {
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
       const storageRef = ref(storage, `profilePictures/${user.uid}.jpg`);
-      const contentType = asset.mimeType ?? 'image/jpeg';
+      const contentType = asset.mimeType ?? asset.type ?? 'image/jpeg';
 
-      await uploadBytes(storageRef, blob, { contentType });
-      const url = await getDownloadURL(storageRef);
+      let fileData;
+
+      if (Platform.OS === 'web') {
+        if (typeof File !== 'undefined' && asset.file instanceof File) {
+          fileData = asset.file;
+        } else if (asset.base64) {
+          const response = await fetch(`data:${contentType};base64,${asset.base64}`);
+          fileData = await response.blob();
+        } else {
+          const response = await fetch(asset.uri);
+          fileData = await response.blob();
+        }
+      } else {
+        const response = await fetch(asset.uri);
+        fileData = await response.blob();
+      }
+
+      const { ref: uploadedRef } = await uploadBytes(storageRef, fileData, { contentType });
+      const url = await getDownloadURL(uploadedRef);
 
       await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
       await updateProfile(user, { photoURL: url });
 
       setProfilePhoto(url);
     } catch (error) {
+      console.error('handlePickImage upload error', error);
       Alert.alert('Error', 'No pudimos actualizar tu foto. Intenta de nuevo.');
     } finally {
       setUploadingPhoto(false);

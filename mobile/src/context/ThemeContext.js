@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { DefaultTheme as NavigationDefaultTheme, DarkTheme as NavigationDarkTheme } from '@react-navigation/native';
 
 const ThemeContext = createContext(null);
 
@@ -36,17 +37,22 @@ const paletteByMode = {
   dark: darkPalette,
 };
 
-const createNavigationTheme = (mode, palette) => ({
-  dark: mode === 'dark',
-  colors: {
-    primary: palette.primary,
-    background: palette.background,
-    card: palette.surface,
-    text: palette.text,
-    border: palette.muted,
-    notification: palette.accent,
-  },
-});
+const createNavigationTheme = (mode, palette) => {
+  const base = mode === 'dark' ? NavigationDarkTheme : NavigationDefaultTheme;
+  return {
+    ...base,
+    dark: mode === 'dark',
+    colors: {
+      ...base.colors,
+      primary: palette.primary,
+      background: palette.background,
+      card: palette.surface,
+      text: palette.text,
+      border: palette.muted,
+      notification: palette.accent,
+    },
+  };
+};
 
 export const ThemeProvider = ({ children }) => {
   const systemScheme = useColorScheme() ?? 'light';
