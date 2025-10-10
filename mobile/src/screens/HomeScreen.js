@@ -41,14 +41,14 @@ const emojiCodePoints = {
 
 const quickActions = [
   {
-    title: 'Registrar animo',
+    title: 'Registrar ánimo',
     description: 'Elige hasta tres emojis y recibe sugerencias personalizadas.',
     icon: 'happy-outline',
     color: '#8b5cf6',
     target: 'Mood',
   },
   {
-    title: 'Habitos diarios',
+    title: 'Hábitos diarios',
     description: 'Lleva el control de tus micro rutinas para mantener el balance.',
     icon: 'calendar-outline',
     color: '#f97316',
@@ -56,7 +56,7 @@ const quickActions = [
   },
   {
     title: 'Foro de ayuda',
-    description: 'Comparte experiencias y motivacion con la comunidad.',
+    description: 'Comparte experiencias y motivación con la comunidad.',
     icon: 'people-outline',
     color: '#ec4899',
     target: 'HelpForum',
@@ -127,7 +127,7 @@ export default function HomeScreen({ navigation }) {
   const personalizedTip = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 9) {
-      return 'Comienza el dia con cinco minutos de respiracion consciente.';
+      return 'Comienza el dáa con cinco minutos de respiración consciente.';
     }
     if (hour >= 12 && hour < 15) {
       return 'Toma una pausa al mediodia y haz estiramientos suaves.';
@@ -135,7 +135,7 @@ export default function HomeScreen({ navigation }) {
     if (hour >= 18) {
       return 'Cierra la jornada escribiendo un breve balance en tu diario.';
     }
-    return 'Registra como te sientes ahora para seguir tu progreso.';
+    return 'Registra cómo te sientes ahora para seguir tu progreso.';
   }, []);
 
 
@@ -273,7 +273,7 @@ useEffect(() => {
         return;
       }
       if (target === 'Exercises') {
-        Alert.alert('Muy pronto', 'Estamos preparando esta seccion para ti.');
+        Alert.alert('Muy pronto', 'Estamos preparando esta sección para ti.');
         return;
       }
       navigation.navigate(target);

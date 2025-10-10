@@ -47,67 +47,67 @@ const formatDate = (date) => {
 const habitAgentProfiles = {
   movimiento: {
     keywords: ['correr', 'caminar', 'yoga', 'ejercicio', 'entren', 'pesas', 'bicicleta', 'ruta', 'gimnasio', 'cardio', 'pilates', 'baile'],
-    summary: 'Tu rutina muestra intencion de movimiento y actividad fisica.',
+    summary: 'Tu rutina muestra intención de movimiento y actividad física.',
     tips: [
-      'Recuerda hidratarte y realizar estiramientos de recuperacion.',
-      'Suma breves pausas de respiracion para equilibrar energia.',
+      'Recuerda hidratarte y realizar estiramientos de recuperación.',
+      'Suma breves pausas de respiración para equilibrar energía.',
     ],
   },
   descanso: {
     keywords: ['descans', 'dorm', 'siesta', 'relaj', 'sueÃƒÂ±o', 'acostar', 'despert'],
-    summary: 'Estas priorizando el descanso, lo cual ayuda a tu balance.',
+    summary: 'Estás priorizando el descanso, lo cual ayuda a tu balance.',
     tips: [
       'Mantener horarios constantes mejora la calidad del descanso.',
-      'Describe como te sentiste al despertar para seguir midiendo tu energia.',
+      'Describe cómo te sentiste al despertar para seguir midiendo tu energía.',
     ],
   },
   alimentacion: {
     keywords: ['comida', 'vegetal', 'fruta', 'nutric', 'cena', 'almuerzo', 'diet', 'agua', 'hidrata'],
-    summary: 'Tu plan refleja conciencia sobre la alimentacion.',
+    summary: 'Tu plan refleja conciencia sobre la alimentación.',
     tips: [
-      'Anota como te sientes despues de comer para identificar patrones.',
-      'Acompaña tus comidas con pausas de respiracion para digerir mejor.',
+      'Anota cómo te sientes después de comer para identificar patrones.',
+      'Acompaña tus comidas con pausas de respiración para digerir mejor.',
     ],
   },
   mindfulness: {
     keywords: ['medit', 'respir', 'gratitud', 'diario', 'afirmacion', 'mindfulness', 'atencion plena', 'oracion'],
-    summary: 'Está cultivando la presencia y el bienestar emocional.',
+    summary: 'Estás cultivando la presencia y el bienestar emocional.',
     tips: [
-      'AÃƒÂ±ade tres respiraciones profundas antes de comenzar tus actividades clave.',
+      'Realiza tres respiraciones profundas antes de comenzar tus actividades clave.',
       'Registra una frase que resuma la calma que obtuviste.',
     ],
   },
   social: {
     keywords: ['familia', 'amiga', 'pareja', 'salir', 'convers', 'llam', 'compart'],
-    summary: 'Incluiste momentos de conexion social en tu dia.',
+    summary: 'Incluiste momentos de conexión social en tu día.',
     tips: [
       'Agradece el impacto positivo que esas interacciones generaron.',
-      'Planifica el siguiente espacio de conexion para mantener la energia.',
+      'Planifica el siguiente espacio de conexión para mantener la energía.',
     ],
   },
   trabajo: {
     keywords: ['trabajo', 'estudio', 'proyecto', 'tarea', 'objetivo', 'plan', 'reunion'],
-    summary: 'Estas organizando tus responsabilidades con intencion.',
+    summary: 'Estas organizando tus responsabilidades con intención.',
     tips: [
       'Reserva micro descansos para evitar la fatiga mental.',
-      'Celebra el avance alcanzado por pequeÃƒÂ±o que parezca.',
+      'Celebra el avance alcanzado por pequeño que parezca.',
     ],
   },
   autocuidado: {
     keywords: ['autocuidado', 'spa', 'rutina de piel', 'leer', 'series', 'hobby', 'creativ', 'arte'],
     summary: 'Tu plan contiene momentos de autocuidado y disfrute.',
     tips: [
-      'Describe la sensacion que buscabas al darte ese espacio.',
+      'Describe la sensación que buscabas al darte ese espacio.',
       'Registra tres cosas que agradeces de ese momento personal.',
     ],
   },
 };
 
 const fallbackAgentResponse = {
-  summary: 'Gracias por compartir tus habitos. Mantener registros te ayuda a ver tu progreso.',
+  summary: 'Gracias por compartir tus hábitos. Mantener registros te ayuda a ver tu progreso.',
   tips: [
-    'Agrega detalles sobre como te sentiste antes y despues de cada habito.',
-    'Incluye un micro-habito que puedas repetir mañana para sostener la racha.',
+    'Agrega detalles sobre cómo te sentiste antes y después de cada hábito.',
+    'Incluye un micro-hábito que puedas repetir mañana para sostener la racha.',
   ],
 };
 
@@ -132,7 +132,7 @@ const analyzeHabitsEntry = (text) => {
 
   const baseSummary = habitAgentProfiles[bestCategory]?.summary ?? fallbackAgentResponse.summary;
   const extendedSummary = secondCategory
-    ? `${baseSummary} Tambien resaltas acciones relacionadas con ${secondCategory}.`
+    ? `${baseSummary} También resaltas acciones relacionadas con ${secondCategory}.`
     : baseSummary;
 
   const tips = [
@@ -225,19 +225,19 @@ export default function HabitsScreen({ navigation }) {
   // Guarda la entrada del día y guarda el análisis generado automáticamente.
   const handleSave = async () => {
     if (!user?.uid) {
-      Alert.alert('Sesion requerida', 'Inicia sesion para registrar tus habitos.');
+      Alert.alert('Sesión requerida', 'Inicia sesión para registrar tus hábitos.');
       navigation?.replace?.('Login');
       return;
     }
 
     const trimmed = draft.trim();
     if (!trimmed) {
-      Alert.alert('Contenido requerido', 'Describe al menos un habito para guardar.');
+      Alert.alert('Contenido requerido', 'Describe al menos un hábito para guardar.');
       return;
     }
 
     if (hasTodayEntry) {
-      Alert.alert('Registro existente', 'Solo puedes registrar tus habitos una vez por dia.');
+      Alert.alert('Registro existente', 'Sólo puedes registrar tus hábitos una vez por día.');
       return;
     }
 
@@ -253,9 +253,9 @@ export default function HabitsScreen({ navigation }) {
         createdAt: serverTimestamp(),
       });
       setDraft('');
-      Alert.alert('Habitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
+      Alert.alert('Hábitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
     } catch (error) {
-      Alert.alert('Error', 'No pudimos guardar tus habitos. Intenta nuevamente.');
+      Alert.alert('Error', 'No pudimos guardar tus hábitos. Intenta nuevamente.');
     } finally {
       setSaving(false);
     }
@@ -310,7 +310,7 @@ export default function HabitsScreen({ navigation }) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Por ejemplo: CaminÃƒÂ© 20 minutos, practiquÃƒÂ© agradecimiento antes de cenar..."
+            placeholder="Por ejemplo: Camina 20 minutos, practica agradecimiento antes de cenar..."
             placeholderTextColor={colors.subText}
             multiline
             textAlignVertical="top"

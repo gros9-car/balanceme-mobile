@@ -37,7 +37,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!trimmed) {
       nextErrors.email = 'El correo es requerido';
     } else if (!/\S+@\S+\.\S+/.test(trimmed)) {
-      nextErrors.email = 'Correo invalido';
+      nextErrors.email = 'Correo inválido';
     }
 
     setErrors(nextErrors);
@@ -56,7 +56,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       } else {
         Alert.alert(
           'Revisa tu correo',
-          'Te enviamos un enlace para restablecer tu contrasena.',
+          'Te enviamos un enlace para restablecer tu contraseña.',
           [{ text: 'Entendido', onPress: () => navigation?.navigate?.('Login') }],
         );
       }
@@ -65,7 +65,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       if (error.code === 'auth/user-not-found') {
         message = 'No existe una cuenta con ese correo.';
       } else if (error.code === 'auth/invalid-email') {
-        message = 'Correo invalido.';
+        message = 'Correo inválido.';
       }
       Alert.alert('Error', message);
     } finally {

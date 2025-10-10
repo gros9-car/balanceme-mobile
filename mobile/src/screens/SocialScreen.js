@@ -340,7 +340,7 @@ export default function SocialScreen({ navigation }) {
         email: user.email ?? "",
       });
 
-      Alert.alert("Solicitud enviada", "Cuando la acepten podran conversar.");
+      Alert.alert("Solicitud enviada", "Cuando la acepten podrán conversar.");
 
       setSearchResult(null);
 
@@ -398,11 +398,11 @@ export default function SocialScreen({ navigation }) {
 
       detachProfileListeners(friend.uid);
 
-      Alert.alert("Amistad eliminada", "La conexion se elimino correctamente.");
+      Alert.alert("Amistad eliminada", "La conexión se elimino correctamente.");
     } catch (error) {
       Alert.alert(
         "Error",
-        "No pudimos eliminar la amistad. Intenta mas tarde.",
+        "No pudimos eliminar la amistad. Intenta más tarde.",
       );
     } finally {
       setRemovingFriendId(null);
@@ -416,7 +416,7 @@ export default function SocialScreen({ navigation }) {
     Alert.alert(
       "Eliminar amistad",
 
-      `Se borrara la conexion con ${nameToShow}.`,
+      `Se borrará la conexión con ${nameToShow}.`,
 
       [
         { text: "Cancelar", style: "cancel" },

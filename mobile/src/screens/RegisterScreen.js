@@ -56,19 +56,19 @@ export default function RegisterScreen({ navigation }) {
     if (!formData.email.trim()) {
       nextErrors.email = 'El correo es requerido';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      nextErrors.email = 'Correo invalido';
+      nextErrors.email = 'Correo inválido';
     }
 
     if (!formData.password) {
-      nextErrors.password = 'La contrasena es requerida';
+      nextErrors.password = 'La contraseña es requerida';
     } else if (formData.password.length < 6) {
-      nextErrors.password = 'La contrasena debe tener minimo 6 caracteres';
+      nextErrors.password = 'La contraseña debe tener mínimo 6 caracteres';
     }
 
     if (!formData.confirmPassword) {
       nextErrors.confirmPassword = 'Confirma tu contraseña';
     } else if (formData.confirmPassword !== formData.password) {
-      nextErrors.confirmPassword = 'Las contrasenas no coinciden';
+      nextErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
     setErrors(nextErrors);
@@ -101,18 +101,18 @@ export default function RegisterScreen({ navigation }) {
       if (Platform.OS === 'web') {
         setSuccessVisible(true);
       } else {
-        Alert.alert('Bienvenido a BalanceMe', 'Tu cuenta esta lista.', [
+        Alert.alert('Bienvenido a BalanceMe', 'Tu cuenta está lista.', [
           { text: 'Ir a iniciar sesion', onPress: () => navigation?.navigate?.('Login') },
         ]);
       }
     } catch (error) {
       let message = 'No pudimos crear tu cuenta. Intenta nuevamente.';
       if (error.code === 'auth/email-already-in-use') {
-        message = 'Ese correo ya esta registrado.';
+        message = 'Ese correo ya está registrado.';
       } else if (error.code === 'auth/invalid-email') {
         message = 'Correo invalido.';
       } else if (error.code === 'auth/weak-password') {
-        message = 'La contrasena es muy debil.';
+        message = 'La contraseña es muy débil.';
       }
       Alert.alert('Error', message);
     } finally {

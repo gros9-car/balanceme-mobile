@@ -63,61 +63,61 @@ const emojiAgentProfiles = {
 const agentStrategyLibrary = {
   social: [
     'Comparte un momento con alguien de confianza.',
-    'Enviale un mensaje a una persona importante para agradecerle.',
+    'Envíale un mensaje a una persona importante para agradecerle.',
     'Planifica una actividad ligera con amigos o familia.',
   ],
   energy: [
     'Realiza una rutina corta de movimiento o baile.',
-    'Da una caminata breve para canalizar tu energia.',
-    'Escucha musica motivadora mientras ordenas tu espacio.',
+    'Da una caminata breve para canalizar tu energía.',
+    'Escucha música motivadora mientras ordenas tu espacio.',
   ],
   calm: [
-    'Practica respiracion caja: inhala 4s, sostiene 4s, exhala 4s.',
-    'Haz una meditacion guiada de 5 minutos enfocada en la respiracion.',
-    'Realiza estiramientos lentos enfocandote en hombros y cuello.',
+    'Practica respiración caja: inhala 4s, sostiene 4s, exhala 4s.',
+    'Haz una meditación guiada de 5 minutos enfocada en la respiración.',
+    'Realiza estiramientos lentos enfocándote en hombros y cuello.',
   ],
   reflection: [
-    'Escribe en tu diario tres ideas o aprendizajes del dia.',
+    'Escribe en tu diario tres ideas o aprendizajes del día.',
     'Enumera logros recientes y reconoce tu esfuerzo.',
     'Haz una lista de gratitud con al menos dos elementos.',
   ],
   progress: [
-    'Define una micro-meta accionable para las proximas horas.',
+    'Define una micro-meta accionable para las próximas horas.',
     'Divide una tarea pendiente en pasos simples y completa el primero.',
     'Reserva 15 minutos para avanzar en un proyecto personal.',
   ],
   rest: [
     'Toma un descanso sin pantallas y bebe agua.',
-    'Haz una siesta corta o practica relajacion muscular progresiva.',
+    'Haz una siesta corta o practica relajación muscular progresiva.',
     'Prioriza acostarte 30 minutos antes esta noche.',
   ],
   support: [
-    'Habla con alguien que pueda escucharte con empatia.',
+    'Habla con alguien que pueda escucharte con empatía.',
     'Busca un espacio seguro para expresar como te sientes.',
     'Agenda un momento para actividades que te resulten reconfortantes.',
   ],
   release: [
     'Escribe tus pensamientos sin filtro durante 5 minutos.',
-    'Haz ejercicio suave para liberar tension acumulada.',
+    'Haz ejercicio suave para liberar tensión acumulada.',
     'Practica respiraciones profundas contando hasta cuatro.',
   ],
   grounding: [
-    'Usa la tecnica 5-4-3-2-1 para anclarte al presente.',
-    'Lava tu rostro con agua fria y respira lentamente.',
-    'Observa conscientemente tu entorno durante un minuto.',
+    'Usa la técnica 5-4-3-2-1 para anclarte al presente.',
+    'Lava tu rostro con agua fría y respira lentamente.',
+    'Observa conscientemente tu entorno durante un mínuto.',
   ],
 };
 
 const tagDescriptions = {
-  social: 'conectar con otras personas',
-  energy: 'canalizar tu energia',
-  calm: 'regalarte calma y regulacion',
-  reflection: 'reflexionar con claridad',
-  progress: 'avanzar con tus metas',
-  rest: 'darle descanso a tu cuerpo',
-  support: 'buscar acompanamiento emocional',
-  release: 'liberar tensiones acumuladas',
-  grounding: 'anclarte al presente',
+  social: 'Conectar con otras personas',
+  energy: 'Canalizar tu energía',
+  calm: 'Regalarte calma y regulación',
+  reflection: 'Reflexionar con claridad',
+  progress: 'Avanzar con tus metas',
+  rest: 'Darle descanso a tu cuerpo',
+  support: 'Buscar acompañamiento emocional',
+  release: 'Liberar tensiones acumuladas',
+  grounding: 'Anclarte al presente',
 };
 
 // Analiza la selección de emojis para decidir sugerencias y un resumen del estado.
@@ -169,11 +169,11 @@ const buildAgentResponse = (selectedNames) => {
   const secondaryTag = sortedTags[1];
   let summary = '';
   if (dominantTag) {
-    summary = `Tu seleccion muestra una necesidad de ${tagDescriptions[dominantTag] ?? 'equilibrio'}.`;
+    summary = `Tu selección muestra una necesidad de ${tagDescriptions[dominantTag] ?? 'equilibrio'}.`;
     if (secondaryTag) {
-      summary += ` Tambien aparecen señales de ${tagDescriptions[secondaryTag] ?? secondaryTag}.`;
+      summary += ` También aparecen señales de ${tagDescriptions[secondaryTag] ?? secondaryTag}.`;
     }
-    summary += ' Estas sugerencias buscan cubrir esas areas clave.';
+    summary += ' Estas sugerencias buscan cubrir esas áreas claves.';
   }
 
   return { suggestions: suggestions.slice(0, 3), summary };
@@ -253,7 +253,7 @@ export default function MoodTrackerScreen({ navigation }) {
         return prev.filter((item) => item !== name);
       }
       if (prev.length >= 3) {
-        Alert.alert('Maximo alcanzado', 'Puedes seleccionar hasta 3 emojis.');
+        Alert.alert('Máximo alcanzado', 'Puedes seleccionar hasta 3 emojis.');
         return prev;
       }
       return [...prev, name];
@@ -277,20 +277,20 @@ export default function MoodTrackerScreen({ navigation }) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     if (hours <= 0) {
-      return `Podras registrar un nuevo estado en ${minutes} min.`;
+      return `Podrás registrar un nuevo estado en ${minutes} min.`;
     }
-    return `Podras registrar un nuevo estado en ${hours} h ${minutes.toString().padStart(2, '0')} min.`;
+    return `Podrás registrar un nuevo estado en ${hours} h ${minutes.toString().padStart(2, '0')} min.`;
   }, [cooldownEndsAt]);
 
   // Guarda el estado de ánimo y las sugerencias generadas en Firestore.
   const handleSave = async () => {
     if (!user?.uid) {
-      Alert.alert('Sesion requerida', 'Inicia sesion para registrar tu estado de animo.');
+      Alert.alert('Sesión requerida', 'Inicia sesión para registrar tu estado de ánimo.');
       navigation?.replace?.('Login');
       return;
     }
     if (isOnCooldown) {
-      Alert.alert('Espera un poco mas', 'Solo puedes registrar un estado cada 12 horas.');
+      Alert.alert('Espera un poco más', 'Sólo puedes registrar un estado cada 12 horas.');
       return;
     }
     if (!selectedEmojis.length) {

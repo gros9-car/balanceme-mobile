@@ -82,7 +82,7 @@ export default function SettingsScreen({ navigation }) {
           <ThemeOption
             mode="light"
             label="Modo claro"
-            description="Iluminacion suave ideal para espacios con buena luz."
+            description="Iluminación suave ideal para espacios con buena luz."
             isActive={theme === 'light'}
             onPress={handleThemeChange}
             colors={colors}
@@ -98,7 +98,7 @@ export default function SettingsScreen({ navigation }) {
           <ThemeOption
             mode="system"
             label="Seguir al sistema"
-            description="BalanceMe adoptara automaticamente el tema de tu dispositivo."
+            description="BalanceMe adoptará automáticamente el tema de tu dispositivo."
             isActive={theme === 'system'}
             onPress={handleThemeChange}
             colors={colors}
