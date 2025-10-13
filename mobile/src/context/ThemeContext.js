@@ -17,20 +17,21 @@ const lightPalette = {
   outline: '#cbd5f5',
   statusBarStyle: 'dark-content',
 };
-
 const darkPalette = {
-  background: '#0f172a',
-  surface: 'rgba(15, 23, 42, 0.95)',
-  primary: '#a855f7',
-  primaryContrast: '#0f172a',
-  text: '#f8fafc',
-  subText: '#cbd5f5',
-  muted: '#1e293b',
-  accent: '#22d3ee',
-  danger: '#f87171',
-  outline: '#334155',
+  background: '#0a0a0a',          
+  surface: 'rgba(20, 20, 20, 0.95)', 
+  primary: '#bb86fc',             
+  primaryContrast: '#ffffff',     
+  text: '#f5f5f5',                
+  subText: '#b8b8d9',            
+  muted: '#1a1a1a',              
+  accent: '#9d8df1',              
+  danger: '#ff6b81',             
+  outline: '#2f2f2f',             
   statusBarStyle: 'light-content',
 };
+
+
 
 const paletteByMode = {
   light: lightPalette,
