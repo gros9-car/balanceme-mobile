@@ -76,7 +76,7 @@ const quickActions = [
     target: 'Journal',
   },
 ];
-
+console.log('soy dross')
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
