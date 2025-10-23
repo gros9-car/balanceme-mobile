@@ -303,7 +303,7 @@ export default function HabitsScreen({ navigation }) {
             </View>
           </View>
           {hasTodayEntry ? (
-            <Text style={[styles.infoText, { color: colors.subText }]}>Ya registraste tus habitos del dia. MaÃƒÂ±ana tendremos nuevas sugerencias para ti.</Text>
+            <Text style={[styles.infoText, { color: colors.subText }]}>Ya registraste tus habitos del dia. Mañana tendremos nuevas sugerencias para ti.</Text>
           ) : (
             <Text style={[styles.infoText, { color: colors.subText }]}>Cuenta que acciones realizaste: movimiento, alimentacion, descanso, conexiones, etc.</Text>
           )}
