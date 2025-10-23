@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useWindowDimensions } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -58,16 +58,10 @@ const AppNavigator = () => {
       >
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
 
         {/* Main */}
         <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Mood" component={MoodTrackerScreen} />
-        <Stack.Screen name="Habits" component={HabitsScreen} />
-        <Stack.Screen name="HelpForum" component={HelpForumScreen} />
-        <Stack.Screen name="Social" component={SocialScreen} />
-        <Stack.Screen name="Journal" component={JournalScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Mood" component={MoodTrackerScreen} />
@@ -89,12 +83,3 @@ export default function App() {
     </ThemeProvider>
   );
 }
-
-export default function App() {
-  return (
-    <ThemeProvider>
-      <RootNavigator />
-    </ThemeProvider>
-  );
-}
-﻿
