@@ -13,28 +13,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-/**
- * Pantalla de inicio de sesión.
- * Valida email/contraseña y utiliza Firebase Auth para autenticar al usuario.
- * Muestra errores específicos por campo y una notificación de éxito.
- */
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase/config';
+import { useTheme } from '../context/ThemeContext';
 
+// Pantalla de inicio de sesión que valida credenciales y entra a la app.
 export default function LoginScreen({ navigation }) {
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  /**
-   * Maneja el envío del formulario de login:
-   * - Valida email y contraseña (requeridos, formato y longitud mínima)
-   * - Inicia sesión con Firebase (signInWithEmailAndPassword)
-   * - En éxito muestra un Alert; en error, mapea códigos comunes a mensajes
-   *   de campo y muestra un Alert si aplica.
-   */
+  // Evalúa entradas, intenta autenticar y maneja errores comunes.
   const handleLogin = async () => {
     const newErrors = {};
     const emailTrim = email.trim();
@@ -57,7 +49,7 @@ export default function LoginScreen({ navigation }) {
       const mapped = {};
       switch (error.code) {
         case 'auth/invalid-email':
-          mapped.email = 'Correo inválido';
+          mapped.email = 'Correo invalido';
           break;
         case 'auth/user-not-found':
           mapped.email = 'No existe una cuenta con ese correo';
@@ -83,126 +75,146 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header con logo (mismo estilo que Register) */}
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="heart" size={32} color="#fff" />
+          <View
+            style={[
+              styles.logoContainer,
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
+            ]}
+          >
+            <Ionicons name="heart" size={32} color={colors.primaryContrast} />
           </View>
-          <Text style={styles.title}>BalanceMe</Text>
-          <Text style={styles.subtitle}>Bienvenido de vuelta</Text>
+          <Text style={[styles.title, { color: colors.text }]}>BalanceMe</Text>
+          <Text style={[styles.subtitle, { color: colors.subText }]}>Bienvenido de vuelta</Text>
         </View>
 
-        {/* Formulario */}
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Iniciar sesión</Text>
+        <View style={[styles.formContainer, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
+          <Text style={[styles.formTitle, { color: colors.text }]}>Iniciar sesion</Text>
 
-          {/* Email */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Correo electrónico</Text>
-            <View style={[styles.inputWrapper, errors?.email && styles.inputError]}>
+            <Text style={[styles.label, { color: colors.text }]}>Correo electronico</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.muted, borderColor: colors.muted },
+                errors?.email && { borderColor: colors.danger },
+              ]}
+            >
               <Ionicons
                 name="mail-outline"
                 size={20}
-                color="#9ca3af"
+                color={colors.subText}
                 style={styles.inputIcon}
               />
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.text }]}
                 value={email}
-                onChangeText={(t) => { setEmail(t); if (errors?.email) setErrors((e)=>({ ...e, email: '' })); }}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  if (errors?.email) setErrors((e) => ({ ...e, email: '' }));
+                }}
                 placeholder="tu@email.com"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.subText}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
-            {errors?.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            {errors?.email ? <Text style={[styles.errorText, { color: colors.danger }]}>{errors.email}</Text> : null}
           </View>
 
-          {/* Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Contraseña</Text>
-            <View style={[styles.inputWrapper, errors?.password && styles.inputError]}>
+            <Text style={[styles.label, { color: colors.text }]}>Contraseña</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                { backgroundColor: colors.muted, borderColor: colors.muted },
+                errors?.password && { borderColor: colors.danger },
+              ]}
+            >
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
-                color="#9ca3af"
+                color={colors.subText}
                 style={styles.inputIcon}
               />
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.text }]}
                 value={password}
-                onChangeText={(t) => { setPassword(t); if (errors?.password) setErrors((e)=>({ ...e, password: '' })); }}
+                onChangeText={(t) => {
+                  setPassword(t);
+                  if (errors?.password) setErrors((e) => ({ ...e, password: '' }));
+                }}
                 placeholder="Tu contraseña"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.subText}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
               />
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
+                onPress={() => setShowPassword((prev) => !prev)}
                 style={styles.eyeIcon}
               >
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#9ca3af"
+                  color={colors.subText}
                 />
               </TouchableOpacity>
             </View>
-            {errors?.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+            {errors?.password ? (
+              <Text style={[styles.errorText, { color: colors.danger }]}>{errors.password}</Text>
+            ) : null}
           </View>
 
-          {/* Olvidaste tu contraseña */}
-          <TouchableOpacity activeOpacity={0.8} onPress={() => navigation.navigate('ForgotPassword')}>
-            <Text style={[styles.linkText, { textAlign: 'right', marginBottom: 16 }]}>¿Olvidaste tu contraseña?</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={styles.forgotLink}
+          >
+            <Text style={[styles.linkText, { color: colors.accent }]}>Olvide mi contraseña</Text>
           </TouchableOpacity>
 
-          {/* Botón entrar */}
           <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
+              isLoading && { backgroundColor: colors.muted, shadowOpacity: 0, elevation: 0 },
+            ]}
             onPress={handleLogin}
             disabled={isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text style={styles.submitButtonText}>Ingresando...</Text>
+                <ActivityIndicator size="small" color={colors.primaryContrast} />
+                <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Ingresando...</Text>
               </View>
             ) : (
-              <Text style={styles.submitButtonText}>Entrar</Text>
+              <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Entrar</Text>
             )}
           </TouchableOpacity>
 
-          {/* Ir a registro */}
           <View style={styles.loginLinkContainer}>
-            <Text style={styles.loginText}>
-              ¿No tienes cuenta?{' '}
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.loginLinkText}>Crear cuenta</Text>
-              </TouchableOpacity>
-            </Text>
+            <Text style={[styles.loginText, { color: colors.subText }]}>No tienes una cuenta?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={[styles.loginLinkText, { color: colors.accent }]}> Crear cuenta</Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Mensaje motivacional */}
-        <Text style={styles.motivationalText}>
-          "Pequeños pasos diarios hacen grandes cambios"
-        </Text>
+          <Text style={[styles.motivationalText, { color: colors.subText }]}>Pequenos pasos crean grandes cambios.</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Estilos iguales a RegisterScreen para mantener consistencia visual
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -215,7 +227,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 24,
   },
   logoContainer: {
     width: 64,
@@ -298,6 +310,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
   linkText: {
     color: '#3b82f6',
     textDecorationLine: 'underline',
@@ -314,11 +330,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
@@ -327,10 +338,13 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   loginLinkContainer: {
     marginTop: 24,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   loginText: {
     fontSize: 14,
