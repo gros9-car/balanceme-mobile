@@ -611,7 +611,13 @@ const styles = StyleSheet.create({
   actionDescription: {
     fontSize: 13,
   },
-  emergencyButton: {
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  quickActionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

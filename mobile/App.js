@@ -50,6 +50,14 @@ function RootNavigator() {
       </Stack.Navigator>
     </NavigationContainer>
   );
+};
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
+  );
 }
 
 export default function App() {
