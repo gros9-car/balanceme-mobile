@@ -54,7 +54,7 @@ const habitAgentProfiles = {
     ],
   },
   descanso: {
-    keywords: ['descans', 'dorm', 'siesta', 'relaj', 'sueÃƒÂ±o', 'acostar', 'despert'],
+    keywords: ['descans', 'dorm', 'siesta', 'relaj', 'sueño', 'acostar', 'despert'],
     summary: 'Estás priorizando el descanso, lo cual ayuda a tu balance.',
     tips: [
       'Mantener horarios constantes mejora la calidad del descanso.',
