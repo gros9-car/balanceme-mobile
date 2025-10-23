@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,8 @@ import {
   ActivityIndicator,
   Alert,
   useWindowDimensions,
-  Modal,
-  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Speech from 'expo-speech';
 import {
   collection,
   addDoc,
@@ -46,8 +43,6 @@ const formatDate = (date) => {
     return '';
   }
 };
-
-
 
 const habitAgentProfiles = {
   movimiento: {
@@ -173,14 +168,6 @@ export default function HabitsScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasTodayEntry, setHasTodayEntry] = useState(false);
-  // Estado para respiración cuadrada
-  const [breathingVisible, setBreathingVisible] = useState(false);
-  const [breathingPhase, setBreathingPhase] = useState('');
-  const [currentCycle, setCurrentCycle] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(4);
-  const anim = useRef(new Animated.Value(0)).current; // 0..1 (escala)
-  const timersRef = useRef([]);
-  const [soundOn, setSoundOn] = useState(true);
 
   const todayLabel = useMemo(() => formatDate(new Date()), []);
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
@@ -235,14 +222,6 @@ export default function HabitsScreen({ navigation }) {
     return unsubscribe;
   }, [user?.uid]);
 
-  // Limpia timers al desmontar
-  useEffect(() => {
-    return () => {
-      timersRef.current.forEach(clearTimeout);
-      timersRef.current = [];
-    };
-  }, []);
-
   // Guarda la entrada del día y guarda el análisis generado automáticamente.
   const handleSave = async () => {
     if (!user?.uid) {
@@ -280,83 +259,6 @@ export default function HabitsScreen({ navigation }) {
     } finally {
       setSaving(false);
     }
-  };
-
-  const openBreathing = () => {
-    // Reset estado
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-    anim.stopAnimation();
-    anim.setValue(0);
-    setCurrentCycle(1);
-    setBreathingPhase('Inhala');
-    setSecondsLeft(4);
-    setBreathingVisible(true);
-    startCycle(1, 0);
-  };
-
-  const closeBreathing = () => {
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-    anim.stopAnimation();
-    try { Speech.stop(); } catch {}
-    setBreathingVisible(false);
-  };
-
-  const stepPlan = [
-    { label: 'Inhala', duration: 4000, animate: 'inhale' },
-    { label: 'Mantén', duration: 4000, animate: 'hold' },
-    { label: 'Exhala', duration: 4000, animate: 'exhale' },
-    { label: 'Espera', duration: 4000, animate: 'hold' },
-  ];
-
-  const runCountdown = (ms) => {
-    setSecondsLeft(Math.ceil(ms / 1000));
-    let remaining = ms;
-    const tick = () => {
-      remaining -= 1000;
-      if (remaining >= 0) setSecondsLeft(Math.ceil(remaining / 1000));
-    };
-    for (let i = 1; i <= Math.floor(ms / 1000); i += 1) {
-      const t = setTimeout(tick, i * 1000);
-      timersRef.current.push(t);
-    }
-  };
-
-  const startCycle = (cycleIndex, stepIndex) => {
-    if (cycleIndex > 4) {
-      setBreathingPhase('Completado');
-      setSecondsLeft(0);
-      if (soundOn) {
-        try { Speech.speak('Completado', { language: 'es-ES' }); } catch {}
-      }
-      return;
-    }
-    const step = stepPlan[stepIndex];
-    setBreathingPhase(step.label);
-    setCurrentCycle(cycleIndex);
-    runCountdown(step.duration);
-
-    if (soundOn) {
-      try {
-        let phrase = step.label;
-        if (phrase.toLowerCase().startsWith('mant')) phrase = 'Manten';
-        Speech.speak(phrase, { language: 'es-ES' });
-      } catch {}
-    }
-
-    if (step.animate === 'inhale') {
-      Animated.timing(anim, { toValue: 1, duration: step.duration, useNativeDriver: true }).start();
-    } else if (step.animate === 'exhale') {
-      Animated.timing(anim, { toValue: 0, duration: step.duration, useNativeDriver: true }).start();
-    }
-
-    const next = setTimeout(() => {
-      const nextStep = (stepIndex + 1) % stepPlan.length;
-      const nextCycle = nextStep === 0 ? cycleIndex + 1 : cycleIndex;
-      startCycle(nextCycle, nextStep);
-    }, step.duration);
-    timersRef.current.push(next);
   };
 
   if (!user?.uid) {
@@ -405,15 +307,6 @@ export default function HabitsScreen({ navigation }) {
           ) : (
             <Text style={[styles.infoText, { color: colors.subText }]}>Cuenta que acciones realizaste: movimiento, alimentacion, descanso, conexiones, etc.</Text>
           )}
-          <TouchableOpacity
-            style={[styles.breatheButton, { borderColor: colors.primary, backgroundColor: colors.primary + '11' }]}
-            onPress={openBreathing}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="pause-circle-outline" size={20} color={colors.primary} />
-            <Text style={[styles.breatheButtonText, { color: colors.primary }]}>Respiración cuadrada (4-4-4-4)</Text>
-          </TouchableOpacity>
-
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -485,64 +378,6 @@ export default function HabitsScreen({ navigation }) {
           })
         )}
       </ScrollView>
-
-      <Modal
-        visible={breathingVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeBreathing}
-      >
-        <View style={[styles.breatheOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-          <View style={[styles.breatheCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
-            <Text style={[styles.breatheTitle, { color: colors.text }]}>Respiración cuadrada</Text>
-            <Text style={[styles.breatheSubtitle, { color: colors.subText }]}>Ciclo {Math.min(currentCycle, 4)} de 4</Text>
-            <TouchableOpacity onPress={() => setSoundOn((v) => !v)} activeOpacity={0.8} style={[styles.soundToggle, { backgroundColor: colors.muted }]}>
-              <Ionicons name={soundOn ? 'volume-high' : 'volume-mute'} size={18} color={colors.text} />
-            </TouchableOpacity>
-
-            <Animated.View
-              style={[
-                styles.breatheCircle,
-                {
-                  backgroundColor: colors.primary + '22',
-                  transform: [
-                    {
-                      scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.35] }),
-                    },
-                  ],
-                },
-              ]}
-            />
-
-            <Text style={[styles.breathePhase, { color: colors.text }]}>{breathingPhase}</Text>
-            {breathingPhase !== 'Completado' ? (
-              <Text style={[styles.breatheTimer, { color: colors.subText }]}>{secondsLeft}s</Text>
-            ) : (
-              <Text style={[styles.breatheDone, { color: colors.primary }]}>¡Bien hecho!</Text>
-            )}
-
-            <View style={styles.breatheActions}>
-              {breathingPhase === 'Completado' ? (
-                <TouchableOpacity
-                  style={[styles.closeButton, { backgroundColor: colors.primary }]}
-                  onPress={closeBreathing}
-                  activeOpacity={0.9}
-                >
-                  <Text style={[styles.closeButtonText, { color: colors.primaryContrast }]}>Finalizar</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.closeButton, { backgroundColor: colors.muted }]}
-                  onPress={closeBreathing}
-                  activeOpacity={0.9}
-                >
-                  <Text style={[styles.closeButtonText, { color: colors.text }]}>Detener</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -698,82 +533,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
-  },
-  breatheOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  breatheCard: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 20,
-    alignItems: 'center',
-    gap: 12,
-  },
-  breatheTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  breatheSubtitle: {
-    fontSize: 13,
-  },
-  breatheCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    marginVertical: 8,
-  },
-  breathePhase: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  breatheTimer: {
-    fontSize: 14,
-  },
-  breatheDone: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  breatheActions: {
-    width: '100%',
-    marginTop: 8,
-  },
-  closeButton: {
-    width: '100%',
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  soundToggle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-  },
-  breatheButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    alignSelf: 'flex-start',
-  },
-  breatheButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   centered: {
     alignItems: 'center',
