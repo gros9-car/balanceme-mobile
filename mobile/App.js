@@ -11,7 +11,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import JournalScreen from "./src/screens/JournalScreen";
 import HabitsScreen from "./src/screens/HabitsScreen";
-import SupportChatScreen from "./src/screens/SupportChatScreen";
+import SupportChatScreen from "./src/screens/SupportChatScreenClean";
 import HelpForumScreen from "./src/screens/HelpForumScreen";
 import SocialScreen from "./src/screens/SocialScreen";
 import DirectChatScreen from "./src/screens/DirectChatScreen";
