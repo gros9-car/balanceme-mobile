@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  SafeAreaView,
+  StatusBar,
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
-  StatusBar,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -15,12 +15,28 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { addDoc, collection, limit, onSnapshot, orderBy, query, serverTimestamp, doc } from 'firebase/firestore';
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
-// Garantiza fechas legibles incluso si el timestamp es inválido.
+const FORUM_CATEGORIES = [
+  { value: 'apoyo', label: 'Apoyo emocional' },
+  { value: 'recursos', label: 'Recursos y tips' },
+  { value: 'logros', label: 'Historias de avance' },
+];
+
 const formatTimestamp = (value) => {
   try {
     return value.toDate().toLocaleString();
@@ -29,92 +45,56 @@ const formatTimestamp = (value) => {
   }
 };
 
-// Deriva un perfil simple para mostrar autor y correo en el foro.
-const deriveProfile = (data) => {
-  const nameCandidate =
-    (typeof data?.name === 'string' && data.name.trim()) ||
-    (typeof data?.displayName === 'string' && data.displayName.trim());
-  const emailCandidate = typeof data?.email === 'string' ? data.email : '';
-  const fallbackName = emailCandidate ? emailCandidate.split('@')[0] : 'Usuario';
-  return {
-    name: nameCandidate ?? fallbackName,
-    email: emailCandidate,
-  };
+const buildAlias = (uid) => {
+  if (!uid) {
+    return 'Anónimo';
+  }
+  const suffix = uid.slice(-4).toUpperCase();
+  return `Anónimo-${suffix}`;
 };
 
-// Foro comunitario que permite publicar mensajes y ver aportes recientes.
-export default function HelpForumScreen({ navigation }) {
+const HelpForumScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const user = auth.currentUser;
 
   const [messages, setMessages] = useState([]);
-  const [profiles, setProfiles] = useState({});
-  const profileSubscriptions = useRef({});
-
   const [draft, setDraft] = useState('');
+  const [category, setCategory] = useState(FORUM_CATEGORIES[0].value);
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
-  const displayName = useMemo(() => {
-    if (user?.displayName?.trim()) {
-      return user.displayName.trim();
-    }
-    if (user?.email?.trim()) {
-      return user.email.trim().split('@')[0];
-    }
-    return 'Anonimo';
-  }, [user?.displayName, user?.email]);
-
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
-  const contentWidth = useMemo(() => ({
-    paddingHorizontal: horizontalPadding,
-    width: '100%',
-    maxWidth: Math.min(920, width * 0.95),
-    alignSelf: 'center',
-    gap: 24,
-  }), [horizontalPadding, width]);
-
-  useEffect(() => () => {
-    // Limpia las suscripciones a perfiles cuando se desmonta la pantalla.
-    Object.values(profileSubscriptions.current).forEach((unsubscribe) => unsubscribe?.());
-    profileSubscriptions.current = {};
-  }, []);
-
-  // Escucha los cambios del perfil de un usuario y cachea su info.
-  const attachProfileListener = (uid) => {
-    if (!uid || profileSubscriptions.current[uid]) {
-      return;
-    }
-    profileSubscriptions.current[uid] = onSnapshot(doc(db, 'users', uid), (snapshot) => {
-      const data = snapshot.data();
-      setProfiles((prev) => ({ ...prev, [uid]: deriveProfile(data ?? {}) }));
-    });
-  };
+  const contentWidth = useMemo(
+    () => ({
+      paddingHorizontal: horizontalPadding,
+      width: '100%',
+      maxWidth: Math.min(920, width * 0.95),
+      alignSelf: 'center',
+      gap: 24,
+    }),
+    [horizontalPadding, width],
+  );
 
   useEffect(() => {
-    // Recupera los mensajes más recientes del foro y vincula los perfiles involucrados.
     const forumRef = collection(db, 'forumPosts');
     const forumQuery = query(forumRef, orderBy('createdAt', 'desc'), limit(200));
 
     const unsubscribe = onSnapshot(
       forumQuery,
       (snapshot) => {
-        const uniqueUserIds = new Set();
         const next = snapshot.docs.map((docSnapshot) => {
           const data = docSnapshot.data() ?? {};
-          if (data.userId) {
-            uniqueUserIds.add(data.userId);
-          }
           return {
             id: docSnapshot.id,
-            author: typeof data.author === 'string' ? data.author : 'Anonimo',
+            alias: typeof data.alias === 'string' ? data.alias : 'Anónimo',
             message: typeof data.message === 'string' ? data.message : '',
+            category: typeof data.category === 'string' ? data.category : FORUM_CATEGORIES[0].value,
             createdAt: data.createdAt ?? data.createdAtServer,
-            userId: data.userId,
+            createdAtDate: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            reports: Array.isArray(data.reports) ? data.reports : [],
           };
         });
-        uniqueUserIds.forEach(attachProfileListener);
         setMessages(next);
         setLoading(false);
       },
@@ -127,34 +107,92 @@ export default function HelpForumScreen({ navigation }) {
     return unsubscribe;
   }, []);
 
-  // Publica un nuevo mensaje en el foro si el usuario está autenticado.
-  const handleSend = async () => {
-    const trimmed = draft.trim();
-    if (!trimmed) {
+  const handlePublish = async () => {
+    if (!user?.uid) {
+      Alert.alert('Sesión requerida', 'Inicia sesión para participar en la comunidad.');
+      navigation?.replace?.('Login');
       return;
     }
-    if (!user?.uid) {
-      Alert.alert('Sesión requerida', 'Necesitas iniciar sesión para participar.');
-      navigation?.replace?.('Login');
+
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      Alert.alert('Mensaje vacío', 'Escribe un mensaje antes de publicar.');
       return;
     }
 
     setPosting(true);
     try {
       const forumRef = collection(db, 'forumPosts');
-      attachProfileListener(user.uid);
       await addDoc(forumRef, {
-        author: displayName,
+        alias: buildAlias(user.uid),
         message: trimmed,
-        userId: user.uid,
+        category,
         createdAt: serverTimestamp(),
+        reports: [],
       });
       setDraft('');
+      Alert.alert('Publicado', 'Tu mensaje anónimo ya es visible.');
     } catch (error) {
-      Alert.alert('Error', 'No pudimos publicar tu mensaje. Intenta nuevamente.');
+      Alert.alert('Error', 'No pudimos publicar el mensaje. Intenta nuevamente.');
     } finally {
       setPosting(false);
     }
+  };
+
+  const handleReport = async (postId) => {
+    if (!user?.uid) {
+      Alert.alert('Acción no disponible', 'Inicia sesión para reportar contenidos.');
+      return;
+    }
+    try {
+      const postRef = doc(db, 'forumPosts', postId);
+      await updateDoc(postRef, {
+        reports: arrayUnion(user.uid),
+      });
+      Alert.alert('Reporte enviado', 'Gracias por ayudarnos a mantener un espacio seguro.');
+    } catch (error) {
+      Alert.alert('Error', 'No pudimos enviar el reporte. Intenta de nuevo.');
+    }
+  };
+
+  const renderItem = ({ item }) => {
+    const categoryMeta = FORUM_CATEGORIES.find((c) => c.value === item.category);
+    return (
+      <View style={[styles.postCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+        <View style={styles.postHeader}>
+          <View style={styles.postAuthor}>
+            <Ionicons name="person-circle-outline" size={22} color={colors.primary} />
+            <View>
+              <Text style={[styles.postAlias, { color: colors.text }]}>{item.alias}</Text>
+              <Text style={[styles.postDate, { color: colors.subText }]}>{formatTimestamp(item.createdAt)}</Text>
+            </View>
+          </View>
+          <View style={[styles.categoryBadge, { backgroundColor: colors.primary + '22' }]}>
+            <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>
+              {categoryMeta?.label ?? 'Discusión'}
+            </Text>
+          </View>
+        </View>
+        <Text style={[styles.postMessage, { color: colors.text }]}>{item.message}</Text>
+        <View style={styles.postFooter}>
+          <TouchableOpacity
+            style={[styles.reportButton, { borderColor: colors.muted }]}
+            onPress={() => handleReport(item.id)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="flag-outline" size={16} color={colors.danger ?? '#ef4444'} />
+            <Text style={[styles.reportText, { color: colors.danger ?? '#ef4444' }]}>
+              Reportar
+            </Text>
+          </TouchableOpacity>
+          {item.reports?.length ? (
+            <Text style={[styles.reportCount, { color: colors.subText }]}>
+              {item.reports.length} reportes
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -175,75 +213,90 @@ export default function HelpForumScreen({ navigation }) {
             <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={[styles.title, { color: colors.text }]}>Foro de ayuda</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>Comparte experiencias y motivacion con la comunidad BalanceMe.</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Comunidad anónima</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.subText }]}>
+              Comparte de forma segura. Recuerda que todo lo publicado se mantiene en anonimato.
+            </Text>
           </View>
-          <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={[styles.composer, { borderColor: colors.muted }]}>
+          <View style={styles.categorySelector}>
+            {FORUM_CATEGORIES.map((item) => {
+              const active = category === item.value;
+              return (
+                <TouchableOpacity
+                  key={item.value}
+                  style={[
+                    styles.categoryChip,
+                    active && { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => setCategory(item.value)}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      { color: active ? colors.primaryContrast : colors.text },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="Escribe un mensaje de apoyo, una duda o un recurso útil..."
+            placeholderTextColor={colors.subText}
+            style={[styles.input, { color: colors.text }]}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, { backgroundColor: colors.primary }]}
+            onPress={handlePublish}
+            disabled={posting}
+            activeOpacity={0.85}
+          >
+            {posting ? (
+              <ActivityIndicator size="small" color={colors.primaryContrast} />
+            ) : (
+              <Ionicons name="send" size={18} color={colors.primaryContrast} />
+            )}
+          </TouchableOpacity>
         </View>
 
         <FlatList
           data={messages}
-          inverted
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.listContent, contentWidth]}
-          ListHeaderComponent={
-            <View style={[styles.composer, { borderTopColor: colors.muted, backgroundColor: colors.surface, shadowColor: colors.outline }]}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={user ? 'Escribe un mensaje para la comunidad...' : 'Inicia sesión para participar'}
-                placeholderTextColor={colors.subText}
-                editable={Boolean(user)}
-                style={[styles.input, { color: colors.text, borderColor: colors.muted }]}
-                multiline
-              />
-              <TouchableOpacity
-                style={[styles.sendButton, { backgroundColor: colors.primary, opacity: posting || !user ? 0.6 : 1 }]}
-                onPress={handleSend}
-                disabled={posting || !user}
-                activeOpacity={0.85}
-              >
-                {posting ? (
-                  <ActivityIndicator size="small" color={colors.primaryContrast} />
-                ) : (
-                  <Ionicons name="send" size={18} color={colors.primaryContrast} />
-                )}
-              </TouchableOpacity>
-            </View>
-          }
+          contentContainerStyle={[styles.list, contentWidth]}
+          renderItem={renderItem}
           ListEmptyComponent={
             loading ? (
-              <View style={styles.centered}>
-                <ActivityIndicator size="large" color={colors.primary} />
+              <View style={styles.loading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.subText }]}>
+                  Cargando mensajes...
+                </Text>
               </View>
             ) : (
-              <View style={styles.centered}>
-                <Ionicons name="people-outline" size={24} color={colors.subText} />
-                <Text style={[styles.centeredText, { color: colors.subText }]}>Aun no hay publicaciones.</Text>
+              <View style={styles.loading}>
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.subText} />
+                <Text style={[styles.loadingText, { color: colors.subText }]}>
+                  Aún no hay publicaciones. ¡Se el primero en compartir algo!
+                </Text>
               </View>
             )
           }
-          renderItem={({ item }) => {
-            const profile = item.userId ? profiles[item.userId] : undefined;
-            const author = profile?.name ?? item.author;
-            return (
-              <View style={[styles.postCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
-                <View style={styles.postHeader}>
-                  <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
-                  <View style={styles.postHeaderText}>
-                    <Text style={[styles.postAuthor, { color: colors.text }]}>{author}</Text>
-                    <Text style={[styles.postDate, { color: colors.subText }]}>{formatTimestamp(item.createdAt)}</Text>
-                  </View>
-                </View>
-                <Text style={[styles.postMessage, { color: colors.text }]}>{item.message}</Text>
-              </View>
-            );
-          }}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+};
+
+export default HelpForumScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -268,80 +321,123 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
-  headerSpacer: {
-    width: 32,
-  },
-  title: {
+  headerTitle: {
     fontSize: 20,
     fontWeight: '700',
   },
-  subtitle: {
+  headerSubtitle: {
     fontSize: 12,
-    fontWeight: '500',
-  },
-  listContent: {
-    paddingBottom: 32,
-    gap: 16,
   },
   composer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     gap: 12,
-    padding: 16,
-    borderRadius: 20,
+    borderBottomWidth: 1,
+  },
+  categorySelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryChip: {
     borderWidth: 1,
-    marginBottom: 16,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  categoryChipText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   input: {
-    flex: 1,
-    minHeight: 48,
-    maxHeight: 120,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    minHeight: 80,
+    maxHeight: 160,
+    borderRadius: 12,
     borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(148,163,184,0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    lineHeight: 20,
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  list: {
+    paddingVertical: 24,
+    gap: 16,
+  },
+  loading: {
     alignItems: 'center',
+    gap: 8,
+    paddingVertical: 24,
+  },
+  loadingText: {
+    fontSize: 13,
+    textAlign: 'center',
   },
   postCard: {
-    borderRadius: 18,
     borderWidth: 1,
+    borderRadius: 18,
     padding: 16,
-    gap: 8,
+    gap: 12,
   },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  postHeaderText: {
-    gap: 2,
+    justifyContent: 'space-between',
+    gap: 12,
   },
   postAuthor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  postAlias: {
     fontSize: 14,
     fontWeight: '600',
   },
   postDate: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+  },
+  categoryBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   postMessage: {
     fontSize: 14,
     lineHeight: 20,
   },
-  centered: {
+  postFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
   },
-  centeredText: {
-    fontSize: 14,
-    textAlign: 'center',
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  reportText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reportCount: {
+    fontSize: 11,
   },
 });

@@ -16,6 +16,11 @@ import HelpForumScreen from "./src/screens/HelpForumScreen";
 import SocialScreen from "./src/screens/SocialScreen";
 import DirectChatScreen from "./src/screens/DirectChatScreen";
 import MoodTrackerScreen from "./src/screens/MoodTrackerScreen";
+import MoodInsightsScreen from "./src/screens/MoodInsightsScreen";
+import SelfCareLibraryScreen from "./src/screens/SelfCareLibraryScreen";
+import EmergencyResourcesScreen from "./src/screens/EmergencyResourcesScreen";
+import ProgressScreen from "./src/screens/ProgressScreen";
+import ReportDetailScreen from "./src/screens/ReportDetailScreen";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "./src/screens/firebase/config";
@@ -23,6 +28,7 @@ import { useNotificationSetup } from "./src/hooks/useNotificationSetup";
 import { useFriendRequestNotifications } from "./src/hooks/useFriendRequestNotifications";
 import { useMessageNotifications } from "./src/hooks/useMessageNotifications";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
+import { GoalProvider } from "./src/context/GoalContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -65,12 +71,17 @@ const AppNavigator = () => {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Mood" component={MoodTrackerScreen} />
+        <Stack.Screen name="MoodInsights" component={MoodInsightsScreen} />
+        <Stack.Screen name="SelfCare" component={SelfCareLibraryScreen} />
+        <Stack.Screen name="Emergency" component={EmergencyResourcesScreen} />
         <Stack.Screen name="Journal" component={JournalScreen} />
         <Stack.Screen name="Habits" component={HabitsScreen} />
+        <Stack.Screen name="Progress" component={ProgressScreen} />
         <Stack.Screen name="SupportChat" component={SupportChatScreen} />
         <Stack.Screen name="HelpForum" component={HelpForumScreen} />
         <Stack.Screen name="Social" component={SocialScreen} />
         <Stack.Screen name="DirectChat" component={DirectChatScreen} />
+        <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -78,7 +89,9 @@ const AppNavigator = () => {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppNavigator />
+      <GoalProvider>
+        <AppNavigator />
+      </GoalProvider>
     </ThemeProvider>
   );
 }

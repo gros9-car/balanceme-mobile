@@ -1,0 +1,450 @@
+import React, { useMemo, useState } from 'react';
+import {
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+import { useTheme } from '../context/ThemeContext';
+
+const BREATHING_EXERCISES = [
+  {
+    id: 'box',
+    title: 'Respiracion cuadrada',
+    duration: '4 minutos',
+    focus: 'Calma rapida y estabilidad',
+    steps: [
+      'Inhala por la nariz contando cuatro segundos.',
+      'Mantiene el aire en los pulmones durante cuatro segundos.',
+      'Exhala por la boca otros cuatro segundos.',
+      'Permanece con los pulmones vacios por cuatro segundos y repite el ciclo.',
+    ],
+  },
+  {
+    id: '478',
+    title: 'Respiracion 4-7-8',
+    duration: '3 minutos',
+    focus: 'Preparacion para el descanso',
+    steps: [
+      'Coloca la lengua detras de los dientes superiores.',
+      'Inhala por la nariz contando cuatro segundos.',
+      'Sostiene el aire durante siete segundos.',
+      'Exhala suavemente por la boca en ocho segundos y repite.',
+    ],
+  },
+  {
+    id: 'coherence',
+    title: 'Respiracion coherente',
+    duration: '5 minutos',
+    focus: 'Ritmo cardiaco equilibrado',
+    steps: [
+      'Inhala por la nariz durante cinco segundos.',
+      'Exhala por la boca durante cinco segundos.',
+      'Mantiene el ritmo continuo durante veinte ciclos.',
+    ],
+  },
+  {
+    id: 'alternate',
+    title: 'Respiracion alternada',
+    duration: '6 minutos',
+    focus: 'Claridad y enfoque mental',
+    steps: [
+      'Cierra la fosa nasal derecha con el pulgar e inhala por la izquierda durante cuatro segundos.',
+      'Cierra la izquierda con el anular y exhala por la derecha durante cuatro segundos.',
+      'Inhala por la derecha y exhala por la izquierda. Continua alternando sin prisa.',
+    ],
+  },
+  {
+    id: 'diaphragmatic',
+    title: 'Respiracion diafragmatica',
+    duration: '7 minutos',
+    focus: 'Liberar tension corporal',
+    steps: [
+      'Coloca una mano en el pecho y otra sobre el abdomen.',
+      'Inhala por la nariz inflando el abdomen y manteniendo el pecho relajado.',
+      'Exhala por la boca contrayendo suavemente el abdomen.',
+      'Permanece atenta a la sensacion de calma mientras repites el ciclo.',
+    ],
+  },
+];
+
+const MEDITATIONS = [
+  {
+    id: 'meditation-5',
+    title: 'Meditacion guiada breve',
+    duration: '5 minutos',
+    summary: 'Enfoca tu atencion en la respiracion y regresa cuando la mente divague.',
+    description:
+      'Busca una postura comoda, cierra los ojos y sigue el ritmo de la respiracion. Cuando aparezca un pensamiento, reconocelo y vuelve a la respiracion sin juicio.',
+  },
+  {
+    id: 'meditation-10',
+    title: 'Meditacion de compasion',
+    duration: '10 minutos',
+    summary: 'Cultiva amabilidad contigo misma y luego hacia otras personas.',
+    description:
+      'Inicia deseandote bienestar: “Que este en paz, que este a salvo, que este en equilibrio”. Luego extiende el mismo deseo a personas cercanas y finalmente a toda la comunidad.',
+  },
+  {
+    id: 'meditation-15',
+    title: 'Escaneo corporal consciente',
+    duration: '15 minutos',
+    summary: 'Explora sensaciones fisicas para relajar y reconocer emociones acumuladas.',
+    description:
+      'Recorre mentalmente el cuerpo desde los pies hasta la cabeza. Observa sensaciones, tensiones y temperatura, inhalando para suavizar y exhalando para soltar.',
+  },
+];
+
+const RELAXATION_TECHNIQUES = [
+  {
+    id: 'pmr-seated',
+    title: 'Relajacion progresiva sentada',
+    duration: '8 minutos',
+    summary: 'Practica gradualmente desde los pies hasta el rostro para soltar tension.',
+    steps: [
+      'Sientate con la espalda recta y los pies firmes en el suelo.',
+      'Tensa los musculos de los pies durante cinco segundos y libera de golpe.',
+      'Continua con pantorrillas, muslos, abdomen, manos, brazos y rostro.',
+      'Respira profundo entre cada zona para notar la diferencia.',
+    ],
+  },
+  {
+    id: 'pmr-lying',
+    title: 'Relajacion progresiva acostada',
+    duration: '12 minutos',
+    summary: 'Ideal antes de dormir o posterior a una jornada demandante.',
+    steps: [
+      'Acuestate boca arriba con los brazos a los costados y las palmas hacia arriba.',
+      'Tensa cada grupo muscular al inhalar y sueltalo al exhalar, avanzando desde los pies hasta la cabeza.',
+      'Permanece dos minutos en silencio prestando atencion al ritmo de tu respiracion.',
+    ],
+  },
+];
+
+const BreathingCard = ({
+  exercise,
+  colors,
+  isActive,
+  currentStep,
+  onStart,
+  onNext,
+  stepIndex,
+}) => (
+  <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+    <View style={styles.cardHeader}>
+      <View>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{exercise.title}</Text>
+        <Text style={[styles.cardSubtitle, { color: colors.subText }]}>
+          {exercise.duration} · {exercise.focus}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+        onPress={onStart}
+        activeOpacity={0.85}
+      >
+        <Ionicons
+          name={isActive ? 'close' : 'play'}
+          size={16}
+          color={colors.primaryContrast}
+        />
+        <Text style={[styles.primaryButtonText, { color: colors.primaryContrast }]}>
+          {isActive ? 'Cerrar guia' : 'Iniciar guia'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+    {isActive ? (
+      <View style={[styles.stepBox, { borderColor: colors.primary + '55' }]}>
+        <Text style={[styles.stepLabel, { color: colors.primary }]}>
+          Paso {stepIndex + 1} de {exercise.steps.length}
+        </Text>
+        <Text style={[styles.stepText, { color: colors.text }]}>{currentStep}</Text>
+        <TouchableOpacity
+          style={[styles.secondaryButton, { borderColor: colors.primary }]}
+          onPress={onNext}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>
+            {stepIndex + 1 >= exercise.steps.length ? 'Finalizar' : 'Siguiente paso'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    ) : null}
+  </View>
+);
+
+const ExpandableCard = ({ title, subtitle, children, colors }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+      <TouchableOpacity
+        style={styles.cardHeader}
+        onPress={() => setOpen((prev) => !prev)}
+        activeOpacity={0.85}
+      >
+        <View>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
+          {subtitle ? (
+            <Text style={[styles.cardSubtitle, { color: colors.subText }]}>{subtitle}</Text>
+          ) : null}
+        </View>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.subText} />
+      </TouchableOpacity>
+      {open ? <View style={styles.cardBody}>{children}</View> : null}
+    </View>
+  );
+};
+
+const SelfCareLibraryScreen = ({ navigation }) => {
+  const { colors } = useTheme();
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [stepIndex, setStepIndex] = useState(0);
+
+  const currentExercise = useMemo(
+    () => BREATHING_EXERCISES.find((item) => item.id === activeExercise) ?? null,
+    [activeExercise],
+  );
+
+  const currentStep = currentExercise ? currentExercise.steps[stepIndex] : null;
+
+  const handleStart = (exerciseId) => {
+    if (activeExercise === exerciseId) {
+      setActiveExercise(null);
+      setStepIndex(0);
+      return;
+    }
+    setActiveExercise(exerciseId);
+    setStepIndex(0);
+  };
+
+  const handleNext = () => {
+    if (!currentExercise) {
+      return;
+    }
+    if (stepIndex + 1 >= currentExercise.steps.length) {
+      setActiveExercise(null);
+      setStepIndex(0);
+    } else {
+      setStepIndex((prev) => prev + 1);
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
+      <View style={[styles.headerBar, { borderBottomColor: colors.muted }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
+          <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de autocuidado</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+          <Ionicons name="leaf-outline" size={22} color={colors.primary} />
+          <View style={styles.sectionIntroText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Respiracion guiada</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
+              Cinco ejercicios seleccionados para regular tu sistema nervioso sin necesidad de conexion.
+            </Text>
+          </View>
+        </View>
+        {BREATHING_EXERCISES.map((exercise) => (
+          <BreathingCard
+            key={exercise.id}
+            exercise={exercise}
+            colors={colors}
+            isActive={currentExercise?.id === exercise.id}
+            currentStep={currentExercise?.id === exercise.id ? currentStep : null}
+            onStart={() => handleStart(exercise.id)}
+            onNext={handleNext}
+            stepIndex={currentExercise?.id === exercise.id ? stepIndex : 0}
+          />
+        ))}
+
+        <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+          <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
+          <View style={styles.sectionIntroText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Meditaciones</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
+              Tres sesiones guiadas para distintos momentos del dia. Descarga el contenido una vez y practicamente offline.
+            </Text>
+          </View>
+        </View>
+        {MEDITATIONS.map((item) => (
+          <ExpandableCard
+            key={item.id}
+            title={`${item.title} · ${item.duration}`}
+            subtitle={item.summary}
+            colors={colors}
+          >
+            <Text style={[styles.listText, { color: colors.text }]}>{item.description}</Text>
+          </ExpandableCard>
+        ))}
+
+        <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+          <Ionicons name="body-outline" size={22} color={colors.primary} />
+          <View style={styles.sectionIntroText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Relajacion progresiva</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
+              Dos rutinas sin audio para liberar tension muscular en cualquier espacio.
+            </Text>
+          </View>
+        </View>
+        {RELAXATION_TECHNIQUES.map((item) => (
+          <ExpandableCard
+            key={item.id}
+            title={`${item.title} · ${item.duration}`}
+            subtitle={item.summary}
+            colors={colors}
+          >
+            {item.steps.map((step) => (
+              <View key={step} style={styles.listRow}>
+                <Ionicons name="ellipse-outline" size={12} color={colors.primary} />
+                <Text style={[styles.listText, { color: colors.text }]}>{step}</Text>
+              </View>
+            ))}
+          </ExpandableCard>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+export default SelfCareLibraryScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    marginRight: 32,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+    gap: 16,
+  },
+  sectionIntro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 16,
+  },
+  sectionIntroText: {
+    flex: 1,
+    gap: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+  },
+  card: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  cardBody: {
+    gap: 10,
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  primaryButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stepBox: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+  },
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  stepText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  listText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+});

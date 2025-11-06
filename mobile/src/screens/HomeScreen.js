@@ -41,22 +41,50 @@ const emojiCodePoints = {
 
 const quickActions = [
   {
-    title: 'Registrar ánimo',
-    description: 'Elige hasta tres emojis y recibe sugerencias personalizadas.',
+    title: 'Registrar animo',
+    description: 'Elige hasta cinco emociones y recibe sugerencias personalizadas.',
     icon: 'happy-outline',
     color: '#8b5cf6',
     target: 'Mood',
   },
   {
-    title: 'Hábitos diarios',
+    title: 'Analizar emociones',
+    description: 'Explora graficas semanales y mensuales.',
+    icon: 'analytics-outline',
+    color: '#38bdf8',
+    target: 'MoodInsights',
+  },
+  {
+    title: 'Habitos diarios',
     description: 'Lleva el control de tus micro rutinas para mantener el balance.',
     icon: 'calendar-outline',
     color: '#f97316',
     target: 'Habits',
   },
   {
+    title: 'Progreso semanal',
+    description: 'Configura metas y revisa tu avance automaticamente.',
+    icon: 'analytics-outline',
+    color: '#0ea5e9',
+    target: 'Progress',
+  },
+  {
+    title: 'Herramientas de autocuidado',
+    description: 'Accede a respiraciones, meditaciones y relajacion offline.',
+    icon: 'leaf-outline',
+    color: '#22c55e',
+    target: 'SelfCare',
+  },
+  {
+    title: 'Recursos de emergencia',
+    description: 'Acceso rapido a estrategias y contactos profesionales.',
+    icon: 'alert-circle-outline',
+    color: '#ef4444',
+    target: 'Emergency',
+  },
+  {
     title: 'Foro de ayuda',
-    description: 'Comparte experiencias y motivación con la comunidad.',
+    description: 'Comparte experiencias y motivacion con la comunidad.',
     icon: 'people-outline',
     color: '#ec4899',
     target: 'HelpForum',
@@ -715,3 +743,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
 });
+
+
+
+

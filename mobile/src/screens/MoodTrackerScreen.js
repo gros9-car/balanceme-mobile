@@ -24,9 +24,11 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import { computeMoodAverages, moodScoreToLabel } from '../utils/moodAnalysis';
 
 const COOL_DOWN_HOURS = 12;
 const COOL_DOWN_MS = COOL_DOWN_HOURS * 60 * 60 * 1000;
+const MAX_EMOJIS_PER_ENTRY = 3;
 
 const fallbackSuggestions = [
   'Respira profundamente tres veces, con conciencia plena.',
@@ -252,8 +254,8 @@ export default function MoodTrackerScreen({ navigation }) {
       if (prev.includes(name)) {
         return prev.filter((item) => item !== name);
       }
-      if (prev.length >= 3) {
-        Alert.alert('Máximo alcanzado', 'Puedes seleccionar hasta 3 emojis.');
+      if (prev.length >= MAX_EMOJIS_PER_ENTRY) {
+        Alert.alert('Maximo alcanzado', 'Puedes seleccionar hasta 3 emociones.');
         return prev;
       }
       return [...prev, name];
@@ -306,10 +308,13 @@ export default function MoodTrackerScreen({ navigation }) {
     setSaving(true);
     try {
       const moodsCollection = collection(db, 'users', user.uid, 'moods');
+      const score = computeMoodAverages(selectedEmojis);
       await addDoc(moodsCollection, {
         emojis: selectedEmojis,
         suggestions: entrySuggestions,
         agentSummary: entrySummary,
+        scores: score,
+        moodLabel: moodScoreToLabel(score),
         createdAt,
         createdAtServer: serverTimestamp(),
       });
@@ -355,7 +360,7 @@ export default function MoodTrackerScreen({ navigation }) {
               <Ionicons name="happy-outline" size={30} color={colors.primaryContrast} />
             </View>
             <Text style={[styles.title, { color: colors.text }]}>Estado de animo</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>Elige hasta 3 emojis que describan como te sientes hoy.</Text>
+            <Text style={[styles.subtitle, { color: colors.subText }]}>Elige hasta 3 emociones que describan como te sientes hoy.</Text>
           </View>
         </View>
 
@@ -396,7 +401,7 @@ export default function MoodTrackerScreen({ navigation }) {
             { backgroundColor: colors.surface, shadowColor: colors.outline },
           ]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Sugerencias del agente IA</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Sugerencias destacadas</Text>
           {agentPreview.summary ? (
             <Text style={[styles.agentSummary, { color: colors.text }]}>{agentPreview.summary}</Text>
           ) : null}
@@ -603,3 +608,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+
+
+

@@ -25,8 +25,8 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import { analyzeHabitsEntry, mapHabitCategoriesToLabels } from '../utils/habitAnalysis';
 
-// Normaliza una fecha para comparar días sin considerar horas.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const startOfDay = (value) => {
@@ -35,7 +35,6 @@ const startOfDay = (value) => {
   return normalized;
 };
 
-// Convierte fechas a texto manejando fallos silenciosos.
 const formatDate = (date) => {
   try {
     return date.toLocaleDateString();
@@ -44,120 +43,8 @@ const formatDate = (date) => {
   }
 };
 
-const habitAgentProfiles = {
-  movimiento: {
-    keywords: ['correr', 'caminar', 'yoga', 'ejercicio', 'entren', 'pesas', 'bicicleta', 'ruta', 'gimnasio', 'cardio', 'pilates', 'baile'],
-    summary: 'Tu rutina muestra intención de movimiento y actividad física.',
-    tips: [
-      'Recuerda hidratarte y realizar estiramientos de recuperación.',
-      'Suma breves pausas de respiración para equilibrar energía.',
-    ],
-  },
-  descanso: {
-    keywords: ['descans', 'dorm', 'siesta', 'relaj', 'sueño', 'acostar', 'despert'],
-    summary: 'Estás priorizando el descanso, lo cual ayuda a tu balance.',
-    tips: [
-      'Mantener horarios constantes mejora la calidad del descanso.',
-      'Describe cómo te sentiste al despertar para seguir midiendo tu energía.',
-    ],
-  },
-  alimentacion: {
-    keywords: ['comida', 'vegetal', 'fruta', 'nutric', 'cena', 'almuerzo', 'diet', 'agua', 'hidrata'],
-    summary: 'Tu plan refleja conciencia sobre la alimentación.',
-    tips: [
-      'Anota cómo te sientes después de comer para identificar patrones.',
-      'Acompaña tus comidas con pausas de respiración para digerir mejor.',
-    ],
-  },
-  mindfulness: {
-    keywords: ['medit', 'respir', 'gratitud', 'diario', 'afirmacion', 'mindfulness', 'atencion plena', 'oracion'],
-    summary: 'Estás cultivando la presencia y el bienestar emocional.',
-    tips: [
-      'Realiza tres respiraciones profundas antes de comenzar tus actividades clave.',
-      'Registra una frase que resuma la calma que obtuviste.',
-    ],
-  },
-  social: {
-    keywords: ['familia', 'amiga', 'pareja', 'salir', 'convers', 'llam', 'compart'],
-    summary: 'Incluiste momentos de conexión social en tu día.',
-    tips: [
-      'Agradece el impacto positivo que esas interacciones generaron.',
-      'Planifica el siguiente espacio de conexión para mantener la energía.',
-    ],
-  },
-  trabajo: {
-    keywords: ['trabajo', 'estudio', 'proyecto', 'tarea', 'objetivo', 'plan', 'reunion'],
-    summary: 'Estas organizando tus responsabilidades con intención.',
-    tips: [
-      'Reserva micro descansos para evitar la fatiga mental.',
-      'Celebra el avance alcanzado por pequeño que parezca.',
-    ],
-  },
-  autocuidado: {
-    keywords: ['autocuidado', 'spa', 'rutina de piel', 'leer', 'series', 'hobby', 'creativ', 'arte'],
-    summary: 'Tu plan contiene momentos de autocuidado y disfrute.',
-    tips: [
-      'Describe la sensación que buscabas al darte ese espacio.',
-      'Registra tres cosas que agradeces de ese momento personal.',
-    ],
-  },
-};
+const CATEGORY_BADGE_COLOR = '#22c55e';
 
-const fallbackAgentResponse = {
-  summary: 'Gracias por compartir tus hábitos. Mantener registros te ayuda a ver tu progreso.',
-  tips: [
-    'Agrega detalles sobre cómo te sentiste antes y después de cada hábito.',
-    'Incluye un micro-hábito que puedas repetir mañana para sostener la racha.',
-  ],
-};
-
-// Analiza el texto de hábitos para generar un resumen y sugerencias.
-const analyzeHabitsEntry = (text) => {
-  const normalized = text.toLowerCase();
-  const scores = {};
-
-  Object.entries(habitAgentProfiles).forEach(([category, profile]) => {
-    if (profile.keywords.some((keyword) => normalized.includes(keyword))) {
-      scores[category] = (scores[category] ?? 0) + 1;
-    }
-  });
-
-  const categories = Object.keys(scores).sort((a, b) => scores[b] - scores[a]);
-  if (!categories.length) {
-    return fallbackAgentResponse;
-  }
-
-  const bestCategory = categories[0];
-  const secondCategory = categories[1];
-
-  const baseSummary = habitAgentProfiles[bestCategory]?.summary ?? fallbackAgentResponse.summary;
-  const extendedSummary = secondCategory
-    ? `${baseSummary} También resaltas acciones relacionadas con ${secondCategory}.`
-    : baseSummary;
-
-  const tips = [
-    ...(habitAgentProfiles[bestCategory]?.tips ?? []),
-    ...(secondCategory ? habitAgentProfiles[secondCategory]?.tips ?? [] : []),
-  ];
-
-  const uniqueTips = [];
-  tips.forEach((tip) => {
-    if (!uniqueTips.includes(tip)) {
-      uniqueTips.push(tip);
-    }
-  });
-
-  if (!uniqueTips.length) {
-    uniqueTips.push(...fallbackAgentResponse.tips);
-  }
-
-  return {
-    summary: extendedSummary,
-    tips: uniqueTips.slice(0, 3),
-  };
-};
-
-// Pantalla de hábitos que registra actividades diarias y ofrece sugerencias del agente.
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -171,15 +58,17 @@ export default function HabitsScreen({ navigation }) {
 
   const todayLabel = useMemo(() => formatDate(new Date()), []);
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
-  const contentStyle = useMemo(() => ({
-    paddingHorizontal: horizontalPadding,
-    width: '100%',
-    maxWidth: Math.min(920, width * 0.95),
-    alignSelf: 'center',
-  }), [horizontalPadding, width]);
+  const contentStyle = useMemo(
+    () => ({
+      paddingHorizontal: horizontalPadding,
+      width: '100%',
+      maxWidth: Math.min(920, width * 0.95),
+      alignSelf: 'center',
+    }),
+    [horizontalPadding, width],
+  );
 
   useEffect(() => {
-    // Escucha los últimos registros para mostrar historial y validar el límite diario.
     if (!user?.uid) {
       setEntries([]);
       setHasTodayEntry(false);
@@ -188,7 +77,7 @@ export default function HabitsScreen({ navigation }) {
     }
 
     const habitsRef = collection(db, 'users', user.uid, 'habits');
-    const habitsQuery = query(habitsRef, orderBy('createdAt', 'desc'), limit(100));
+    const habitsQuery = query(habitsRef, orderBy('createdAt', 'desc'), limit(120));
 
     const unsubscribe = onSnapshot(
       habitsQuery,
@@ -197,18 +86,26 @@ export default function HabitsScreen({ navigation }) {
           const data = docSnapshot.data() ?? {};
           const timestamp = data.createdAt ?? data.createdAtServer;
           const createdAt = timestamp?.toDate ? timestamp.toDate() : new Date();
+          const content = typeof data.content === 'string' ? data.content : '';
+          const summary = typeof data.agentSummary === 'string' ? data.agentSummary : '';
+          const tips = Array.isArray(data.agentTips) ? data.agentTips : [];
+          const categories = Array.isArray(data.agentCategories) ? data.agentCategories : [];
+
           return {
             id: docSnapshot.id,
-            content: typeof data.content === 'string' ? data.content : '',
-            summary: typeof data.agentSummary === 'string' ? data.agentSummary : '',
-            tips: Array.isArray(data.agentTips) ? data.agentTips : [],
+            content,
+            summary,
+            tips,
+            categories,
             createdAt,
           };
         });
 
         setEntries(nextEntries);
         const today = startOfDay(new Date()).getTime();
-        const foundToday = nextEntries.some((entry) => startOfDay(entry.createdAt).getTime() === today);
+        const foundToday = nextEntries.some(
+          (entry) => startOfDay(entry.createdAt).getTime() === today,
+        );
         setHasTodayEntry(foundToday);
         setLoading(false);
       },
@@ -222,22 +119,21 @@ export default function HabitsScreen({ navigation }) {
     return unsubscribe;
   }, [user?.uid]);
 
-  // Guarda la entrada del día y guarda el análisis generado automáticamente.
   const handleSave = async () => {
     if (!user?.uid) {
-      Alert.alert('Sesión requerida', 'Inicia sesión para registrar tus hábitos.');
+      Alert.alert('Sesion requerida', 'Inicia sesion para registrar tus habitos.');
       navigation?.replace?.('Login');
       return;
     }
 
     const trimmed = draft.trim();
     if (!trimmed) {
-      Alert.alert('Contenido requerido', 'Describe al menos un hábito para guardar.');
+      Alert.alert('Contenido requerido', 'Describe al menos un habito para guardar.');
       return;
     }
 
     if (hasTodayEntry) {
-      Alert.alert('Registro existente', 'Sólo puedes registrar tus hábitos una vez por día.');
+      Alert.alert('Registro existente', 'Solo puedes registrar tus habitos una vez por dia.');
       return;
     }
 
@@ -250,12 +146,13 @@ export default function HabitsScreen({ navigation }) {
         content: trimmed,
         agentSummary: agentResponse.summary,
         agentTips: agentResponse.tips,
+        agentCategories: agentResponse.categories ?? [],
         createdAt: serverTimestamp(),
       });
       setDraft('');
-      Alert.alert('Hábitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
+      Alert.alert('Habitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
     } catch (error) {
-      Alert.alert('Error', 'No pudimos guardar tus hábitos. Intenta nuevamente.');
+      Alert.alert('Error', 'No pudimos guardar tus habitos. Intenta nuevamente.');
     } finally {
       setSaving(false);
     }
@@ -267,7 +164,9 @@ export default function HabitsScreen({ navigation }) {
         <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
         <View style={styles.centered}>
           <Ionicons name="lock-closed-outline" size={28} color={colors.subText} />
-          <Text style={[styles.centeredText, { color: colors.subText }]}>Inicia sesion para gestionar tus habitos.</Text>
+          <Text style={[styles.centeredText, { color: colors.subText }]}>
+            Inicia sesion para gestionar tus habitos.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -278,7 +177,10 @@ export default function HabitsScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <ScrollView contentContainerStyle={[styles.scrollContainer, contentStyle]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, contentStyle]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <TouchableOpacity
             style={[styles.backButton, { borderColor: colors.muted }]}
@@ -289,10 +191,17 @@ export default function HabitsScreen({ navigation }) {
             <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Habitos diarios</Text>
-          <Text style={[styles.subtitle, { color: colors.subText }]}>Escribe como cuidaste tu bienestar hoy y recibe sugerencias.</Text>
+          <Text style={[styles.subtitle, { color: colors.subText }]}>
+            Escribe como cuidaste tu bienestar hoy y recibe sugerencias.
+          </Text>
         </View>
 
-        <View style={[styles.editorCard, { backgroundColor: colors.surface, shadowColor: colors.outline }]}>
+        <View
+          style={[
+            styles.editorCard,
+            { backgroundColor: colors.surface, shadowColor: colors.outline },
+          ]}
+        >
           <View style={styles.editorHeader}>
             <View style={[styles.badge, { backgroundColor: colors.primary + '22' }]}>
               <Ionicons name="leaf-outline" size={18} color={colors.primary} />
@@ -303,22 +212,33 @@ export default function HabitsScreen({ navigation }) {
             </View>
           </View>
           {hasTodayEntry ? (
-            <Text style={[styles.infoText, { color: colors.subText }]}>Ya registraste tus habitos del dia. Mañana tendremos nuevas sugerencias para ti.</Text>
+            <Text style={[styles.infoText, { color: colors.subText }]}>
+              Ya registraste tus habitos del dia. Manana tendremos nuevas sugerencias para ti.
+            </Text>
           ) : (
-            <Text style={[styles.infoText, { color: colors.subText }]}>Cuenta que acciones realizaste: movimiento, alimentacion, descanso, conexiones, etc.</Text>
+            <Text style={[styles.infoText, { color: colors.subText }]}>
+              Cuenta que acciones realizaste: movimiento, alimentacion, descanso, conexiones, etc.
+            </Text>
           )}
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Por ejemplo: Camina 20 minutos, practica agradecimiento antes de cenar..."
+            placeholder="Por ejemplo: Caminata de 20 minutos, gratitud antes de cenar..."
             placeholderTextColor={colors.subText}
             multiline
             textAlignVertical="top"
-            style={[styles.textArea, { borderColor: colors.muted, color: colors.text, backgroundColor: colors.muted }]}
+            style={[
+              styles.textArea,
+              { borderColor: colors.muted, color: colors.text, backgroundColor: colors.muted },
+            ]}
             editable={!hasTodayEntry}
           />
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: colors.primary, shadowColor: colors.primary }, disableSubmit && styles.saveButtonDisabled]}
+            style={[
+              styles.saveButton,
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
+              disableSubmit && styles.saveButtonDisabled,
+            ]}
             onPress={handleSave}
             disabled={disableSubmit}
             activeOpacity={0.9}
@@ -326,10 +246,14 @@ export default function HabitsScreen({ navigation }) {
             {saving ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.primaryContrast} />
-                <Text style={[styles.saveButtonText, { color: colors.primaryContrast }]}>Guardando...</Text>
+                <Text style={[styles.saveButtonText, { color: colors.primaryContrast }]}>
+                  Guardando...
+                </Text>
               </View>
             ) : (
-              <Text style={[styles.saveButtonText, { color: colors.primaryContrast }]}>Guardar habitos</Text>
+              <Text style={[styles.saveButtonText, { color: colors.primaryContrast }]}>
+                Guardar habitos
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -341,16 +265,21 @@ export default function HabitsScreen({ navigation }) {
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={[styles.centeredText, { color: colors.subText }]}>Cargando habitos...</Text>
+            <Text style={[styles.centeredText, { color: colors.subText }]}>
+              Cargando habitos...
+            </Text>
           </View>
         ) : entries.length === 0 ? (
           <View style={styles.centered}>
             <Ionicons name="leaf-outline" size={24} color={colors.subText} />
-            <Text style={[styles.centeredText, { color: colors.subText }]}>Todavia no registras habitos.</Text>
+            <Text style={[styles.centeredText, { color: colors.subText }]}>
+              Todavia no registras habitos.
+            </Text>
           </View>
         ) : (
           entries.map((entry) => {
             const formatted = formatDate(entry.createdAt);
+            const categoryLabels = mapHabitCategoriesToLabels(entry.categories);
             return (
               <View
                 key={entry.id}
@@ -363,7 +292,18 @@ export default function HabitsScreen({ navigation }) {
                 <Text style={[styles.entryContent, { color: colors.text }]}>{entry.content}</Text>
                 {entry.summary ? (
                   <View style={[styles.agentCard, { backgroundColor: colors.muted }]}>
-                    <Text style={[styles.agentTitle, { color: colors.text }]}>Analisis del agente</Text>
+                    <Text style={[styles.agentTitle, { color: colors.text }]}>
+                      Resumen de tus hábitos
+                    </Text>
+                    {categoryLabels.length ? (
+                      <View style={styles.categoryRow}>
+                        {categoryLabels.map((label) => (
+                          <View key={label} style={styles.categoryBadge}>
+                            <Text style={styles.categoryBadgeText}>{label}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
                     <Text style={[styles.agentSummary, { color: colors.text }]}>{entry.summary}</Text>
                     {entry.tips.map((tip) => (
                       <View key={tip} style={styles.tipRow}>
@@ -514,11 +454,29 @@ const styles = StyleSheet.create({
   agentCard: {
     borderRadius: 16,
     padding: 16,
-    gap: 8,
+    gap: 10,
   },
   agentTitle: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: CATEGORY_BADGE_COLOR + '22',
+    borderWidth: 1,
+    borderColor: CATEGORY_BADGE_COLOR,
+  },
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: CATEGORY_BADGE_COLOR,
   },
   agentSummary: {
     fontSize: 13,
@@ -537,6 +495,7 @@ const styles = StyleSheet.create({
   centered: {
     alignItems: 'center',
     gap: 12,
+    paddingVertical: 48,
   },
   centeredText: {
     fontSize: 14,
