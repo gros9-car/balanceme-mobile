@@ -11,15 +11,12 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-import { auth, db, storage } from './firebase/config';
+import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
 // Renderiza una fila informativa del perfil si existe un valor para mostrar.
@@ -61,7 +58,6 @@ export default function ProfileScreen({ navigation }) {
   const [pendingName, setPendingName] = useState(fallbackName);
   const [isEditingName, setIsEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     // Descarga los datos guardados en Firestore y sincroniza nombre/foto locales.
@@ -157,73 +153,6 @@ export default function ProfileScreen({ navigation }) {
     setIsEditingName(false);
   };
 
-  // Permite seleccionar una imagen, subirla a Storage y actualizar el avatar.
-  const handlePickImage = async () => {
-    if (!user?.uid) {
-      return;
-    }
-
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permisos requeridos', 'Necesitamos acceso a tus imágenes para cambiar la foto de perfil.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-      base64: Platform.OS === 'web',
-    });
-
-    if (result.canceled) {
-      return;
-    }
-
-    const asset = result.assets?.[0];
-    if (!asset?.uri) {
-      Alert.alert('Error', 'No pudimos leer la imagen seleccionada.');
-      return;
-    }
-
-    setUploadingPhoto(true);
-    try {
-      const storageRef = ref(storage, `profilePictures/${user.uid}.jpg`);
-      const contentType = asset.mimeType ?? asset.type ?? 'image/jpeg';
-
-      let fileData;
-
-      if (Platform.OS === 'web') {
-        if (typeof File !== 'undefined' && asset.file instanceof File) {
-          fileData = asset.file;
-        } else if (asset.base64) {
-          const response = await fetch(`data:${contentType};base64,${asset.base64}`);
-          fileData = await response.blob();
-        } else {
-          const response = await fetch(asset.uri);
-          fileData = await response.blob();
-        }
-      } else {
-        const response = await fetch(asset.uri);
-        fileData = await response.blob();
-      }
-
-      const { ref: uploadedRef } = await uploadBytes(storageRef, fileData, { contentType });
-      const url = await getDownloadURL(uploadedRef);
-
-      await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
-      await updateProfile(user, { photoURL: url });
-
-      setProfilePhoto(url);
-    } catch (error) {
-      console.error('handlePickImage upload error', error);
-      Alert.alert('Error', 'No pudimos actualizar tu foto. Intenta de nuevo.');
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
   if (!user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
@@ -253,24 +182,15 @@ export default function ProfileScreen({ navigation }) {
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
-          <TouchableOpacity
+          <View
             style={[styles.avatar, profilePhoto ? styles.avatarWithBorder : { backgroundColor: colors.primary }]}
-            onPress={handlePickImage}
-            activeOpacity={0.85}
           >
             {profilePhoto ? (
               <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
             ) : (
               <Text style={[styles.avatarText, { color: colors.primaryContrast }]}>{avatarLetter}</Text>
             )}
-            <View style={[styles.cameraBadge, { backgroundColor: colors.surface, borderColor: colors.muted }]}> 
-              {uploadingPhoto ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons name="camera-outline" size={14} color={colors.primary} />
-              )}
-            </View>
-          </TouchableOpacity>
+          </View>
 
           {isEditingName ? (
             <View style={styles.editContainer}>
@@ -341,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
   backButton: {
@@ -395,15 +315,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 36,
     fontWeight: '700',
-  },
-  cameraBadge: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
   },
   nameRow: {
     flexDirection: 'row',

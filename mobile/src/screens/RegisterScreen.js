@@ -16,6 +16,8 @@ import {
 
   ActivityIndicator,
 
+  SafeAreaView,
+
   StatusBar,
 
   Alert,
@@ -24,13 +26,9 @@ import {
 
   Platform,
 
-  KeyboardAvoidingView,
-
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { Screen, Content, Card } from '../components/layout/Screen';
-import useResponsive from '../hooks/useResponsive';
 
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
@@ -41,27 +39,16 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase/config';
 
 import { useTheme } from '../context/ThemeContext';
-import { PASSWORD_GUIDELINES, validatePassword } from '../utils/passwordPolicy';
 
 
 
-// Pantalla de registro que maneja formulario, validaciones y creaciÃ³n de cuentas.
+// Pantalla de registro que maneja formulario, validaciones y creaci├│n de cuentas.
 
 const EMAIL_REGEX = /\S+@\S+\.\S+/;
 
 export default function RegisterScreen({ navigation }) {
 
   const { colors } = useTheme();
-  const { isSmall, spacing, font } = useResponsive();
-  const fontStyles = {
-    title: { fontSize: font.xl },
-    subtitle: { fontSize: font.sm },
-    formTitle: { fontSize: font.lg },
-    label: { fontSize: font.sm },
-    input: { fontSize: font.md },
-    helper: { fontSize: font.sm },
-    button: { fontSize: font.md },
-  };
 
   const [formData, setFormData] = useState({
 
@@ -87,7 +74,7 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-  // Actualiza el campo editado y limpia su error si existÃ­a.
+  // Actualiza el campo editado y limpia su error si exist├¡a.
 
   const handleInputChange = (field, value) => {
 
@@ -103,7 +90,7 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-  // Aplica validaciones bÃ¡sicas sobre nombre, correo y contraseÃ±as.
+  // Aplica validaciones b├ísicas sobre nombre, correo y contrase├▒as.
 
   const validateForm = () => {
 
@@ -115,9 +102,9 @@ export default function RegisterScreen({ navigation }) {
 
       nextErrors.name = 'El nombre es requerido';
 
-    } else if (formData.name.trim().length < 5) {
+    } else if (formData.name.trim().length < 2) {
 
-      nextErrors.name = 'El nombre debe tener al menos 5 caracteres';
+      nextErrors.name = 'El nombre debe tener al menos 2 caracteres';
 
     }
 
@@ -137,13 +124,35 @@ export default function RegisterScreen({ navigation }) {
 
     const password = formData.password ?? '';
 
-    const emailLocalPart = formData.email?.includes('@') ? formData.email.split('@')[0] : '';
+    if (!password) {
 
-    const passwordCheck = validatePassword(password, [formData.name, emailLocalPart]);
+      nextErrors.password = 'La contrasena es requerida';
 
-    if (!passwordCheck.valid) {
+    } else {
 
-      nextErrors.password = passwordCheck.message;
+      const patterns = [
+
+        { regex: /.{8,}/, message: 'Debe tener al menos 8 caracteres' },
+
+        { regex: /[A-Z]/, message: 'Incluye al menos una letra mayuscula' },
+
+        { regex: /[a-z]/, message: 'Incluye al menos una letra minuscula' },
+
+        { regex: /[0-9]/, message: 'Incluye al menos un numero' },
+
+        { regex: /[^A-Za-z0-9]/, message: 'Incluye al menos un caracter especial' },
+
+      ];
+
+
+
+      const failed = patterns.find((rule) => !rule.regex.test(password));
+
+      if (failed) {
+
+        nextErrors.password = `La contrasena no cumple la politica: ${failed.message}.`;
+
+      }
 
     }
 
@@ -151,11 +160,11 @@ export default function RegisterScreen({ navigation }) {
 
     if (!formData.confirmPassword) {
 
-      nextErrors.confirmPassword = 'Confirma tu contraseña';
+      nextErrors.confirmPassword = 'Confirma tu contrasena';
 
     } else if (formData.confirmPassword !== password) {
 
-      nextErrors.confirmPassword = 'Las contraseñas no coinciden';
+      nextErrors.confirmPassword = 'Las contrasenas no coinciden';
 
     }
 
@@ -167,7 +176,7 @@ export default function RegisterScreen({ navigation }) {
 
   };
 
-  
+  console.log('Hola hola');
 
 
 
@@ -221,7 +230,7 @@ export default function RegisterScreen({ navigation }) {
 
       } else {
 
-        Alert.alert('Bienvenido a BalanceMe', 'Tu cuenta está lista.', [
+        Alert.alert('Bienvenido a BalanceMe', 'Tu cuenta est├í lista.', [
 
           { text: 'Ir a iniciar sesion', onPress: () => navigation?.navigate?.('Login') },
 
@@ -243,7 +252,7 @@ export default function RegisterScreen({ navigation }) {
 
       } else if (error.code === 'auth/weak-password') {
 
-        message = 'La contraseña es muy débil.';
+        message = 'La contrasena es muy debil.';
 
       }
 
@@ -259,7 +268,7 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-  // Oculta el modal web y regresa a la pantalla de inicio de sesiÃ³n.
+  // Oculta el modal web y regresa a la pantalla de inicio de sesi├│n.
 
   const closeSuccessModal = () => {
 
@@ -273,73 +282,55 @@ export default function RegisterScreen({ navigation }) {
 
   return (
 
-    <Screen
-      edges={['top', 'bottom']}
-      style={{ backgroundColor: colors.background, paddingHorizontal: spacing * 2 }}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+      <ScrollView
+
+        contentContainerStyle={styles.scrollContainer}
+
+        showsVerticalScrollIndicator={false}
+
+        keyboardShouldPersistTaps="handled"
+
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContainer,
-            { paddingHorizontal: spacing * 2, paddingVertical: spacing * 3 },
-          ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentInsetAdjustmentBehavior="always"
-        >
-          <Content>
-            <Card
-              style={[
-                styles.formContainer,
-                {
-                  backgroundColor: colors.surface,
-                  shadowColor: colors.outline,
-                  padding: spacing * 2,
-                  marginTop: isSmall ? spacing : spacing * 2,
-                },
-              ]}
-            >
-              <View style={[styles.header, { marginBottom: spacing * 1.5 }]}>
-                <View
-                  style={[
-                    styles.logoContainer,
-                    {
-                      backgroundColor: colors.primary,
-                      shadowColor: colors.primary,
-                      width: spacing * 4,
-                      height: spacing * 4,
-                      borderRadius: spacing * 2,
-                      marginBottom: spacing,
-                    },
-                  ]}
-                >
-                  <Ionicons name="heart" size={32} color={colors.primaryContrast} />
-                </View>
-                <Text style={[styles.title, fontStyles.title, { color: colors.text }]}>BalanceMe</Text>
-                <Text style={[styles.subtitle, fontStyles.subtitle, { color: colors.subText }]}>
-                  Construyamos tu bienestar
-                </Text>
-              </View>
 
-        <Text
-          style={[styles.formTitle, fontStyles.formTitle, { color: colors.text }]}
-        >
-          Crear cuenta
-        </Text>
+        <View style={styles.header}>
 
-          <Text style={[styles.formTitle, fontStyles.formTitle, { color: colors.text }]}>Crear cuenta</Text>
+          <View
+
+            style={[
+
+              styles.logoContainer,
+
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
+
+            ]}
+
+          >
+
+            <Ionicons name="heart" size={32} color={colors.primaryContrast} />
+
+          </View>
+
+          <Text style={[styles.title, { color: colors.text }]}>BalanceMe</Text>
+
+          <Text style={[styles.subtitle, { color: colors.subText }]}>Construyamos tu bienestar</Text>
+
+        </View>
+
+
+
+        <View style={[styles.formContainer, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
+
+          <Text style={[styles.formTitle, { color: colors.text }]}>Crear cuenta</Text>
 
 
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Nombre</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Nombre completo</Text>
 
             <View
 
@@ -359,7 +350,7 @@ export default function RegisterScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
+                style={[styles.textInput, { color: colors.text }]}
 
                 value={formData.name}
 
@@ -383,7 +374,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Correo electrónico</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Correo electronico</Text>
 
             <View
 
@@ -403,7 +394,7 @@ export default function RegisterScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
+                style={[styles.textInput, { color: colors.text }]}
 
                 value={formData.email}
 
@@ -431,7 +422,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Contraseña</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Contrase├▒a</Text>
 
             <View
 
@@ -451,13 +442,13 @@ export default function RegisterScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
+                style={[styles.textInput, { color: colors.text }]}
 
                 value={formData.password}
 
                 onChangeText={(text) => handleInputChange('password', text)}
 
-                placeholder="*******"
+                placeholder="Minimo 6 caracteres"
 
                 placeholderTextColor={colors.subText}
 
@@ -483,11 +474,6 @@ export default function RegisterScreen({ navigation }) {
 
             </View>
 
-            <View style={styles.policyList}>
-              {PASSWORD_GUIDELINES.map((rule) => (
-                <Text key={rule} style={[styles.policyItem, { color: colors.subText }]}>- {rule}</Text>
-              ))}
-            </View>
             {errors.password ? <Text style={[styles.errorText, { color: colors.danger }]}>{errors.password}</Text> : null}
 
           </View>
@@ -496,7 +482,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Confirmar contraseña</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Confirmar contrase├▒a</Text>
 
             <View
 
@@ -516,13 +502,13 @@ export default function RegisterScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
+                style={[styles.textInput, { color: colors.text }]}
 
                 value={formData.confirmPassword}
 
                 onChangeText={(text) => handleInputChange('confirmPassword', text)}
 
-                placeholder="Repite tu contraseña"
+                placeholder="Repite tu contrasena"
 
                 placeholderTextColor={colors.subText}
 
@@ -558,11 +544,11 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-          <Text style={[styles.termsText, fontStyles.helper, { color: colors.subText }]}>Al registrarte aceptas nuestros{' '}
+          <Text style={[styles.termsText, { color: colors.subText }]}>Al registrarte aceptas nuestros{' '}
 
-            <Text style={[styles.linkText, fontStyles.helper, { color: colors.accent }]}>términos y condiciones</Text>{' '}y{' '}
+            <Text style={[styles.linkText, { color: colors.accent }]}>terminos y condiciones</Text>{' '}y{' '}
 
-            <Text style={[styles.linkText, fontStyles.helper, { color: colors.accent }]}>política de privacidad</Text>.
+            <Text style={[styles.linkText, { color: colors.accent }]}>politica de privacidad</Text>.
 
           </Text>
 
@@ -594,13 +580,13 @@ export default function RegisterScreen({ navigation }) {
 
                 <ActivityIndicator size="small" color={colors.primaryContrast} />
 
-                <Text style={[styles.submitButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Creando cuenta...</Text>
+                <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Creando cuenta...</Text>
 
               </View>
 
             ) : (
 
-              <Text style={[styles.submitButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Crear mi cuenta</Text>
+              <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Crear mi cuenta</Text>
 
             )}
 
@@ -610,11 +596,11 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.loginPrompt}>
 
-            <Text style={[styles.loginText, fontStyles.helper, { color: colors.subText }]}>Ya tienes una cuenta?</Text>
+            <Text style={[styles.loginText, { color: colors.subText }]}>Ya tienes una cuenta?</Text>
 
             <TouchableOpacity onPress={() => navigation?.navigate?.('Login')}>
 
-              <Text style={[styles.loginLinkText, fontStyles.helper, { color: colors.accent }]}> Inicia sesión</Text>
+              <Text style={[styles.loginLinkText, { color: colors.accent }]}> Inicia sesi├│n</Text>
 
             </TouchableOpacity>
 
@@ -622,13 +608,12 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-          <Text style={[styles.motivationalText, fontStyles.helper, { color: colors.subText }]}>Tu bienestar también merece agenda.</Text>
+          <Text style={[styles.motivationalText, { color: colors.subText }]}>Tu bienestar tambien merece agenda.</Text>
 
-        </Card>
-          </Content>
-        </ScrollView>
+        </View>
 
-      </KeyboardAvoidingView>
+      </ScrollView>
+
 
 
       <Modal
@@ -649,9 +634,9 @@ export default function RegisterScreen({ navigation }) {
 
             <Ionicons name="checkmark-circle" size={40} color={colors.primary} />
 
-            <Text style={[styles.modalTitle, fontStyles.formTitle, { color: colors.text }]}>Cuenta creada</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Cuenta creada</Text>
 
-            <Text style={[styles.modalText, fontStyles.helper, { color: colors.subText }]}>Todo listo para que inicies sesión y continues tu camino.</Text>
+            <Text style={[styles.modalText, { color: colors.subText }]}>Todo listo para que inicies sesion y continues tu camino.</Text>
 
             <TouchableOpacity
 
@@ -663,7 +648,7 @@ export default function RegisterScreen({ navigation }) {
 
             >
 
-              <Text style={[styles.modalButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Ir a iniciar sesión</Text>
+              <Text style={[styles.modalButtonText, { color: colors.primaryContrast }]}>Ir a iniciar sesion</Text>
 
             </TouchableOpacity>
 
@@ -673,7 +658,7 @@ export default function RegisterScreen({ navigation }) {
 
       </Modal>
 
-    </Screen>
+    </SafeAreaView>
 
   );
 
@@ -690,11 +675,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
 
   },
-  flex: {
-
-    flex: 1,
-
-  },
 
   scrollContainer: {
 
@@ -705,8 +685,6 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
 
     gap: 24,
-
-    paddingBottom: 48,
 
   },
 
@@ -804,13 +782,6 @@ const styles = StyleSheet.create({
 
     gap: 8,
 
-  },
-  policyList: {
-    gap: 4,
-    paddingLeft: 8,
-  },
-  policyItem: {
-    fontSize: 12,
   },
 
   label: {
@@ -1072,6 +1043,5 @@ const styles = StyleSheet.create({
   },
 
 });
-
 
 

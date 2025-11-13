@@ -24,7 +24,7 @@ import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
 const DAYS_TO_FETCH = 60;
-const EMOTIONS_PER_ENTRY_TARGET = 5;
+const EMOTIONS_PER_ENTRY_TARGET = 3;
 
 const round = (value, decimals = 2) => {
   const factor = 10 ** decimals;

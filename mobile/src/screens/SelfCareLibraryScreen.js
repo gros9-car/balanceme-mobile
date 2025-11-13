@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import {
-  SafeAreaView,
   StatusBar,
   ScrollView,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
@@ -203,8 +204,22 @@ const ExpandableCard = ({ title, subtitle, children, colors }) => {
 
 const SelfCareLibraryScreen = ({ navigation }) => {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
   const [activeExercise, setActiveExercise] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
+
+  const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
+  const maxContentWidth = Math.min(900, width * 0.95);
+
+  const contentStyle = useMemo(
+    () => ({
+      paddingHorizontal: horizontalPadding,
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+      width: '100%',
+    }),
+    [horizontalPadding, maxContentWidth],
+  );
 
   const currentExercise = useMemo(
     () => BREATHING_EXERCISES.find((item) => item.id === activeExercise) ?? null,
@@ -236,7 +251,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
       <View style={[styles.headerBar, { borderBottomColor: colors.muted }]}>
         <TouchableOpacity
@@ -250,7 +265,11 @@ const SelfCareLibraryScreen = ({ navigation }) => {
         <Text style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de autocuidado</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, contentStyle]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="always"
+      >
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="leaf-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>

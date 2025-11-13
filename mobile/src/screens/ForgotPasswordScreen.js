@@ -1,47 +1,35 @@
 import React, { useRef, useState } from 'react';
 import {
-   View,
-   Text,
-   TextInput,
-   TouchableOpacity,
-   ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
   StyleSheet,
   ActivityIndicator,
+  SafeAreaView,
   StatusBar,
   Alert,
   Modal,
   Platform,
   Keyboard,
-  KeyboardAvoidingView,
- } from 'react-native';
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
-import { Screen, Content, Card } from '../components/layout/Screen';
-import useResponsive from '../hooks/useResponsive';
 
-// Pantalla de recuperación que valida el correo y envía el enlace de restablecimiento.
+// Pantalla de recuperaci├│n que valida el correo y env├¡a el enlace de restablecimiento.
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
-  const { spacing, font, isSmall } = useResponsive();
-  const fontStyles = {
-    title: { fontSize: font.xl },
-    subtitle: { fontSize: font.sm },
-    formTitle: { fontSize: font.lg },
-    label: { fontSize: font.sm },
-    input: { fontSize: font.md },
-    button: { fontSize: font.md },
-    helper: { fontSize: font.sm },
-  };
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const emailInputRef = useRef(null);
 
-  // Revisa el correo y solicita a Firebase el envío del email de reinicio.
+  // Revisa el correo y solicita a Firebase el env├¡o del email de reinicio.
   const handleReset = async () => {
     const trimmed = email.trim();
     const nextErrors = {};
@@ -49,7 +37,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!trimmed) {
       nextErrors.email = 'El correo es requerido';
     } else if (!/\S+@\S+\.\S+/.test(trimmed)) {
-      nextErrors.email = 'Correo inválido';
+      nextErrors.email = 'Correo inv├ílido';
     }
 
     setErrors(nextErrors);
@@ -68,7 +56,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       } else {
         Alert.alert(
           'Revisa tu correo',
-          'Te enviamos un enlace para restablecer tu contraseña.',
+          'Te enviamos un enlace para restablecer tu contrase├▒a.',
           [{ text: 'Entendido', onPress: () => navigation?.navigate?.('Login') }],
         );
       }
@@ -77,7 +65,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       if (error.code === 'auth/user-not-found') {
         message = 'No existe una cuenta con ese correo.';
       } else if (error.code === 'auth/invalid-email') {
-        message = 'Correo inválido.';
+        message = 'Correo inv├ílido.';
       }
       Alert.alert('Error', message);
     } finally {
@@ -85,68 +73,38 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
   };
 
-  // Cierra el modal web y regresa a la pantalla de inicio de sesión.
+  // Cierra el modal web y regresa a la pantalla de inicio de sesi├│n.
   const closeModal = () => {
     setSuccessVisible(false);
     navigation?.navigate?.('Login');
   };
 
   return (
-    <Screen
-      edges={['top', 'bottom']}
-      style={{ backgroundColor: colors.background, paddingHorizontal: spacing * 2 }}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
-      >
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContainer,
-          { paddingHorizontal: spacing * 2, paddingVertical: spacing * 3 },
-        ]}
+        contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="always"
       >
-        <Content>
-        <Card
-          style={[
-            styles.formContainer,
-            {
-              backgroundColor: colors.surface,
-              shadowColor: colors.outline,
-              padding: spacing * 2,
-              marginTop: isSmall ? spacing : spacing * 2,
-            },
-          ]}
-        >
-        <View style={[styles.header, { marginBottom: spacing * 1.5 }]}>
+        <View style={styles.header}>
           <View
             style={[
               styles.logoContainer,
-              {
-                backgroundColor: colors.primary,
-                shadowColor: colors.primary,
-                width: spacing * 4,
-                height: spacing * 4,
-                borderRadius: spacing * 2,
-                marginBottom: spacing,
-              },
+              { backgroundColor: colors.primary, shadowColor: colors.primary },
             ]}
           >
             <Ionicons name="heart" size={32} color={colors.primaryContrast} />
           </View>
-          <Text style={[styles.title, fontStyles.title, { color: colors.text }]}>BalanceMe</Text>
-          <Text style={[styles.subtitle, fontStyles.subtitle, { color: colors.subText }]}>Recupera tu acceso</Text>
+          <Text style={[styles.title, { color: colors.text }]}>BalanceMe</Text>
+          <Text style={[styles.subtitle, { color: colors.subText }]}>Recupera tu acceso</Text>
         </View>
 
-          <Text style={[styles.formTitle, fontStyles.formTitle, { color: colors.text }]}>Restablecer contrasena</Text>
+        <View style={[styles.formContainer, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
+          <Text style={[styles.formTitle, { color: colors.text }]}>Restablecer contrasena</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Correo electronico</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Correo electronico</Text>
             <View
               style={[
                 styles.inputWrapper,
@@ -157,7 +115,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               <Ionicons name="mail-outline" size={20} color={colors.subText} style={styles.inputIcon} />
               <TextInput
                 ref={emailInputRef}
-                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
+                style={[styles.textInput, { color: colors.text }]}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
@@ -188,10 +146,10 @@ export default function ForgotPasswordScreen({ navigation }) {
             {isLoading ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.primaryContrast} />
-                <Text style={[styles.submitButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Enviando...</Text>
+                <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Enviando...</Text>
               </View>
             ) : (
-              <Text style={[styles.submitButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Enviar enlace</Text>
+              <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Enviar enlace</Text>
             )}
           </TouchableOpacity>
 
@@ -200,32 +158,30 @@ export default function ForgotPasswordScreen({ navigation }) {
             onPress={() => navigation?.navigate?.('Login')}
           >
             <Ionicons name="arrow-back" size={18} color={colors.accent} />
-            <Text style={[styles.backToLoginText, fontStyles.helper, { color: colors.accent }]}>Volver a iniciar sesion</Text>
+            <Text style={[styles.backToLoginText, { color: colors.accent }]}>Volver a iniciar sesion</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.motivationalText, fontStyles.helper, { color: colors.subText }]}>Estamos contigo en cada paso.</Text>
-        </Card>
-        </Content>
+          <Text style={[styles.motivationalText, { color: colors.subText }]}>Estamos contigo en cada paso.</Text>
+        </View>
       </ScrollView>
-      </KeyboardAvoidingView>
 
       <Modal visible={successVisible} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
             <Ionicons name="mail" size={40} color={colors.primary} />
-            <Text style={[styles.modalTitle, fontStyles.formTitle, { color: colors.text }]}>Correo enviado</Text>
-            <Text style={[styles.modalText, fontStyles.helper, { color: colors.subText }]}>Revisa tu bandeja y sigue las instrucciones para crear una nueva contrasena.</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Correo enviado</Text>
+            <Text style={[styles.modalText, { color: colors.subText }]}>Revisa tu bandeja y sigue las instrucciones para crear una nueva contrasena.</Text>
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={closeModal}
               activeOpacity={0.85}
             >
-              <Text style={[styles.modalButtonText, fontStyles.button, { color: colors.primaryContrast }]}>Ir a iniciar sesion</Text>
+              <Text style={[styles.modalButtonText, { color: colors.primaryContrast }]}>Ir a iniciar sesion</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
@@ -234,15 +190,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  flex: {
-    flex: 1,
-  },
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingVertical: 40,
     gap: 24,
-    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',

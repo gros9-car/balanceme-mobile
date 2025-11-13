@@ -5,10 +5,12 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  SafeAreaView,
   StatusBar,
   Modal,
   Animated,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
@@ -16,8 +18,6 @@ import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase/config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
-import { Screen } from '../components/layout/Screen';
-import useResponsive from '../hooks/useResponsive';
 
 // Pantalla principal que muestra resumen diario y accesos a herramientas clave.
 const emojiCodePoints = {
@@ -41,8 +41,8 @@ const emojiCodePoints = {
 
 const quickActions = [
   {
-    title: 'Registrar ánimo',
-    description: 'Elige hasta tres emociones y recibe sugerencias personalizadas.',
+    title: 'Registrar animo',
+    description: 'Elige hasta cinco emociones y recibe sugerencias personalizadas.',
     icon: 'happy-outline',
     color: '#8b5cf6',
     target: 'Mood',
@@ -55,7 +55,7 @@ const quickActions = [
     target: 'MoodInsights',
   },
   {
-    title: 'Hábitos diarios',
+    title: 'Habitos diarios',
     description: 'Lleva el control de tus micro rutinas para mantener el balance.',
     icon: 'calendar-outline',
     color: '#f97316',
@@ -104,10 +104,10 @@ const quickActions = [
     target: 'Journal',
   },
 ];
-
+console.log('soy dross')
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
-  const { width, height, isLarge, spacing, font } = useResponsive();
+  const { width, height } = useWindowDimensions();
   const user = auth.currentUser;
   const slideAnim = useRef(new Animated.Value(-320)).current;
 
@@ -115,11 +115,11 @@ export default function HomeScreen({ navigation }) {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [lastMood, setLastMood] = useState('calm');
 
-  const horizontalPadding = Math.max(spacing * 2, Math.min(spacing * 3, width * 0.05));
-  const cardSpacing = isLarge ? spacing * 1.5 : spacing;
+  const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
+  const cardSpacing = width >= 768 ? 24 : 16;
   const maxContentWidth = Math.min(960, width * 0.95);
   const menuWidth = Math.min(360, Math.max(260, width * 0.8));
-  const isWide = isLarge;
+  const isWide = width >= 768;
   const actionFlexBasis = isWide ? `${100 / Math.min(3, Math.ceil(width / 320))}%` : '100%';
 
   const fallbackName = useMemo(() => {
@@ -155,7 +155,7 @@ export default function HomeScreen({ navigation }) {
   const personalizedTip = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 9) {
-      return 'Comienza el día con cinco minutos de respiración consciente.';
+      return 'Comienza el d├ía con cinco minutos de respiraci├│n consciente.';
     }
     if (hour >= 12 && hour < 15) {
       return 'Toma una pausa al mediodia y haz estiramientos suaves.';
@@ -163,11 +163,11 @@ export default function HomeScreen({ navigation }) {
     if (hour >= 18) {
       return 'Cierra la jornada escribiendo un breve balance en tu diario.';
     }
-    return 'Registra cómo te sientes ahora para seguir tu progreso.';
+    return 'Registra c├│mo te sientes ahora para seguir tu progreso.';
   }, []);
 
 
-// Recupera registros recientes para calcular la racha e identificar el ÃƒÂºltimo estado.
+// Recupera registros recientes para calcular la racha e identificar el ├║ltimo estado.
 useEffect(() => {
   if (!user?.uid) {
     setCurrentStreak(0);
@@ -183,7 +183,7 @@ useEffect(() => {
     return normalized;
   };
 
-  // Resume los registros recientes y calcula estadÃƒÂ­sticas bÃƒÂ¡sicas.
+  // Resume los registros recientes y calcula estad├¡sticas b├ísicas.
   const fetchMoodSummary = async () => {
     try {
       const moodsRef = collection(db, 'users', user.uid, 'moods');
@@ -261,7 +261,7 @@ useEffect(() => {
   };
 }, [user?.uid]);
 
-  // Controla la animaciÃƒÂ³n del menÃƒÂº lateral y su visibilidad.
+  // Controla la animaci├│n del men├║ lateral y su visibilidad.
   const toggleMenu = () => {
     if (menuVisible) {
       Animated.timing(slideAnim, {
@@ -279,7 +279,7 @@ useEffect(() => {
     }).start();
   };
 
-  // Cierra la sesión del usuario y devuelve a la pantalla de login.
+  // Cierra la sesi├│n del usuario y devuelve a la pantalla de login.
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -289,7 +289,7 @@ useEffect(() => {
     }
   };
 
-  // Navega según la opción seleccionada y maneja acciones especiales como logout.
+  // Navega seg├║n la opci├│n seleccionada y maneja acciones especiales como logout.
   const handleMenuOption = (target) => {
     toggleMenu();
     if (!target) {
@@ -301,27 +301,26 @@ useEffect(() => {
         return;
       }
       if (target === 'Exercises') {
-        Alert.alert('Muy pronto', 'Estamos preparando esta sección para ti.');
+        Alert.alert('Muy pronto', 'Estamos preparando esta secci├│n para ti.');
         return;
       }
       navigation.navigate(target);
     }, 260);
   };
 
-  // Convierte el ÃƒÂºltimo estado de ÃƒÂ¡nimo guardado en su emoji correspondiente.
+  // Convierte el ├║ltimo estado de ├ínimo guardado en su emoji correspondiente.
   const moodEmoji = useMemo(() => {
     const codePoint = emojiCodePoints[lastMood] ?? 0x1f642;
     return String.fromCodePoint(codePoint);
   }, [lastMood]);
 
   return (
-    <Screen edges={['top', 'bottom']} style={{ backgroundColor: colors.background, paddingHorizontal: spacing * 1.5 }}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
       <View style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.scrollContainer, { paddingBottom: 32, paddingHorizontal: horizontalPadding }]}
           showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="always"
         >
           <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
           <View style={styles.header}>
@@ -339,8 +338,8 @@ useEffect(() => {
               >
                 <Ionicons name="heart" size={32} color={colors.primaryContrast} />
               </View>
-              <Text style={[styles.appTitle, { color: colors.text, fontSize: font.xl }]}>BalanceMe</Text>
-              <Text style={[styles.appSubtitle, { color: colors.subText, fontSize: font.sm }]}>Tu espacio de bienestar</Text>
+              <Text style={[styles.appTitle, { color: colors.text }]}>BalanceMe</Text>
+              <Text style={[styles.appSubtitle, { color: colors.subText }]}>Tu espacio de bienestar</Text>
             </View>
           </View>
 
@@ -348,18 +347,18 @@ useEffect(() => {
             style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline, gap: cardSpacing }]}
           >
             <Text style={[styles.greetingText, { color: colors.subText }]}>{`${greeting}, ${displayName}`}</Text>
-            <Text style={[styles.questionText, { color: colors.text }]}>{'\u00bf'}Cómo te sientes hoy?</Text>
+            <Text style={[styles.questionText, { color: colors.text }]}>{'\u00bf'}Como te sientes hoy?</Text>
             <View style={[styles.horizontalDivider, { backgroundColor: colors.muted }]} />
             <View style={styles.summaryRow}>
               <View style={styles.summaryStat}>
                 <Ionicons name="flame" size={20} color="#f97316" />
                 <Text style={[styles.summaryValue, { color: colors.text }]}>{currentStreak}</Text>
-                <Text style={[styles.summaryLabel, { color: colors.subText }]}>días de racha</Text>
+                <Text style={[styles.summaryLabel, { color: colors.subText }]}>dias de racha</Text>
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.muted }]} />
               <View style={styles.summaryStat}>
                 <Text style={styles.summaryEmoji}>{moodEmoji}</Text>
-                <Text style={[styles.summaryLabel, { color: colors.subText }]}>Último registro</Text>
+                <Text style={[styles.summaryLabel, { color: colors.subText }]}>Ultimo registro</Text>
               </View>
             </View>
             <Text style={[styles.tipHelper, { color: colors.subText }]}>{personalizedTip}</Text>
@@ -501,7 +500,7 @@ useEffect(() => {
           </Animated.View>
         </TouchableOpacity>
       </Modal>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
@@ -744,6 +743,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
 });
+
 
 
 

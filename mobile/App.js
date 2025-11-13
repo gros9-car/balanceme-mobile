@@ -29,6 +29,8 @@ import { useFriendRequestNotifications } from "./src/hooks/useFriendRequestNotif
 import { useMessageNotifications } from "./src/hooks/useMessageNotifications";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { GoalProvider } from "./src/context/GoalContext";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { defaultScreenOptions } from "./src/navigation/options";
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +58,7 @@ const AppNavigator = () => {
       <Stack.Navigator
         initialRouteName="Login"
         screenOptions={{
+          ...defaultScreenOptions,
           headerShown: false,
           gestureEnabled: true,
           fullScreenGestureEnabled: true,
@@ -88,10 +91,12 @@ const AppNavigator = () => {
 }
 export default function App() {
   return (
-    <ThemeProvider>
-      <GoalProvider>
-        <AppNavigator />
-      </GoalProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <GoalProvider>
+          <AppNavigator />
+        </GoalProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

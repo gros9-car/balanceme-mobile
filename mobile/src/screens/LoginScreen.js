@@ -24,12 +24,11 @@ import React, { useState } from 'react';
 
    Platform,
 
-   Image,
-
  } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Ionicons } from '@expo/vector-icons';
+import { Screen, Content, Card } from '../components/layout/Screen';
+import useResponsive from '../hooks/useResponsive';
 
 
 
@@ -46,6 +45,18 @@ import { useTheme } from '../context/ThemeContext';
 export default function LoginScreen({ navigation }) {
 
   const { colors } = useTheme();
+
+  const { isSmall, spacing, font } = useResponsive();
+
+  const fontStyles = {
+    title: { fontSize: font.xl },
+    subtitle: { fontSize: font.sm },
+    formTitle: { fontSize: font.lg },
+    label: { fontSize: font.sm },
+    input: { fontSize: font.md },
+    button: { fontSize: font.md },
+    helper: { fontSize: font.sm },
+  };
 
   const [email, setEmail] = useState('');
 
@@ -153,7 +164,13 @@ export default function LoginScreen({ navigation }) {
 
   return (
 
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}> 
+    <Screen
+
+      edges={['top', 'bottom']}
+
+      style={{ backgroundColor: colors.background, paddingHorizontal: spacing * 2 }}
+
+    >
 
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
 
@@ -169,7 +186,7 @@ export default function LoginScreen({ navigation }) {
 
       <ScrollView
 
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[styles.scrollContainer, { paddingHorizontal: spacing * 2, paddingVertical: spacing * 3 }]}
 
         showsVerticalScrollIndicator={false}
 
@@ -179,7 +196,27 @@ export default function LoginScreen({ navigation }) {
 
       >
 
-        <View style={styles.header}>
+        <Content>
+
+        <Card style={[
+
+          styles.formContainer,
+
+          {
+
+            backgroundColor: colors.surface,
+
+            shadowColor: colors.outline,
+
+            padding: spacing * 2,
+
+            marginTop: isSmall ? spacing : spacing * 2,
+
+          },
+
+        ]}>
+
+        <View style={[styles.header, { marginBottom: spacing * 1.5 }]}>
 
           <View
 
@@ -187,33 +224,32 @@ export default function LoginScreen({ navigation }) {
 
               styles.logoContainer,
 
-              { backgroundColor: colors.primary, shadowColor: colors.primary },
+              { backgroundColor: colors.primary, shadowColor: colors.primary,
+                width: spacing * 4, height: spacing * 4,
+                borderRadius: spacing * 2, marginBottom: spacing },
 
             ]}
 
           >
 
-            <Image source={require('../../assets/icon.png')} style={styles.logoImage} />
+            <Ionicons name="heart" size={32} color={colors.primaryContrast} />
 
           </View>
 
-          <Text style={[styles.title, { color: colors.text }]}>BalanceMe</Text>
+          <Text style={[styles.title, fontStyles.title, { color: colors.text }]}>BalanceMe</Text>
 
-          <Text style={[styles.subtitle, { color: colors.subText }]}>Bienvenid@ de vuelta</Text>
+          <Text style={[styles.subtitle, fontStyles.subtitle, { color: colors.subText }]}>Bienvenid@ de vuelta</Text>
 
         </View>
 
-
-
-        <View style={[styles.formContainer, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
 
           <Text style={[styles.formTitle, { color: colors.text }]}>Iniciar sesión</Text>
 
 
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: spacing * 1.5 }]}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Correo electrónico</Text>
+            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Correo electrónico</Text>
 
             <View
 
@@ -243,7 +279,7 @@ export default function LoginScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, { color: colors.text }]}
+                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
 
                 value={email}
 
@@ -275,9 +311,9 @@ export default function LoginScreen({ navigation }) {
 
 
 
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { marginBottom: spacing * 1.5 }]}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Contraseña</Text>
+            <Text style={[styles.label, fontStyles.label, { color: colors.text }]}>Contraseña</Text>
 
             <View
 
@@ -307,7 +343,7 @@ export default function LoginScreen({ navigation }) {
 
               <TextInput
 
-                style={[styles.textInput, { color: colors.text }]}
+                style={[styles.textInput, fontStyles.input, { color: colors.text }]}
 
                 value={password}
 
@@ -367,11 +403,11 @@ export default function LoginScreen({ navigation }) {
 
             onPress={() => navigation.navigate('ForgotPassword')}
 
-            style={styles.forgotLink}
+            style={[styles.forgotLink, { marginBottom: spacing }]}
 
           >
 
-            <Text style={[styles.linkText, { color: colors.accent }]}>Olvidé mi contraseña</Text>
+            <Text style={[styles.linkText, fontStyles.helper, { color: colors.accent }]}>Olvidé mi contraseña</Text>
 
           </TouchableOpacity>
 
@@ -417,13 +453,13 @@ export default function LoginScreen({ navigation }) {
 
 
 
-          <View style={styles.loginLinkContainer}>
+          <View style={[styles.loginLinkContainer, { marginTop: spacing }]}>
 
-            <Text style={[styles.loginText, { color: colors.subText }]}>No tienes una cuenta?</Text>
+            <Text style={[styles.loginText, fontStyles.helper, { color: colors.subText }]}>No tienes una cuenta?</Text>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
 
-              <Text style={[styles.loginLinkText, { color: colors.accent }]}> Crear cuenta</Text>
+              <Text style={[styles.loginLinkText, fontStyles.helper, { color: colors.accent }]}> Crear cuenta</Text>
 
             </TouchableOpacity>
 
@@ -431,15 +467,17 @@ export default function LoginScreen({ navigation }) {
 
 
 
-          <Text style={[styles.motivationalText, { color: colors.subText }]}>Pequeños pasos crean grandes cambios.</Text>
+          <Text style={[styles.motivationalText, fontStyles.helper, { color: colors.subText }]}>Pequeños pasos crean grandes cambios.</Text>
 
-        </View>
+        </Card>
+
+        </Content>
 
       </ScrollView>
 
       </KeyboardAvoidingView>
 
-    </SafeAreaView>
+    </Screen>
 
   );
 
@@ -529,16 +567,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
 
     textAlign: 'center',
-
-  },
-
-  logoImage: {
-
-    width: 32,
-
-    height: 32,
-
-    resizeMode: 'contain',
 
   },
 
@@ -757,4 +785,19 @@ const styles = StyleSheet.create({
   },
 
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
