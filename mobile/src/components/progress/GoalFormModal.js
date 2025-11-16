@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { HABIT_TAGS, normalizeHabitTag } from '../../constants/habitTags';
 
 const MOOD_EMOJIS = [
   { name: 'alegre', label: 'Alegre' },
@@ -23,15 +24,10 @@ const MOOD_EMOJIS = [
   { name: 'enojado', label: 'Enojado' },
 ];
 
-const HABIT_CATEGORIES = [
-  { value: 'movimiento', label: 'Movimiento' },
-  { value: 'descanso', label: 'Descanso' },
-  { value: 'alimentacion', label: 'Alimentacion' },
-  { value: 'mindfulness', label: 'Mindfulness' },
-  { value: 'social', label: 'Conexion social' },
-  { value: 'trabajo', label: 'Foco y trabajo' },
-  { value: 'autocuidado', label: 'Autocuidado' },
-];
+const HABIT_CATEGORY_OPTIONS = HABIT_TAGS.map(({ value, label }) => ({
+  value,
+  label,
+}));
 
 const CATEGORY_OPTIONS = [
   { value: 'mood', label: 'Estado de animo', icon: 'happy-outline' },
@@ -63,6 +59,27 @@ const toNumber = (value, fallback = 0) => {
   return parsed;
 };
 
+const normalizeCategoryFilters = (categories) => {
+  if (!Array.isArray(categories)) {
+    return [];
+  }
+  const normalized = categories
+    .map((value) => normalizeHabitTag(value))
+    .filter(Boolean);
+  return Array.from(new Set(normalized));
+};
+
+const normalizeFilters = (filters = {}) => {
+  if (!filters) {
+    return {};
+  }
+  const categories = normalizeCategoryFilters(filters.categories);
+  return {
+    ...filters,
+    categories,
+  };
+};
+
 export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
   const base = initialGoal ?? defaultGoal;
 
@@ -72,7 +89,7 @@ export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
   const [comparison, setComparison] = useState(base.comparison ?? 'atLeast');
   const [targetValue, setTargetValue] = useState(String(base.targetValue ?? 0));
   const [description, setDescription] = useState(base.description ?? '');
-  const [filters, setFilters] = useState(base.filters ?? {});
+  const [filters, setFilters] = useState(() => normalizeFilters(base.filters ?? {}));
   const [error, setError] = useState('');
   const [measurementLabel, setMeasurementLabel] = useState(base.measurementLabel ?? '');
 
@@ -87,7 +104,7 @@ export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
     setComparison(nextBase.comparison ?? 'atLeast');
     setTargetValue(String(nextBase.targetValue ?? 0));
     setDescription(nextBase.description ?? '');
-    setFilters(nextBase.filters ?? {});
+    setFilters(normalizeFilters(nextBase.filters ?? {}));
     setError('');
     setMeasurementLabel(nextBase.measurementLabel ?? '');
   }, [visible, initialGoal]);
@@ -110,6 +127,25 @@ export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
 
   const toggleFilterValue = (filterKey, value) => {
     setFilters((prev) => {
+      if (filterKey === 'categories') {
+        const normalizedValue = normalizeHabitTag(value);
+        if (!normalizedValue) {
+          return prev ?? {};
+        }
+        const existing = Array.isArray(prev?.categories) ? prev.categories : [];
+        const normalizedSet = new Set(
+          existing.map((item) => normalizeHabitTag(item)).filter(Boolean),
+        );
+        if (normalizedSet.has(normalizedValue)) {
+          normalizedSet.delete(normalizedValue);
+        } else {
+          normalizedSet.add(normalizedValue);
+        }
+        return {
+          ...(prev ?? {}),
+          categories: Array.from(normalizedSet),
+        };
+      }
       const nextSet = new Set(Array.isArray(prev?.[filterKey]) ? prev[filterKey] : []);
       if (nextSet.has(value)) {
         nextSet.delete(value);
@@ -117,11 +153,16 @@ export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
         nextSet.add(value);
       }
       return {
-        ...prev,
+        ...(prev ?? {}),
         [filterKey]: Array.from(nextSet),
       };
     });
   };
+
+  const activeHabitCategories = useMemo(() => {
+    const categories = Array.isArray(filters?.categories) ? filters.categories : [];
+    return new Set(categories.map((item) => normalizeHabitTag(item)).filter(Boolean));
+  }, [filters]);
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -243,8 +284,8 @@ export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
               <View style={styles.field}>
                 <Text style={styles.label}>Categorias de habitos</Text>
                 <View style={styles.tagGrid}>
-                  {HABIT_CATEGORIES.map((option) => {
-                    const selected = (filters.categories ?? []).includes(option.value);
+                  {HABIT_CATEGORY_OPTIONS.map((option) => {
+                    const selected = activeHabitCategories.has(option.value);
                     return (
                       <TouchableOpacity
                         key={option.value}

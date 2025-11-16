@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 // Tarjeta de selección que permite elegir el modo de color deseado.
 const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) => {
@@ -42,6 +43,16 @@ const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) =>
 // Pantalla de ajustes enfocada en cambiar el tema de la aplicación.
 export default function SettingsScreen({ navigation }) {
   const { colors, theme, setTheme, effectiveTheme } = useTheme();
+  const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =
+    useResponsiveLayout({ maxContentWidth: 640 });
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+    }),
+    [maxContentWidth],
+  );
 
   // Genera una etiqueta amigable del modo actual de tema.
   const currentModeLabel = useMemo(() => {
@@ -57,52 +68,88 @@ export default function SettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} />
-      <View style={[styles.topBar, { backgroundColor: colors.surface, borderColor: colors.muted }]}> 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
+      <View
+        style={[
+          styles.topBarWrapper,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingBottom: Math.max(12, verticalPadding * 0.4),
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.topBar,
+            { backgroundColor: colors.surface, borderColor: colors.muted },
+            contentWidthStyle,
+          ]}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-          <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: colors.text }]}>Configuracion</Text>
-        <View style={styles.topBarSpacer} />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+          </TouchableOpacity>
+          <Text style={[styles.topBarTitle, { color: colors.text }]}>Configuracion</Text>
+          <View style={styles.topBarSpacer} />
+        </View>
       </View>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.text }]}>Configuracion</Text>
-        <Text style={[styles.subtitle, { color: colors.subText }]}>Personaliza BalanceMe para que coincida con tu estilo.</Text>
+      <View
+        style={[
+          styles.contentWrapper,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingBottom: verticalPadding,
+            paddingTop: verticalPadding,
+          },
+        ]}
+      >
+        <View style={[styles.content, contentWidthStyle]}>
+          <Text style={[styles.title, { color: colors.text }]}>Configuracion</Text>
+          <Text style={[styles.subtitle, { color: colors.subText }]}>
+            Personaliza BalanceMe para que coincida con tu estilo.
+          </Text>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Tema</Text>
-          <Text style={[styles.sectionHelper, { color: colors.subText }]}>Modo actual: {currentModeLabel}</Text>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Tema</Text>
+            <Text style={[styles.sectionHelper, { color: colors.subText }]}>
+              Modo actual: {currentModeLabel}
+            </Text>
 
-          <ThemeOption
-            mode="light"
-            label="Modo claro"
-            description="Iluminación suave ideal para espacios con buena luz."
-            isActive={theme === 'light'}
-            onPress={handleThemeChange}
-            colors={colors}
-          />
-          <ThemeOption
-            mode="dark"
-            label="Modo oscuro"
-            description="Contraste alto para cuidar tu vista en ambientes nocturnos."
-            isActive={theme === 'dark'}
-            onPress={handleThemeChange}
-            colors={colors}
-          />
-          <ThemeOption
-            mode="system"
-            label="Seguir al sistema"
-            description="BalanceMe adoptará automáticamente el tema de tu dispositivo."
-            isActive={theme === 'system'}
-            onPress={handleThemeChange}
-            colors={colors}
-          />
+            <ThemeOption
+              mode="light"
+              label="Modo claro"
+              description="Iluminacion suave ideal para espacios con buena luz."
+              isActive={theme === 'light'}
+              onPress={handleThemeChange}
+              colors={colors}
+            />
+            <ThemeOption
+              mode="dark"
+              label="Modo oscuro"
+              description="Contraste alto para cuidar tu vista en ambientes nocturnos."
+              isActive={theme === 'dark'}
+              onPress={handleThemeChange}
+              colors={colors}
+            />
+            <ThemeOption
+              mode="system"
+              label="Seguir al sistema"
+              description="BalanceMe adaptara automaticamente el tema de tu dispositivo."
+              isActive={theme === 'system'}
+              onPress={handleThemeChange}
+              colors={colors}
+            />
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -112,6 +159,9 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  topBarWrapper: {
+    width: '100%',
   },
   topBar: {
     flexDirection: 'row',
@@ -137,8 +187,11 @@ const styles = StyleSheet.create({
   topBarSpacer: {
     width: 60,
   },
+  contentWrapper: {
+    width: '100%',
+  },
   content: {
-    padding: 24,
+    width: '100%',
     gap: 24,
   },
   title: {

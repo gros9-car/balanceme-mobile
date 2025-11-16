@@ -26,6 +26,7 @@ import {
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 import { analyzeHabitsEntry, mapHabitCategoriesToLabels } from '../utils/habitAnalysis';
+import { HABIT_TAGS, HABIT_TAG_LABEL_LOOKUP, normalizeHabitTag } from '../constants/habitTags';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -44,6 +45,7 @@ const formatDate = (date) => {
 };
 
 const CATEGORY_BADGE_COLOR = '#22c55e';
+const MAX_PRESET_SELECTION = 3;
 
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
@@ -52,6 +54,7 @@ export default function HabitsScreen({ navigation }) {
 
   const [entries, setEntries] = useState([]);
   const [draft, setDraft] = useState('');
+  const [selectedHabits, setSelectedHabits] = useState([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasTodayEntry, setHasTodayEntry] = useState(false);
@@ -90,6 +93,7 @@ export default function HabitsScreen({ navigation }) {
           const summary = typeof data.agentSummary === 'string' ? data.agentSummary : '';
           const tips = Array.isArray(data.agentTips) ? data.agentTips : [];
           const categories = Array.isArray(data.agentCategories) ? data.agentCategories : [];
+          const presetHabits = Array.isArray(data.presetHabits) ? data.presetHabits : [];
 
           return {
             id: docSnapshot.id,
@@ -97,6 +101,7 @@ export default function HabitsScreen({ navigation }) {
             summary,
             tips,
             categories,
+            presetHabits,
             createdAt,
           };
         });
@@ -119,6 +124,21 @@ export default function HabitsScreen({ navigation }) {
     return unsubscribe;
   }, [user?.uid]);
 
+  const toggleHabit = (value) => {
+    if (hasTodayEntry) {
+      return;
+    }
+    setSelectedHabits((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((item) => item !== value);
+      }
+      if (prev.length >= MAX_PRESET_SELECTION) {
+        return prev;
+      }
+      return [...prev, value];
+    });
+  };
+
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesion requerida', 'Inicia sesion para registrar tus habitos.');
@@ -127,8 +147,8 @@ export default function HabitsScreen({ navigation }) {
     }
 
     const trimmed = draft.trim();
-    if (!trimmed) {
-      Alert.alert('Contenido requerido', 'Describe al menos un habito para guardar.');
+    if (!selectedHabits.length && !trimmed) {
+      Alert.alert('Seleccion requerida', 'Elige al menos un habito o escribe una nota.');
       return;
     }
 
@@ -137,19 +157,32 @@ export default function HabitsScreen({ navigation }) {
       return;
     }
 
-    const agentResponse = analyzeHabitsEntry(trimmed);
+    const presetLabels = selectedHabits
+      .map((value) => HABIT_TAG_LABEL_LOOKUP[value])
+      .filter(Boolean);
+    const contentParts = [];
+    if (presetLabels.length) {
+      contentParts.push(`Habitos realizados: ${presetLabels.join(', ')}`);
+    }
+    if (trimmed) {
+      contentParts.push(trimmed);
+    }
+    const normalizedContent = contentParts.join('. ');
+    const agentResponse = analyzeHabitsEntry(normalizedContent);
 
     setSaving(true);
     try {
       const habitsRef = collection(db, 'users', user.uid, 'habits');
       await addDoc(habitsRef, {
-        content: trimmed,
+        content: normalizedContent,
+        presetHabits: selectedHabits,
         agentSummary: agentResponse.summary,
         agentTips: agentResponse.tips,
         agentCategories: agentResponse.categories ?? [],
         createdAt: serverTimestamp(),
       });
       setDraft('');
+      setSelectedHabits([]);
       Alert.alert('Habitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
     } catch (error) {
       Alert.alert('Error', 'No pudimos guardar tus habitos. Intenta nuevamente.');
@@ -172,6 +205,7 @@ export default function HabitsScreen({ navigation }) {
     );
   }
 
+  const presetLimitReached = selectedHabits.length >= MAX_PRESET_SELECTION;
   const disableSubmit = saving || hasTodayEntry;
 
   return (
@@ -217,13 +251,60 @@ export default function HabitsScreen({ navigation }) {
             </Text>
           ) : (
             <Text style={[styles.infoText, { color: colors.subText }]}>
-              Cuenta que acciones realizaste: movimiento, alimentacion, descanso, conexiones, etc.
+              Selecciona los habitos que realizaste hoy y complementa con detalles si lo deseas.
             </Text>
           )}
+          <View style={styles.presetSection}>
+            <View style={styles.presetHeader}>
+              <Text style={[styles.presetTitle, { color: colors.text }]}>Habitos frecuentes</Text>
+              <Text style={[styles.presetCounter, { color: colors.subText }]}>
+                {selectedHabits.length}/{MAX_PRESET_SELECTION}
+              </Text>
+            </View>
+            <Text style={[styles.presetHelper, { color: colors.subText }]}>
+              {hasTodayEntry
+                ? 'Espera al dia siguiente para registrar nuevos habitos.'
+                : 'Toca para marcar lo que realizaste. Puedes seleccionar hasta tres opciones.'}
+            </Text>
+            <View style={styles.presetGrid}>
+              {HABIT_TAGS.map((preset) => {
+                const isSelected = selectedHabits.includes(preset.value);
+                const disabled = hasTodayEntry;
+                return (
+                  <TouchableOpacity
+                    key={preset.value}
+                    style={[
+                      styles.presetChip,
+                      { borderColor: colors.muted, backgroundColor: colors.muted },
+                      isSelected && {
+                        borderColor: colors.primary,
+                        backgroundColor: colors.primary + '22',
+                      },
+                    ]}
+                    onPress={() => (!isSelected && presetLimitReached ? null : toggleHabit(preset.value))}
+                    disabled={disabled}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.presetChipLabel,
+                        { color: isSelected ? colors.primary : colors.text },
+                      ]}
+                    >
+                      {preset.label}
+                    </Text>
+                    <Text style={[styles.presetChipDescription, { color: colors.subText }]}>
+                      {preset.description}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Por ejemplo: Caminata de 20 minutos, gratitud antes de cenar..."
+            placeholder="Agrega un detalle breve o reflexion adicional (opcional)."
             placeholderTextColor={colors.subText}
             multiline
             textAlignVertical="top"
@@ -280,6 +361,12 @@ export default function HabitsScreen({ navigation }) {
           entries.map((entry) => {
             const formatted = formatDate(entry.createdAt);
             const categoryLabels = mapHabitCategoriesToLabels(entry.categories);
+            const presetLabels = Array.isArray(entry.presetHabits)
+              ? entry.presetHabits
+                  .map((value) => normalizeHabitTag(value))
+                  .filter(Boolean)
+                  .map((value) => HABIT_TAG_LABEL_LOOKUP[value] ?? value)
+              : [];
             return (
               <View
                 key={entry.id}
@@ -289,11 +376,26 @@ export default function HabitsScreen({ navigation }) {
                   <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                   <Text style={[styles.entryDate, { color: colors.subText }]}>{formatted}</Text>
                 </View>
+                {presetLabels.length ? (
+                  <View style={styles.presetRow}>
+                    {presetLabels.map((label) => (
+                      <View
+                        key={label}
+                        style={[
+                          styles.presetBadge,
+                          { borderColor: colors.primary, backgroundColor: colors.primary + '12' },
+                        ]}
+                      >
+                        <Text style={[styles.presetBadgeText, { color: colors.primary }]}>{label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
                 <Text style={[styles.entryContent, { color: colors.text }]}>{entry.content}</Text>
                 {entry.summary ? (
                   <View style={[styles.agentCard, { backgroundColor: colors.muted }]}>
                     <Text style={[styles.agentTitle, { color: colors.text }]}>
-                      Resumen de tus hábitos
+                      Resumen de tus habitos
                     </Text>
                     {categoryLabels.length ? (
                       <View style={styles.categoryRow}>
@@ -401,6 +503,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  presetSection: {
+    gap: 12,
+  },
+  presetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  presetTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  presetCounter: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  presetHelper: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  presetGrid: {
+    gap: 12,
+  },
+  presetChip: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  presetChipLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  presetChipDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
   saveButton: {
     height: 52,
     borderRadius: 16,
@@ -450,6 +590,21 @@ const styles = StyleSheet.create({
   entryContent: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetBadge: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  presetBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   agentCard: {
     borderRadius: 16,

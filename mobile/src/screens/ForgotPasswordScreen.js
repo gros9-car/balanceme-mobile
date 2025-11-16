@@ -13,23 +13,82 @@ import {
   Modal,
   Platform,
   Keyboard,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 
-// Pantalla de recuperaci├│n que valida el correo y env├¡a el enlace de restablecimiento.
+// --- Hook de responsividad ---
+const useResponsiveForgot = () => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const isSmall = width < 360;
+  const isTablet = width >= 768;
+
+  const horizontalPadding = Math.max(16, Math.min(32, width * 0.08));
+  const verticalPadding = Math.max(24, Math.min(40, height * 0.06));
+
+  const maxContentWidth = Math.min(isTablet ? 520 : 420, width * 0.95);
+
+  const titleFont = isSmall ? 26 : 32;
+  const subtitleFont = isSmall ? 13 : 14;
+  const formTitleFont = isSmall ? 18 : 22;
+  const labelFont = isSmall ? 13 : 14;
+  const inputHeight = isSmall ? 46 : 52;
+  const buttonHeight = isSmall ? 46 : 52;
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: insets.top + 40,
+    android: 0,
+    default: 0,
+  });
+
+  return {
+    horizontalPadding,
+    verticalPadding,
+    maxContentWidth,
+    titleFont,
+    subtitleFont,
+    formTitleFont,
+    labelFont,
+    inputHeight,
+    buttonHeight,
+    keyboardVerticalOffset,
+    safeTop: insets.top,
+    safeBottom: insets.bottom,
+  };
+};
+
+// Pantalla de recuperación que valida el correo y envía el enlace de restablecimiento.
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
+  const {
+    horizontalPadding,
+    verticalPadding,
+    maxContentWidth,
+    titleFont,
+    subtitleFont,
+    formTitleFont,
+    labelFont,
+    inputHeight,
+    buttonHeight,
+    keyboardVerticalOffset,
+    safeTop,
+    safeBottom,
+  } = useResponsiveForgot();
+
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const emailInputRef = useRef(null);
 
-  // Revisa el correo y solicita a Firebase el env├¡o del email de reinicio.
+  // Revisa el correo y solicita a Firebase el envío del email de reinicio.
   const handleReset = async () => {
     const trimmed = email.trim();
     const nextErrors = {};
@@ -37,7 +96,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!trimmed) {
       nextErrors.email = 'El correo es requerido';
     } else if (!/\S+@\S+\.\S+/.test(trimmed)) {
-      nextErrors.email = 'Correo inv├ílido';
+      nextErrors.email = 'Correo inválido';
     }
 
     setErrors(nextErrors);
@@ -56,7 +115,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       } else {
         Alert.alert(
           'Revisa tu correo',
-          'Te enviamos un enlace para restablecer tu contrase├▒a.',
+          'Te enviamos un enlace para restablecer tu contraseña.',
           [{ text: 'Entendido', onPress: () => navigation?.navigate?.('Login') }],
         );
       }
@@ -65,7 +124,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       if (error.code === 'auth/user-not-found') {
         message = 'No existe una cuenta con ese correo.';
       } else if (error.code === 'auth/invalid-email') {
-        message = 'Correo inv├ílido.';
+        message = 'Correo inválido.';
       }
       Alert.alert('Error', message);
     } finally {
@@ -73,110 +132,242 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
   };
 
-  // Cierra el modal web y regresa a la pantalla de inicio de sesi├│n.
+  // Cierra el modal web y regresa a la pantalla de inicio de sesión.
   const closeModal = () => {
     setSuccessVisible(false);
     navigation?.navigate?.('Login');
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: safeTop,
+          paddingBottom: safeBottom,
+        },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={styles.header}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContainer,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: verticalPadding,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View
-            style={[
-              styles.logoContainer,
-              { backgroundColor: colors.primary, shadowColor: colors.primary },
-            ]}
+            style={{
+              width: '100%',
+              maxWidth: maxContentWidth,
+              alignSelf: 'center',
+              gap: 24,
+            }}
           >
-            <Ionicons name="heart" size={32} color={colors.primaryContrast} />
-          </View>
-          <Text style={[styles.title, { color: colors.text }]}>BalanceMe</Text>
-          <Text style={[styles.subtitle, { color: colors.subText }]}>Recupera tu acceso</Text>
-        </View>
+            {/* HEADER */}
+            <View style={styles.header}>
+              <View
+                style={[
+                  styles.logoContainer,
+                  { backgroundColor: colors.primary, shadowColor: colors.primary },
+                ]}
+              >
+                <Ionicons name="heart" size={32} color={colors.primaryContrast} />
+              </View>
+              <Text style={[styles.title, { color: colors.text, fontSize: titleFont }]}>
+                BalanceMe
+              </Text>
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: colors.subText, fontSize: subtitleFont },
+                ]}
+              >
+                Recupera tu acceso
+              </Text>
+            </View>
 
-        <View style={[styles.formContainer, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
-          <Text style={[styles.formTitle, { color: colors.text }]}>Restablecer contrasena</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.text }]}>Correo electronico</Text>
+            {/* FORM CARD */}
             <View
               style={[
-                styles.inputWrapper,
-                { backgroundColor: colors.muted, borderColor: colors.muted },
-                errors.email && { borderColor: colors.danger },
+                styles.formContainer,
+                { backgroundColor: colors.surface, shadowColor: colors.outline },
               ]}
             >
-              <Ionicons name="mail-outline" size={20} color={colors.subText} style={styles.inputIcon} />
-              <TextInput
-                ref={emailInputRef}
-                style={[styles.textInput, { color: colors.text }]}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (errors.email) {
-                    setErrors((prev) => ({ ...prev, email: '' }));
-                  }
-                }}
-                placeholder="tu@email.com"
-                placeholderTextColor={colors.subText}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            {errors.email ? <Text style={[styles.errorText, { color: colors.danger }]}>{errors.email}</Text> : null}
-          </View>
+              <Text
+                style={[
+                  styles.formTitle,
+                  { color: colors.text, fontSize: formTitleFont },
+                ]}
+              >
+                Restablecer contraseña
+              </Text>
 
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              { backgroundColor: colors.primary, shadowColor: colors.primary },
-              isLoading && { backgroundColor: colors.muted, shadowOpacity: 0, elevation: 0 },
-            ]}
-            onPress={handleReset}
-            disabled={isLoading}
-            activeOpacity={0.85}
-          >
-            {isLoading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={colors.primaryContrast} />
-                <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Enviando...</Text>
+              <View style={styles.inputGroup}>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: colors.text, fontSize: labelFont },
+                  ]}
+                >
+                  Correo electrónico
+                </Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: colors.muted,
+                      borderColor: colors.muted,
+                      height: inputHeight,
+                    },
+                    errors.email && { borderColor: colors.danger },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={colors.subText}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    ref={emailInputRef}
+                    style={[styles.textInput, { color: colors.text }]}
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (errors.email) {
+                        setErrors((prev) => ({ ...prev, email: '' }));
+                      }
+                    }}
+                    placeholder="tu@email.com"
+                    placeholderTextColor={colors.subText}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                {errors.email ? (
+                  <Text style={[styles.errorText, { color: colors.danger }]}>
+                    {errors.email}
+                  </Text>
+                ) : null}
               </View>
-            ) : (
-              <Text style={[styles.submitButtonText, { color: colors.primaryContrast }]}>Enviar enlace</Text>
-            )}
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backToLogin}
-            onPress={() => navigation?.navigate?.('Login')}
-          >
-            <Ionicons name="arrow-back" size={18} color={colors.accent} />
-            <Text style={[styles.backToLoginText, { color: colors.accent }]}>Volver a iniciar sesion</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  {
+                    backgroundColor: colors.primary,
+                    shadowColor: colors.primary,
+                    height: buttonHeight,
+                  },
+                  isLoading && {
+                    backgroundColor: colors.muted,
+                    shadowOpacity: 0,
+                    elevation: 0,
+                  },
+                ]}
+                onPress={handleReset}
+                disabled={isLoading}
+                activeOpacity={0.85}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color={colors.primaryContrast} />
+                    <Text
+                      style={[
+                        styles.submitButtonText,
+                        { color: colors.primaryContrast },
+                      ]}
+                    >
+                      Enviando...
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    style={[
+                      styles.submitButtonText,
+                      { color: colors.primaryContrast },
+                    ]}
+                  >
+                    Enviar enlace
+                  </Text>
+                )}
+              </TouchableOpacity>
 
-          <Text style={[styles.motivationalText, { color: colors.subText }]}>Estamos contigo en cada paso.</Text>
-        </View>
-      </ScrollView>
+              <TouchableOpacity
+                style={styles.backToLogin}
+                onPress={() => navigation?.navigate?.('Login')}
+              >
+                <Ionicons name="arrow-back" size={18} color={colors.accent} />
+                <Text
+                  style={[
+                    styles.backToLoginText,
+                    { color: colors.accent, fontSize: labelFont },
+                  ]}
+                >
+                  Volver a iniciar sesión
+                </Text>
+              </TouchableOpacity>
 
-      <Modal visible={successVisible} transparent animationType="fade" statusBarTranslucent>
+              <Text
+                style={[
+                  styles.motivationalText,
+                  { color: colors.subText, fontSize: labelFont - 1 },
+                ]}
+              >
+                Estamos contigo en cada paso.
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* MODAL WEB */}
+      <Modal
+        visible={successVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
+          <View
+            style={[
+              styles.modalCard,
+              { backgroundColor: colors.surface, shadowColor: colors.outline },
+            ]}
+          >
             <Ionicons name="mail" size={40} color={colors.primary} />
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Correo enviado</Text>
-            <Text style={[styles.modalText, { color: colors.subText }]}>Revisa tu bandeja y sigue las instrucciones para crear una nueva contrasena.</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              Correo enviado
+            </Text>
+            <Text style={[styles.modalText, { color: colors.subText }]}>
+              Revisa tu bandeja y sigue las instrucciones para crear una nueva contraseña.
+            </Text>
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: colors.primary }]}
               onPress={closeModal}
               activeOpacity={0.85}
             >
-              <Text style={[styles.modalButtonText, { color: colors.primaryContrast }]}>Ir a iniciar sesion</Text>
+              <Text
+                style={[
+                  styles.modalButtonText,
+                  { color: colors.primaryContrast },
+                ]}
+              >
+                Ir a iniciar sesión
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -192,9 +383,8 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-    gap: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
@@ -204,60 +394,45 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#8b5cf6',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   title: {
-    fontSize: 32,
     fontWeight: 'bold',
-    color: '#1f2937',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   formContainer: {
-    backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 24,
     gap: 20,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
   formTitle: {
-    fontSize: 22,
     fontWeight: '600',
-    color: '#1f2937',
     textAlign: 'center',
   },
   inputGroup: {
     gap: 8,
   },
   label: {
-    fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#e5e7eb',
     paddingHorizontal: 12,
-    height: 52,
   },
   inputIcon: {
     marginRight: 12,
@@ -265,28 +440,18 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1f2937',
   },
   errorText: {
     fontSize: 12,
-    color: '#ef4444',
   },
   submitButton: {
-    height: 52,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
   },
   loadingRow: {
     flexDirection: 'row',
@@ -300,13 +465,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backToLoginText: {
-    fontSize: 14,
     fontWeight: '500',
-    color: '#3b82f6',
   },
   motivationalText: {
-    fontSize: 12,
-    color: '#6b7280',
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -324,8 +485,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -334,11 +493,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f2937',
   },
   modalText: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   modalButton: {
@@ -348,12 +505,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
   },
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
   },
 });
-

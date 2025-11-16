@@ -27,6 +27,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
@@ -56,6 +57,7 @@ const buildAlias = (uid) => {
 const HelpForumScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const user = auth.currentUser;
 
   const [messages, setMessages] = useState([]);
@@ -64,17 +66,33 @@ const HelpForumScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
+  // ---- Responsividad ----
+  const isSmall = width < 360;
+  const isTablet = width >= 768;
+
+  const baseFont = isSmall ? 13 : 14;
+  const headerTitleFont = isSmall ? 18 : 20;
+  const headerSubtitleFont = isSmall ? 11 : 12;
+
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
+  const maxContentWidth = Math.min(920, width * 0.95);
+
   const contentWidth = useMemo(
     () => ({
       paddingHorizontal: horizontalPadding,
       width: '100%',
-      maxWidth: Math.min(920, width * 0.95),
+      maxWidth: maxContentWidth,
       alignSelf: 'center',
       gap: 24,
     }),
-    [horizontalPadding, width],
+    [horizontalPadding, maxContentWidth],
   );
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: insets.top + 60,
+    android: 0,
+    default: 0,
+  });
 
   useEffect(() => {
     const forumRef = collection(db, 'forumPosts');
@@ -89,7 +107,10 @@ const HelpForumScreen = ({ navigation }) => {
             id: docSnapshot.id,
             alias: typeof data.alias === 'string' ? data.alias : 'Anónimo',
             message: typeof data.message === 'string' ? data.message : '',
-            category: typeof data.category === 'string' ? data.category : FORUM_CATEGORIES[0].value,
+            category:
+              typeof data.category === 'string'
+                ? data.category
+                : FORUM_CATEGORIES[0].value,
             createdAt: data.createdAt ?? data.createdAtServer,
             createdAtDate: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
             reports: Array.isArray(data.reports) ? data.reports : [],
@@ -149,7 +170,10 @@ const HelpForumScreen = ({ navigation }) => {
       await updateDoc(postRef, {
         reports: arrayUnion(user.uid),
       });
-      Alert.alert('Reporte enviado', 'Gracias por ayudarnos a mantener un espacio seguro.');
+      Alert.alert(
+        'Reporte enviado',
+        'Gracias por ayudarnos a mantener un espacio seguro.',
+      );
     } catch (error) {
       Alert.alert('Error', 'No pudimos enviar el reporte. Intenta de nuevo.');
     }
@@ -158,30 +182,55 @@ const HelpForumScreen = ({ navigation }) => {
   const renderItem = ({ item }) => {
     const categoryMeta = FORUM_CATEGORIES.find((c) => c.value === item.category);
     return (
-      <View style={[styles.postCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+      <View
+        style={[
+          styles.postCard,
+          { backgroundColor: colors.surface, borderColor: colors.muted },
+        ]}
+      >
         <View style={styles.postHeader}>
           <View style={styles.postAuthor}>
             <Ionicons name="person-circle-outline" size={22} color={colors.primary} />
             <View>
-              <Text style={[styles.postAlias, { color: colors.text }]}>{item.alias}</Text>
-              <Text style={[styles.postDate, { color: colors.subText }]}>{formatTimestamp(item.createdAt)}</Text>
+              <Text style={[styles.postAlias, { color: colors.text }]}>
+                {item.alias}
+              </Text>
+              <Text style={[styles.postDate, { color: colors.subText }]}>
+                {formatTimestamp(item.createdAt)}
+              </Text>
             </View>
           </View>
-          <View style={[styles.categoryBadge, { backgroundColor: colors.primary + '22' }]}>
+          <View
+            style={[
+              styles.categoryBadge,
+              { backgroundColor: colors.primary + '22' },
+            ]}
+          >
             <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>
               {categoryMeta?.label ?? 'Discusión'}
             </Text>
           </View>
         </View>
-        <Text style={[styles.postMessage, { color: colors.text }]}>{item.message}</Text>
+        <Text style={[styles.postMessage, { color: colors.text }]}>
+          {item.message}
+        </Text>
         <View style={styles.postFooter}>
           <TouchableOpacity
             style={[styles.reportButton, { borderColor: colors.muted }]}
             onPress={() => handleReport(item.id)}
             activeOpacity={0.85}
           >
-            <Ionicons name="flag-outline" size={16} color={colors.danger ?? '#ef4444'} />
-            <Text style={[styles.reportText, { color: colors.danger ?? '#ef4444' }]}>
+            <Ionicons
+              name="flag-outline"
+              size={16}
+              color={colors.danger ?? '#ef4444'}
+            />
+            <Text
+              style={[
+                styles.reportText,
+                { color: colors.danger ?? '#ef4444' },
+              ]}
+            >
               Reportar
             </Text>
           </TouchableOpacity>
@@ -196,31 +245,80 @@ const HelpForumScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={[styles.header, { borderBottomColor: colors.muted }]}>
+        {/* HEADER RESPONSIVO */}
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: isSmall ? 12 : 16,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.85}
           >
             <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+            <Text
+              style={[
+                styles.backText,
+                { color: colors.text, fontSize: baseFont },
+              ]}
+            >
+              Volver
+            </Text>
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Comunidad anónima</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.subText }]}>
-              Comparte de forma segura. Recuerda que todo lo publicado se mantiene en anonimato.
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.text, fontSize: headerTitleFont },
+              ]}
+            >
+              Comunidad anónima
+            </Text>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                { color: colors.subText, fontSize: headerSubtitleFont },
+              ]}
+            >
+              Comparte de forma segura. Recuerda que todo lo publicado se mantiene en
+              anonimato.
             </Text>
           </View>
         </View>
 
-        <View style={[styles.composer, { borderColor: colors.muted }]}>
+        {/* COMPOSER RESPONSIVO */}
+        <View
+          style={[
+            styles.composer,
+            {
+              borderBottomColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: isSmall ? 12 : 16,
+            },
+          ]}
+        >
           <View style={styles.categorySelector}>
             {FORUM_CATEGORIES.map((item) => {
               const active = category === item.value;
@@ -229,7 +327,8 @@ const HelpForumScreen = ({ navigation }) => {
                   key={item.value}
                   style={[
                     styles.categoryChip,
-                    active && { backgroundColor: colors.primary },
+                    { borderColor: colors.muted },
+                    active && { backgroundColor: colors.primary, borderColor: 'transparent' },
                   ]}
                   onPress={() => setCategory(item.value)}
                   activeOpacity={0.85}
@@ -237,7 +336,10 @@ const HelpForumScreen = ({ navigation }) => {
                   <Text
                     style={[
                       styles.categoryChipText,
-                      { color: active ? colors.primaryContrast : colors.text },
+                      {
+                        color: active ? colors.primaryContrast : colors.text,
+                        fontSize: baseFont - 1,
+                      },
                     ]}
                   >
                     {item.label}
@@ -251,11 +353,25 @@ const HelpForumScreen = ({ navigation }) => {
             onChangeText={setDraft}
             placeholder="Escribe un mensaje de apoyo, una duda o un recurso útil..."
             placeholderTextColor={colors.subText}
-            style={[styles.input, { color: colors.text }]}
+            style={[
+              styles.input,
+              {
+                color: colors.text,
+                fontSize: baseFont,
+                minHeight: isSmall ? 72 : 80,
+                maxHeight: isTablet ? 220 : 160,
+              },
+            ]}
             multiline
           />
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: colors.primary,
+                opacity: posting ? 0.7 : 1,
+              },
+            ]}
             onPress={handlePublish}
             disabled={posting}
             activeOpacity={0.85}
@@ -268,23 +384,39 @@ const HelpForumScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
+        {/* LISTA RESPONSIVA */}
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.list, contentWidth]}
           renderItem={renderItem}
           ListEmptyComponent={
             loading ? (
               <View style={styles.loading}>
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={[styles.loadingText, { color: colors.subText }]}>
+                <Text
+                  style={[
+                    styles.loadingText,
+                    { color: colors.subText, fontSize: baseFont - 1 },
+                  ]}
+                >
                   Cargando mensajes...
                 </Text>
               </View>
             ) : (
               <View style={styles.loading}>
-                <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.subText} />
-                <Text style={[styles.loadingText, { color: colors.subText }]}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={22}
+                  color={colors.subText}
+                />
+                <Text
+                  style={[
+                    styles.loadingText,
+                    { color: colors.subText, fontSize: baseFont - 1 },
+                  ]}
+                >
                   Aún no hay publicaciones. ¡Se el primero en compartir algo!
                 </Text>
               </View>
@@ -305,8 +437,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderBottomWidth: 1,
     gap: 12,
   },
@@ -316,7 +446,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backText: {
-    fontSize: 14,
     fontWeight: '500',
   },
   headerContent: {
@@ -324,15 +453,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerTitle: {
-    fontSize: 20,
     fontWeight: '700',
   },
-  headerSubtitle: {
-    fontSize: 12,
-  },
+  headerSubtitle: {},
   composer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     gap: 12,
     borderBottomWidth: 1,
   },
@@ -348,19 +472,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   categoryChipText: {
-    fontSize: 12,
     fontWeight: '600',
   },
   input: {
-    minHeight: 80,
-    maxHeight: 160,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',
     backgroundColor: 'rgba(148,163,184,0.15)',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 14,
     lineHeight: 20,
   },
   sendButton: {
@@ -379,7 +499,6 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   loadingText: {
-    fontSize: 13,
     textAlign: 'center',
   },
   postCard: {
@@ -400,7 +519,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   postAlias: {
-    fontSize: 14,
     fontWeight: '600',
   },
   postDate: {

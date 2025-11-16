@@ -11,6 +11,7 @@ import {
   Animated,
   Alert,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
@@ -104,6 +105,33 @@ const quickActions = [
     target: 'Journal',
   },
 ];
+
+const emergencyContacts = [
+  {
+    id: 'linea-minsal',
+    label: 'Linea Salud Mental MINSAL *4141',
+    detail: 'Apoyo telefonico 24/7',
+    phone: '*4141',
+  },
+  {
+    id: 'salud-responde',
+    label: 'Salud Responde 600 360 7777',
+    detail: 'Orientacion en salud y crisis',
+    phone: '6003607777',
+  },
+  {
+    id: 'linea-libre',
+    label: 'Linea Libre 1515 (INJUV)',
+    detail: 'Apoyo para jovenes (10:00-22:00)',
+    phone: '1515',
+  },
+  {
+    id: 'quedate',
+    label: 'Programa quedate.cl',
+    detail: 'Material online y apoyo',
+    url: 'https://www.quedate.cl',
+  },
+];
 console.log('soy dross')
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
@@ -112,6 +140,7 @@ export default function HomeScreen({ navigation }) {
   const slideAnim = useRef(new Animated.Value(-320)).current;
 
   const [menuVisible, setMenuVisible] = useState(false);
+  const [emergencyVisible, setEmergencyVisible] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [lastMood, setLastMood] = useState('calm');
 
@@ -155,7 +184,7 @@ export default function HomeScreen({ navigation }) {
   const personalizedTip = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 9) {
-      return 'Comienza el d├ía con cinco minutos de respiraci├│n consciente.';
+      return 'Comienza el día con cinco minutos de respiración consciente.';
     }
     if (hour >= 12 && hour < 15) {
       return 'Toma una pausa al mediodia y haz estiramientos suaves.';
@@ -163,7 +192,7 @@ export default function HomeScreen({ navigation }) {
     if (hour >= 18) {
       return 'Cierra la jornada escribiendo un breve balance en tu diario.';
     }
-    return 'Registra c├│mo te sientes ahora para seguir tu progreso.';
+    return 'Registra cómo te sientes ahora para seguir tu progreso.';
   }, []);
 
 
@@ -183,26 +212,31 @@ useEffect(() => {
     return normalized;
   };
 
-  // Resume los registros recientes y calcula estad├¡sticas b├ísicas.
-  const fetchMoodSummary = async () => {
+  // Resume los registros recientes de animo y habitos para la racha.
+  const fetchActivityStreak = async () => {
     try {
       const moodsRef = collection(db, 'users', user.uid, 'moods');
+      const habitsRef = collection(db, 'users', user.uid, 'habits');
       const moodsQuery = query(moodsRef, orderBy('createdAt', 'desc'), limit(60));
-      const snapshot = await getDocs(moodsQuery);
+      const habitsQuery = query(habitsRef, orderBy('createdAt', 'desc'), limit(60));
+
+      const [moodSnapshot, habitSnapshot] = await Promise.all([getDocs(moodsQuery), getDocs(habitsQuery)]);
+
       if (!isMounted) {
         return;
       }
-      if (snapshot.empty) {
+
+      if (moodSnapshot.empty) {
         setCurrentStreak(0);
         setLastMood('calm');
         return;
       }
 
-      const uniqueDays = [];
-      const daySet = new Set();
+      const moodDaySet = new Set();
+      const moodDayKeys = [];
       let latestEmojiName = 'calm';
 
-      snapshot.forEach((document) => {
+      moodSnapshot.forEach((document) => {
         const data = document.data();
         if (!data) {
           return;
@@ -215,37 +249,62 @@ useEffect(() => {
         if (!date) {
           return;
         }
-        const key = date.toISOString().slice(0, 10);
-        if (!daySet.has(key)) {
-          daySet.add(key);
-          uniqueDays.push(date);
+        const key = startOfDay(date).getTime();
+        if (!moodDaySet.has(key)) {
+          moodDaySet.add(key);
+          moodDayKeys.push(key);
         }
       });
 
-      uniqueDays.sort((a, b) => startOfDay(b).getTime() - startOfDay(a).getTime());
+      const resolvedMood = emojiCodePoints[latestEmojiName] ? latestEmojiName : 'neutral';
+      setLastMood(resolvedMood);
 
-      if (!uniqueDays.length) {
+      if (!moodDayKeys.length || habitSnapshot.empty) {
+        setCurrentStreak(0);
+        return;
+      }
+
+      const habitDaySet = new Set();
+      habitSnapshot.forEach((document) => {
+        const data = document.data();
+        if (!data) {
+          return;
+        }
+        const timestamp = data.createdAt ?? data.createdAtServer;
+        const date = timestamp?.toDate ? timestamp.toDate() : null;
+        if (!date) {
+          return;
+        }
+        const key = startOfDay(date).getTime();
+        habitDaySet.add(key);
+      });
+
+      if (!habitDaySet.size) {
+        setCurrentStreak(0);
+        return;
+      }
+
+      const sharedDayKeys = moodDayKeys.filter((key) => habitDaySet.has(key));
+
+      if (!sharedDayKeys.length) {
         setCurrentStreak(0);
       } else {
+        const sortedKeys = [...sharedDayKeys].sort((a, b) => b - a);
         let streak = 0;
-        let expected = startOfDay(uniqueDays[0]);
-        for (const currentDay of uniqueDays) {
-          const normalizedDay = startOfDay(currentDay);
-          const diff = Math.round((expected.getTime() - normalizedDay.getTime()) / dayMs);
+        let expected = sortedKeys[0];
+
+        for (const dayKey of sortedKeys) {
+          const diff = Math.round((expected - dayKey) / dayMs);
           if (diff === 0) {
             streak += 1;
-            expected = new Date(expected.getTime() - dayMs);
+            expected -= dayMs;
           } else {
             break;
           }
         }
+
         setCurrentStreak(streak);
       }
-
-      if (!emojiCodePoints[latestEmojiName]) {
-        latestEmojiName = 'neutral';
-      }
-      setLastMood(latestEmojiName);
     } catch (error) {
       if (isMounted) {
         setCurrentStreak(0);
@@ -254,7 +313,7 @@ useEffect(() => {
     }
   };
 
-  fetchMoodSummary();
+  fetchActivityStreak();
 
   return () => {
     isMounted = false;
@@ -277,6 +336,36 @@ useEffect(() => {
       duration: 250,
       useNativeDriver: true,
     }).start();
+  };
+
+  const toggleEmergency = () => {
+    setEmergencyVisible((prev) => !prev);
+  };
+
+  const handleEmergencyContact = async ({ phone, url }) => {
+    try {
+      if (phone) {
+        const normalized = phone.replace(/\s+/g, '');
+        const telUrl = `tel:${normalized}`;
+        const supported = await Linking.canOpenURL(telUrl);
+        if (supported) {
+          await Linking.openURL(telUrl);
+        } else {
+          Alert.alert('No disponible', 'No se pudo iniciar la llamada en este dispositivo.');
+        }
+        return;
+      }
+      if (url) {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('No disponible', 'No pudimos abrir el enlace.');
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Intenta nuevamente mas tarde.');
+    }
   };
 
   // Cierra la sesi├│n del usuario y devuelve a la pantalla de login.
@@ -407,6 +496,7 @@ useEffect(() => {
             <TouchableOpacity
               style={[styles.emergencyButton, { borderColor: colors.danger + '33', backgroundColor: colors.danger + '11' }]}
               activeOpacity={0.9}
+              onPress={toggleEmergency}
             >
               <Ionicons name="call-outline" size={20} color={colors.danger} />
               <Text style={[styles.emergencyText, { color: colors.danger }]}>Busca apoyo profesional si lo necesitas</Text>
@@ -430,6 +520,64 @@ useEffect(() => {
           <Ionicons name="chatbubbles-outline" size={24} color={colors.primaryContrast} />
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={emergencyVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={toggleEmergency}
+      >
+        <TouchableOpacity style={styles.emergencyOverlay} activeOpacity={1} onPress={toggleEmergency}>
+          <View
+            style={[
+              styles.emergencySheet,
+              { backgroundColor: colors.surface, borderColor: colors.muted, shadowColor: colors.outline },
+            ]}
+          >
+            <View style={styles.emergencyHeader}>
+              <Text style={[styles.emergencyTitle, { color: colors.text }]}>Contactos de emergencia</Text>
+              <Text style={[styles.emergencySubtitle, { color: colors.subText }]}>
+                Guarda estos numeros y enlaces para acceder rapidamente a apoyo profesional.
+              </Text>
+            </View>
+            <ScrollView contentContainerStyle={styles.emergencyList} showsVerticalScrollIndicator={false}>
+              {emergencyContacts.map((item) => (
+                <View key={item.id} style={[styles.emergencyItem, { borderColor: colors.muted }]}>
+                  <View style={styles.emergencyItemText}>
+                    <Text style={[styles.emergencyItemLabel, { color: colors.text }]}>{item.label}</Text>
+                    <Text style={[styles.emergencyItemDetail, { color: colors.subText }]}>{item.detail}</Text>
+                    {item.phone ? (
+                      <Text style={[styles.emergencyItemData, { color: colors.text }]}>{item.phone}</Text>
+                    ) : item.url ? (
+                      <Text style={[styles.emergencyItemData, { color: colors.text }]}>{item.url}</Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.emergencyItemButton, { backgroundColor: colors.primary }]}
+                    onPress={() => handleEmergencyContact(item)}
+                    activeOpacity={0.85}
+                  >
+                    <Ionicons
+                      name={item.phone ? 'call-outline' : 'globe-outline'}
+                      size={16}
+                      color={colors.primaryContrast}
+                    />
+                    <Text style={[styles.emergencyItemButtonText, { color: colors.primaryContrast }]}>
+                      {item.phone ? 'Llamar' : 'Abrir'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.emergencyClose, { borderColor: colors.muted }]}
+              onPress={toggleEmergency}
+            >
+              <Text style={[styles.emergencyCloseText, { color: colors.text }]}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={menuVisible}
@@ -652,6 +800,86 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
+  },
+  emergencyOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emergencySheet: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    gap: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  emergencyHeader: {
+    gap: 8,
+  },
+  emergencyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emergencySubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  emergencyList: {
+    gap: 12,
+  },
+  emergencyItem: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  emergencyItemText: {
+    flex: 1,
+    gap: 2,
+  },
+  emergencyItemLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  emergencyItemDetail: {
+    fontSize: 12,
+  },
+  emergencyItemData: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emergencyItemButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  emergencyItemButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emergencyClose: {
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  emergencyCloseText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   motivationalText: {
     fontSize: 13,

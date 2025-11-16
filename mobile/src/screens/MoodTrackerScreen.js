@@ -24,6 +24,7 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { computeMoodAverages, moodScoreToLabel } from '../utils/moodAnalysis';
 
 const COOL_DOWN_HOURS = 12;
@@ -184,6 +185,16 @@ const buildAgentResponse = (selectedNames) => {
 // Pantalla para registrar el estado de ánimo y recibir recomendaciones personalizadas.
 export default function MoodTrackerScreen({ navigation }) {
   const { colors } = useTheme();
+  const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =
+    useResponsiveLayout({ maxContentWidth: 920 });
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+    }),
+    [maxContentWidth],
+  );
   const [selectedEmojis, setSelectedEmojis] = useState([]);
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -337,10 +348,27 @@ export default function MoodTrackerScreen({ navigation }) {
   const isSaveDisabled = saving || isOnCooldown;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingTop: verticalPadding,
+            paddingBottom: verticalPadding,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="always"
+      >
+        <View style={[styles.content, contentWidthStyle]}>
+          <View style={styles.header}>
           <TouchableOpacity
             style={[styles.backButton, { borderColor: colors.muted }]}
             onPress={() => navigation.goBack()}
@@ -464,6 +492,7 @@ export default function MoodTrackerScreen({ navigation }) {
             ))}
           </View>
         ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -475,8 +504,10 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 32,
+    alignItems: 'center',
+  },
+  content: {
+    width: '100%',
     gap: 24,
   },
   header: {

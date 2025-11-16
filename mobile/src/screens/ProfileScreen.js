@@ -18,6 +18,7 @@ import { updateProfile } from 'firebase/auth';
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 // Renderiza una fila informativa del perfil si existe un valor para mostrar.
 const ProfileRow = ({ icon, label, value, colors }) => {
@@ -42,6 +43,16 @@ const ProfileRow = ({ icon, label, value, colors }) => {
 export default function ProfileScreen({ navigation }) {
   const { colors, effectiveTheme } = useTheme();
   const user = auth.currentUser;
+  const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =
+    useResponsiveLayout({ maxContentWidth: 920, horizontalFactor: 0.06 });
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+    }),
+    [maxContentWidth],
+  );
 
   const fallbackName = useMemo(() => {
     if (user?.displayName?.trim()) {
@@ -155,9 +166,19 @@ export default function ProfileScreen({ navigation }) {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+      <SafeAreaView
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+        ]}
+      >
         <StatusBar barStyle={colors.statusBarStyle} />
-        <View style={styles.emptyState}>
+        <View
+          style={[
+            styles.emptyState,
+            { paddingHorizontal: horizontalPadding, paddingVertical: verticalPadding },
+          ]}
+        >
           <Ionicons name="lock-closed-outline" size={32} color={colors.subText} />
           <Text style={[styles.emptyText, { color: colors.subText }]}>Debes iniciar sesion para ver tu perfil.</Text>
         </View>
@@ -166,22 +187,51 @@ export default function ProfileScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} />
-      <View style={[styles.topBar, { backgroundColor: colors.surface, borderColor: colors.muted }]}> 
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-          <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-        </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { color: colors.text }]}>Perfil</Text>
-        <View style={styles.topBarSpacer} />
+      <View
+        style={[
+          styles.topBarContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingBottom: Math.max(12, verticalPadding * 0.4),
+          },
+        ]}
+      >
+        <View style={[styles.topBar, { backgroundColor: colors.surface, borderColor: colors.muted }, contentWidthStyle]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+          </TouchableOpacity>
+          <Text style={[styles.topBarTitle, { color: colors.text }]}>Perfil</Text>
+          <View style={styles.topBarSpacer} />
+        </View>
       </View>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline }]}> 
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingTop: verticalPadding,
+            paddingBottom: verticalPadding,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="always"
+      >
+        <View style={[styles.content, contentWidthStyle]}>
+          <View
+            style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline }]}
+          >
           <View
             style={[styles.avatar, profilePhoto ? styles.avatarWithBorder : { backgroundColor: colors.primary }]}
           >
@@ -247,6 +297,7 @@ export default function ProfileScreen({ navigation }) {
           <ProfileRow icon="person-circle-outline" label="UID" value={user.uid} colors={colors} />
           <ProfileRow icon="calendar-outline" label="Miembro desde" value={joinDate} colors={colors} />
         </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -255,6 +306,9 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  topBarContainer: {
+    width: '100%',
   },
   topBar: {
     flexDirection: 'row',
@@ -280,8 +334,12 @@ const styles = StyleSheet.create({
   topBarSpacer: {
     width: 60,
   },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+  },
   content: {
-    padding: 24,
+    width: '100%',
     gap: 20,
   },
   card: {

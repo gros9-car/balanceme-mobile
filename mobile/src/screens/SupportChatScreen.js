@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../context/ThemeContext';
 
@@ -51,23 +53,66 @@ const keywordResponses = [
   },
 ];
 
-// Determina la respuesta empática del bot según palabras clave o plantillas aleatorias.
-const generateBotMessage = (input) => {
-  const text = input.trim().toLowerCase();
-  if (!text) {
-    return 'Estoy aquí para conversar cuando lo necesites.';
-  }
+// ---- Utils de normalización y fuzzy (JS puro) ----
+const removeAccents = (s) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  const match = keywordResponses.find((profile) => profile.keywords.some((keyword) => text.includes(keyword)));
-  if (match) {
-    return match.reply;
-  }
+const normalize = (s) =>
+  removeAccents(
+    (s || '')
+      .toLowerCase()
+      .replace(/[^a-záéíóúñü\s]/gi, ' ')
+      .replace(/\s+/g, ' '),
+  )
+    .trim()
+    .replace(/([a-zñ])\1{1,}/g, '$1');
 
-  const template = supportiveTemplates[Math.floor(Math.random() * supportiveTemplates.length)];
-  return `${template} ¿�Deseas que pensemos en un pequeño paso a seguir?`;
+const levenshtein = (a, b) => {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  const dp = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    let prev = i - 1;
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
+      prev = temp;
+    }
+  }
+  return dp[n];
 };
 
-// Generador mejorado: detección de area corporal + anti-repetición (ASCII-seguro)
+const fuzzyIncludes = (text, keywords) => {
+  const tnorm = normalize(text);
+  const tokens = tnorm.split(/\s+/).filter(Boolean);
+  for (const kw of keywords) {
+    const nk = normalize(kw);
+    if (!nk) continue;
+    if (tnorm.includes(nk)) return true;
+    for (const t of tokens) {
+      const dist = levenshtein(t, nk);
+      const threshold = nk.length <= 5 ? 1 : 2;
+      if (dist <= threshold) return true;
+    }
+  }
+  return false;
+};
+
+const supportiveTemplatesClean = [
+  'Gracias por compartirlo. Estoy aquí para escucharte.',
+  'Respira profundo unos segundos. Estoy contigo en esto.',
+  'Lo que sientes es válido. Estoy aquí para acompañarte.',
+];
+
+// ====== GENERADOR AVANZADO createMessageGenerator2 (JS limpio) ======
 const createMessageGenerator2 = () => {
   let templateIndex = 0;
   let lastReply = '';
@@ -77,7 +122,7 @@ const createMessageGenerator2 = () => {
       (s || '')
         .toLowerCase()
         .replace(/[^a-z\s]/gi, ' ')
-        .replace(/\s+/g, ' ')
+        .replace(/\s+/g, ' '),
     )
       .trim()
       .replace(/([a-z])\1{1,}/g, '$1');
@@ -133,11 +178,19 @@ const createMessageGenerator2 = () => {
     },
   ];
 
-  // Categorías emocionales con múltiples variantes (para evitar repeticiones)
   const moodCategories = [
     {
       name: 'ansiedad',
-      keywords: ['ansiedad', 'ansioso', 'ansiosa', 'angustia', 'nervioso', 'nerviosa', 'preocupado', 'preocupada'],
+      keywords: [
+        'ansiedad',
+        'ansioso',
+        'ansiosa',
+        'angustia',
+        'nervioso',
+        'nerviosa',
+        'preocupado',
+        'preocupada',
+      ],
       replies: [
         'La ansiedad puede sentirse abrumadora. Probemos 3 respiraciones 4-4-6 ahora mismo.',
         'Te acompaño. Observa 5 cosas que ves, 4 que tocas y 3 sonidos.',
@@ -146,7 +199,16 @@ const createMessageGenerator2 = () => {
     },
     {
       name: 'estres',
-      keywords: ['estres', 'estresado', 'estresada', 'presion', 'agotado', 'agotada', 'saturado', 'saturada'],
+      keywords: [
+        'estres',
+        'estresado',
+        'estresada',
+        'presion',
+        'agotado',
+        'agotada',
+        'saturado',
+        'saturada',
+      ],
       replies: [
         'Parece mucha presión. Elige una tarea pequeña de 2 minutos y empecemos.',
         'Tomemos agua y 30s de respiración. ¿Qué puedes delegar o posponer hoy?',
@@ -155,7 +217,7 @@ const createMessageGenerator2 = () => {
     },
     {
       name: 'tristeza',
-      keywords: ['triste', 'tristeza', 'bajon', 'bajon', 'deprim', 'llorar', 'solo', 'sola'],
+      keywords: ['triste', 'tristeza', 'bajon', 'deprim', 'llorar', 'solo', 'sola'],
       replies: [
         'Siento que te sientas así. Nombrarlo ya es un paso. ¿Qué podría darte un poco de alivio ahora?',
         'Gracias por compartirlo. ¿Te gustaría escribir tres frases sobre lo que sientes?',
@@ -182,13 +244,48 @@ const createMessageGenerator2 = () => {
     },
   ];
 
-  // Stopwords simples y helper para eco breve del contenido del usuario
-  const stopWords = new Set(['yo','me','mi','mis','con','de','del','la','el','los','las','y','o','a','en','un','una','que','por','para','muy','mucho','tengo','siento','estoy','es','esta','esto','esa','ese','hoy','ahora']);
+  const stopWords = new Set([
+    'yo',
+    'me',
+    'mi',
+    'mis',
+    'con',
+    'de',
+    'del',
+    'la',
+    'el',
+    'los',
+    'las',
+    'y',
+    'o',
+    'a',
+    'en',
+    'un',
+    'una',
+    'que',
+    'por',
+    'para',
+    'muy',
+    'mucho',
+    'tengo',
+    'siento',
+    'estoy',
+    'es',
+    'esta',
+    'esto',
+    'esa',
+    'ese',
+    'hoy',
+    'ahora',
+  ]);
+
   const recent = [];
+
   const remember = (reply) => {
     recent.push(reply);
     if (recent.length > 4) recent.shift();
   };
+
   const chooseVariant = (arr, last) => {
     if (!arr || arr.length === 0) return '';
     const blacklist = new Set(recent);
@@ -201,6 +298,7 @@ const createMessageGenerator2 = () => {
     }
     return choice;
   };
+
   const buildEcho = (raw) => {
     const tokens = norm(raw).split(/\s+/).filter(Boolean);
     const terms = [];
@@ -229,7 +327,6 @@ const createMessageGenerator2 = () => {
       return reply;
     }
 
-    // 2) Categorías emocionales con variantes
     const mood = moodCategories.find((c) => fuzzy(text, c.keywords));
     if (mood) {
       let reply = chooseVariant(mood.replies, lastReply);
@@ -240,7 +337,6 @@ const createMessageGenerator2 = () => {
       return reply;
     }
 
-    // 3) Tabla legada como respaldo
     const match = keywordResponses.find((p) => fuzzy(text, p.keywords));
     if (match) {
       let reply = match.reply || '';
@@ -253,96 +349,14 @@ const createMessageGenerator2 = () => {
     }
 
     const base = templates[(templateIndex++) % templates.length];
-    const reply = `${base} ¿�Deseas que pensemos en un pequeno paso a seguir?`;
+    const reply = `${base} ¿Deseas que pensemos en un pequeno paso a seguir?`;
     lastReply = reply;
     remember(reply);
     return reply;
   };
 };
-// ---- Mejora de coincidencia y anti-repetición ----
-// Normaliza texto y aplica coincidencia difusa para tolerar faltas de ortografía.
-const removeAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const normalize = (s) =>
-  removeAccents(
-    (s || '')
-      .toLowerCase()
-      .replace(/[^a-záéíóúñü\s]/gi, ' ')
-      .replace(/\s+/g, ' ')
-  )
-    .trim()
-    .replace(/([a-zñ])\1{1,}/g, '$1');
 
-const levenshtein = (a, b) => {
-  if (a === b) return 0;
-  const m = a.length, n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  const dp = new Array(n + 1);
-  for (let j = 0; j <= n; j++) dp[j] = j;
-  for (let i = 1; i <= m; i++) {
-    let prev = i - 1;
-    dp[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const temp = dp[j];
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
-      prev = temp;
-    }
-  }
-  return dp[n];
-};
-
-const fuzzyIncludes = (text, keywords) => {
-  const tnorm = normalize(text);
-  const tokens = tnorm.split(/\s+/).filter(Boolean);
-  for (const kw of keywords) {
-    const nk = normalize(kw);
-    if (!nk) continue;
-    if (tnorm.includes(nk)) return true;
-    for (const t of tokens) {
-      const dist = levenshtein(t, nk);
-      const threshold = nk.length <= 5 ? 1 : 2;
-      if (dist <= threshold) return true;
-    }
-  }
-  return false;
-};
-
-// Versión limpia de normalización y fuzzy para evitar problemas de codificación
-const normalizeClean = (s) =>
-  removeAccents(
-    (s || '')
-      .toLowerCase()
-      .replace(/[^a-záéíóúñü\s]/gi, ' ')
-      .replace(/\s+/g, ' ')
-  )
-    .trim()
-    .replace(/([a-zñ])\1{1,}/g, '$1');
-
-const fuzzyIncludesClean = (text, keywords) => {
-  const tnorm = normalizeClean(text);
-  const tokens = tnorm.split(/\s+/).filter(Boolean);
-  for (const kw of keywords) {
-    const nk = normalizeClean(kw);
-    if (!nk) continue;
-    if (tnorm.includes(nk)) return true;
-    for (const t of tokens) {
-      const dist = levenshtein(t, nk);
-      const threshold = nk.length <= 5 ? 1 : 2;
-      if (dist <= threshold) return true;
-    }
-  }
-  return false;
-};
-
-// Plantillas con acentos correctos
-const supportiveTemplatesClean = [
-  'Gracias por compartirlo. Estoy aquí para escucharte.',
-  'Respira profundo unos segundos. Estoy contigo en esto.',
-  'Lo que sientes es válido. Estoy aquí para acompañarte.',
-];
-
-// Crea un generador de mensajes con memoria para evitar repeticiones.
+// ===== GENERADOR SIMPLE (fallback, por si lo quieres usar en otro lado) =====
 const createMessageGenerator = () => {
   let templateIndex = 0;
   let lastReply = '';
@@ -363,32 +377,112 @@ const createMessageGenerator = () => {
       return reply;
     }
 
-    const base = supportiveTemplates[(templateIndex++) % supportiveTemplates.length];
-    const reply = `${base} ¿�Deseas que pensemos en un pequeño paso a seguir?`;
+    const base = supportiveTemplatesClean[(templateIndex++) % supportiveTemplatesClean.length];
+    const reply = `${base} ¿Deseas que pensemos en un pequeño paso a seguir?`;
     lastReply = reply;
     return reply;
   };
 };
 
+// ===== HOOK DE RESPONSIVIDAD PARA ESTE CHAT =====
+const useResponsiveSupportChat = () => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const isSmall = width < 360;
+  const isTablet = width >= 768;
+
+  const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
+  const maxContentWidth = Math.min(900, width * 0.95);
+
+  const baseFont = isSmall ? 13 : 14;
+  const headerTitleFont = isSmall ? 18 : 20;
+  const headerSubtitleFont = isSmall ? 11 : 12;
+
+  const bubbleMaxWidth = isTablet ? '60%' : '75%';
+  const composerVerticalPadding = isSmall ? 10 : 16;
+  const inputMinHeight = 44;
+  const inputMaxHeight = Math.max(100, height * 0.22);
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: insets.top + 60,
+    android: 0,
+    default: 0,
+  });
+
+  return {
+    isSmall,
+    horizontalPadding,
+    maxContentWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    bubbleMaxWidth,
+    composerVerticalPadding,
+    inputMinHeight,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop: insets.top,
+    safeBottom: insets.bottom,
+  };
+};
+
 // Renderiza una burbuja de mensaje adaptada al remitente actual.
-const MessageBubble = ({ item, colors }) => {
+const MessageBubble = ({ item, colors, bubbleMaxWidth, baseFont }) => {
   const isUser = item.role === 'user';
-  const bubbleStyle = isUser ? styles.userBubble : [styles.botBubble, { backgroundColor: colors.muted }];
+
+  const bubbleBase = isUser ? styles.userBubble : styles.botBubble;
+  const bubbleStyle = [
+    bubbleBase,
+    {
+      maxWidth: bubbleMaxWidth,
+      padding: baseFont,
+      backgroundColor: isUser ? colors.primary : colors.muted,
+    },
+  ];
+
   const textColor = isUser ? colors.primaryContrast : colors.text;
 
   return (
-    <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowBot]}>
+    <View
+      style={[
+        styles.messageRow,
+        isUser ? styles.messageRowUser : styles.messageRowBot,
+      ]}
+    >
       {!isUser ? (
-        <View style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}>
+        <View
+          style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}
+        >
           <Ionicons name="heart" size={16} color={colors.primary} />
         </View>
       ) : null}
-      <View style={[bubbleStyle, isUser && { backgroundColor: colors.primary }]}>
-        <Text style={[styles.messageAuthor, { color: textColor }]}>{isUser ? 'Tú' : botName}</Text>
-        <Text style={[styles.messageText, { color: textColor }]}>{item.text}</Text>
+      <View style={bubbleStyle}>
+        <Text
+          style={[
+            styles.messageAuthor,
+            { color: textColor, fontSize: baseFont - 2 },
+          ]}
+        >
+          {isUser ? 'Tú' : botName}
+        </Text>
+        <Text
+          style={[
+            styles.messageText,
+            {
+              color: textColor,
+              fontSize: baseFont,
+              lineHeight: baseFont * 1.45,
+            },
+          ]}
+        >
+          {item.text}
+        </Text>
       </View>
       {isUser ? (
-        <View style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}>
+        <View
+          style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}
+        >
           <Ionicons name="person" size={16} color={colors.primary} />
         </View>
       ) : null}
@@ -399,18 +493,32 @@ const MessageBubble = ({ item, colors }) => {
 // Chat de apoyo anónimo que simula respuestas empáticas instantáneas.
 export default function SupportChatScreen({ navigation }) {
   const { colors } = useTheme();
-  // Generador con memoria (rotación de plantillas y anti-repetición)
+  const {
+    isSmall,
+    horizontalPadding,
+    maxContentWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    bubbleMaxWidth,
+    composerVerticalPadding,
+    inputMinHeight,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop,
+    safeBottom,
+  } = useResponsiveSupportChat();
+
   const generateBotMessageRef = useRef(createMessageGenerator2());
   const [messages, setMessages] = useState([
     {
       id: 'intro',
       role: 'bot',
-      text: `Hola, soy ${botName}. Gracias por acercarte. Cuéntame, ¿En qué te gustaría trabajar hoy?`,
+      text: `Hola, soy ${botName}. Gracias por acercarte. Cuéntame, ¿en qué te gustaría trabajar hoy?`,
     },
   ]);
   const [draft, setDraft] = useState('');
 
-  // Agrega el mensaje del usuario y la respuesta generada del bot.
   const handleSend = () => {
     const trimmed = draft.trim();
     if (!trimmed) {
@@ -434,14 +542,35 @@ export default function SupportChatScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: safeTop,
+          paddingBottom: safeBottom,
+        },
+      ]}
+    >
+      <StatusBar
+        barStyle={colors.statusBarStyle}
+        backgroundColor={colors.background}
+      />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={[styles.header, { borderBottomColor: colors.muted }]}
+        {/* HEADER RESPONSIVO */}
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: isSmall ? 12 : 16,
+            },
+          ]}
         >
           <TouchableOpacity
             style={styles.backButton}
@@ -449,36 +578,103 @@ export default function SupportChatScreen({ navigation }) {
             activeOpacity={0.85}
           >
             <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+            <Text
+              style={[
+                styles.backText,
+                { color: colors.text, fontSize: baseFont },
+              ]}
+            >
+              Volver
+            </Text>
           </TouchableOpacity>
           <View style={styles.headerTitleBlock}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>{botName}</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.subText }]}>Tu compañero de apoyo emocional</Text>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.text, fontSize: headerTitleFont },
+              ]}
+            >
+              {botName}
+            </Text>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                { color: colors.subText, fontSize: headerSubtitleFont },
+              ]}
+              numberOfLines={1}
+            >
+              Tu compañero de apoyo emocional
+            </Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
 
+        {/* MENSAJES RESPONSIVOS */}
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesContainer}
-          renderItem={(info) => <MessageBubble item={info.item} colors={colors} />}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.messagesContainer,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: horizontalPadding,
+              paddingBottom: horizontalPadding / 2,
+              width: '100%',
+              maxWidth: maxContentWidth,
+              alignSelf: 'center',
+            },
+          ]}
+          renderItem={({ item }) => (
+            <MessageBubble
+              item={item}
+              colors={colors}
+              bubbleMaxWidth={bubbleMaxWidth}
+              baseFont={baseFont}
+            />
+          )}
         />
 
-        <View style={[styles.composer, { borderColor: colors.muted }]}
+        {/* COMPOSER RESPONSIVO */}
+        <View
+          style={[
+            styles.composer,
+            {
+              borderTopColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: composerVerticalPadding,
+            },
+          ]}
         >
           <TextInput
             value={draft}
             onChangeText={setDraft}
             placeholder="Comparte lo que sientes ahora..."
             placeholderTextColor={colors.subText}
-            style={[styles.input, { color: colors.text }]}
+            style={[
+              styles.input,
+              {
+                color: colors.text,
+                minHeight: inputMinHeight,
+                maxHeight: inputMaxHeight,
+                paddingHorizontal: isSmall ? 12 : 16,
+                paddingVertical: isSmall ? 8 : 10,
+                fontSize: baseFont,
+              },
+            ]}
             multiline
           />
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: colors.primary,
+                opacity: draft.trim() ? 1 : 0.6,
+              },
+            ]}
             onPress={handleSend}
             activeOpacity={0.85}
+            disabled={!draft.trim()}
           >
             <Ionicons name="send" size={18} color={colors.primaryContrast} />
           </TouchableOpacity>
@@ -495,8 +691,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderBottomWidth: 1,
     gap: 12,
   },
@@ -506,25 +700,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backText: {
-    fontSize: 14,
     fontWeight: '500',
   },
   headerTitleBlock: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
     fontWeight: '700',
   },
   headerSubtitle: {
-    fontSize: 12,
     fontWeight: '500',
   },
   headerSpacer: {
     width: 32,
   },
   messagesContainer: {
-    padding: 20,
     gap: 12,
   },
   messageRow: {
@@ -546,41 +736,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   userBubble: {
-    maxWidth: '75%',
-    padding: 12,
     borderRadius: 16,
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    maxWidth: '75%',
-    padding: 12,
     borderRadius: 16,
     borderBottomLeftRadius: 4,
   },
   messageAuthor: {
-    fontSize: 11,
-    fontWeight: '600',
     marginBottom: 4,
   },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  messageText: {},
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderTopWidth: 1,
   },
   input: {
     flex: 1,
-    minHeight: 48,
-    maxHeight: 120,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderWidth: 1,
     borderColor: 'transparent',
     backgroundColor: 'transparent',
@@ -593,4 +768,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

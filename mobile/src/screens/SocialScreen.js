@@ -29,6 +29,7 @@ import {
 import { auth, db } from "./firebase/config";
 
 import { useTheme } from "../context/ThemeContext";
+import useResponsiveLayout from "../hooks/useResponsiveLayout";
 
 // Traduce estados de amistad en etiquetas legibles para la UI.
 const statusLabels = {
@@ -66,6 +67,16 @@ const deriveProfile = (data = {}) => {
 // Pantalla social que administra solicitudes, amistades y acceso al chat directo.
 export default function SocialScreen({ navigation }) {
   const { colors } = useTheme();
+  const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =
+    useResponsiveLayout({ maxContentWidth: 960, horizontalFactor: 0.05 });
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: "100%",
+      maxWidth: maxContentWidth,
+      alignSelf: "center",
+    }),
+    [maxContentWidth],
+  );
 
   const user = auth.currentUser;
 
@@ -446,14 +457,22 @@ export default function SocialScreen({ navigation }) {
   if (!user?.uid) {
     return (
       <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+        ]}
       >
         <StatusBar
           barStyle={colors.statusBarStyle}
           backgroundColor={colors.background}
         />
 
-        <View style={styles.centered}>
+        <View
+          style={[
+            styles.centered,
+            { paddingHorizontal: horizontalPadding, paddingVertical: verticalPadding },
+          ]}
+        >
           <Ionicons
             name="lock-closed-outline"
             size={28}
@@ -470,7 +489,10 @@ export default function SocialScreen({ navigation }) {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+      ]}
     >
       <StatusBar
         barStyle={colors.statusBarStyle}
@@ -478,10 +500,19 @@ export default function SocialScreen({ navigation }) {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingTop: verticalPadding,
+            paddingBottom: verticalPadding,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="always"
       >
-        <View style={styles.header}>
+        <View style={[styles.content, contentWidthStyle]}>
+          <View style={styles.header}>
           <TouchableOpacity
             style={[styles.backButton, { borderColor: colors.muted }]}
             onPress={() => navigation.goBack()}
@@ -836,6 +867,7 @@ export default function SocialScreen({ navigation }) {
             })
           )}
         </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -849,9 +881,11 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
 
-    paddingHorizontal: 20,
+    alignItems: "center",
+  },
 
-    paddingVertical: 32,
+  content: {
+    width: "100%",
 
     gap: 20,
   },

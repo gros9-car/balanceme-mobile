@@ -1,3 +1,5 @@
+import { HABIT_TAG_LABEL_LOOKUP, normalizeHabitTag } from '../constants/habitTags';
+
 const roundTo = (value, decimals = 2) => {
   if (Number.isNaN(value)) {
     return 0;
@@ -67,24 +69,54 @@ export const summarizeMoodEntries = (entries = [], filters = {}) => {
   };
 };
 
+const buildEntryHabitTags = (entry) => {
+  const tagSet = new Set();
+  (entry.presetHabits ?? []).forEach((tag) => {
+    const normalized = normalizeHabitTag(tag);
+    if (normalized) {
+      tagSet.add(normalized);
+    }
+  });
+  (entry.categories ?? []).forEach((legacy) => {
+    const normalized = normalizeHabitTag(legacy);
+    if (normalized) {
+      tagSet.add(normalized);
+    }
+  });
+  return Array.from(tagSet);
+};
+
 export const summarizeHabitEntries = (entries = [], filters = {}) => {
-  const { categories } = filters;
-  const filtered = Array.isArray(categories) && categories.length
-    ? entries.filter((entry) =>
-        (entry.categories ?? []).some((category) => categories.includes(category)),
-      )
-    : entries;
+  const categoryFilter = Array.isArray(filters?.categories)
+    ? filters.categories
+        .map((category) => normalizeHabitTag(category))
+        .filter(Boolean)
+    : [];
+  const filterSet = categoryFilter.length ? new Set(categoryFilter) : null;
+
+  const resolvedEntries = entries.map((entry) => ({
+    tags: buildEntryHabitTags(entry),
+    entry,
+  }));
+
+  const filtered = filterSet
+    ? resolvedEntries.filter(({ tags }) => tags.some((tag) => filterSet.has(tag)))
+    : resolvedEntries;
 
   const categoryCounts = {};
-  filtered.forEach((entry) => {
-    (entry.categories ?? []).forEach((category) => {
+  filtered.forEach(({ tags }) => {
+    tags.forEach((category) => {
       categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
     });
   });
 
   const sortedCategories = Object.entries(categoryCounts)
     .sort((a, b) => b[1] - a[1])
-    .map(([category, count]) => ({ category, count }));
+    .map(([category, count]) => ({
+      category,
+      count,
+      label: HABIT_TAG_LABEL_LOOKUP[category] ?? category,
+    }));
 
   return {
     count: filtered.length,

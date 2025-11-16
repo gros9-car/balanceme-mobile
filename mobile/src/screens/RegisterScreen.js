@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import {
 
@@ -26,6 +26,8 @@ import {
 
   Platform,
 
+  KeyboardAvoidingView,
+
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +41,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase/config';
 
 import { useTheme } from '../context/ThemeContext';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 
 
@@ -49,6 +52,22 @@ const EMAIL_REGEX = /\S+@\S+\.\S+/;
 export default function RegisterScreen({ navigation }) {
 
   const { colors } = useTheme();
+  const {
+    horizontalPadding,
+    verticalPadding,
+    maxContentWidth,
+    keyboardVerticalOffset,
+    safeTop,
+    safeBottom,
+  } = useResponsiveLayout({ horizontalFactor: 0.08, verticalFactor: 0.06, maxContentWidth: 520 });
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+    }),
+    [maxContentWidth],
+  );
 
   const [formData, setFormData] = useState({
 
@@ -281,22 +300,32 @@ export default function RegisterScreen({ navigation }) {
 
 
   return (
-
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
-
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: safeTop, paddingBottom: safeBottom },
+      ]}
+    >
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-
-      <ScrollView
-
-        contentContainerStyle={styles.scrollContainer}
-
-        showsVerticalScrollIndicator={false}
-
-        keyboardShouldPersistTaps="handled"
-
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-
-        <View style={styles.header}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContainer,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: verticalPadding,
+              paddingBottom: verticalPadding,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.content, contentWidthStyle]}>
+            <View style={styles.header}>
 
           <View
 
@@ -612,7 +641,9 @@ export default function RegisterScreen({ navigation }) {
 
         </View>
 
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
 
 
@@ -680,9 +711,13 @@ const styles = StyleSheet.create({
 
     flexGrow: 1,
 
-    paddingHorizontal: 20,
+    alignItems: 'center',
 
-    paddingVertical: 40,
+  },
+
+  content: {
+
+    width: '100%',
 
     gap: 24,
 

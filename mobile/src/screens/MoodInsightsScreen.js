@@ -22,13 +22,21 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 const DAYS_TO_FETCH = 60;
 const EMOTIONS_PER_ENTRY_TARGET = 3;
 
+// -------------------- Helpers --------------------
 const round = (value, decimals = 2) => {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
+};
+
+const startOfDay = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
 
 const formatDateKey = (date) => {
@@ -38,92 +46,129 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-const isoWeekKey = (date) => {
-  const tempDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = tempDate.getUTCDay() || 7;
-  tempDate.setUTCDate(tempDate.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(tempDate.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
-  return `${tempDate.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
-};
-
-const generateRange = (length, endDate = new Date()) => {
-  const result = [];
-  const cursor = new Date(endDate);
-  cursor.setHours(0, 0, 0, 0);
-  for (let i = length - 1; i >= 0; i -= 1) {
-    const date = new Date(cursor);
-    date.setDate(cursor.getDate() - i);
-    result.push(new Date(date));
+// Valence (-2..2) -> score 0..100 (interno)
+const computeMoodScore = (entry) => {
+  const valence = entry?.scores?.valence;
+  if (typeof valence !== 'number') {
+    return 50; // neutro si no hay dato
   }
-  return result;
+  const normalized = (valence + 2) / 4; // 0..1
+  const pct = Math.max(0, Math.min(1, normalized)) * 100;
+  return Math.round(pct);
 };
 
-const groupByDay = (entries) => {
+// 3 categorías: Semana difícil, Semana normal, Buena semana
+const scoreToLabel = (score) => {
+  const s = Math.max(0, Math.min(100, score));
+  if (s <= 33) return 'Semana difícil';
+  if (s <= 66) return 'Semana normal';
+  return 'Buena semana';
+};
+
+const buildDailyStatsMap = (entries) => {
   const map = new Map();
+
   entries.forEach((entry) => {
-    const key = formatDateKey(entry.date);
-    const prev = map.get(key) ?? { totalValence: 0, totalEnergy: 0, count: 0, emojis: [] };
-    map.set(key, {
-      totalValence: prev.totalValence + (entry.scores?.valence ?? 0),
-      totalEnergy: prev.totalEnergy + (entry.scores?.energy ?? 0),
+    const dateKey = formatDateKey(startOfDay(entry.date));
+    const score = computeMoodScore(entry);
+    const prev = map.get(dateKey) ?? { scoreSum: 0, count: 0, emojis: [] };
+    map.set(dateKey, {
+      scoreSum: prev.scoreSum + score,
       count: prev.count + 1,
       emojis: [...prev.emojis, ...(entry.emojis ?? [])],
     });
   });
+
   return map;
 };
 
-const aggregateDailySeries = (entries) => {
-  const grouped = groupByDay(entries);
-  const today = new Date();
-  const days = generateRange(7, today);
-  return days.map((date) => {
+// Últimos 7 días (día a día)
+const buildLast7DaysSeries = (entries) => {
+  const today = startOfDay(new Date());
+  const dailyStats = buildDailyStatsMap(entries);
+  const result = [];
+
+  for (let i = 6; i >= 0; i -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
     const key = formatDateKey(date);
-    const record = grouped.get(key);
-    const value = record ? record.totalValence / record.count : 0;
-    return {
+    const stats = dailyStats.get(key);
+
+    const hasData = !!stats && stats.count > 0;
+    const avgScore = hasData ? stats.scoreSum / stats.count : 0;
+    const score = hasData ? Math.round(avgScore) : 0;
+
+    result.push({
       label: date.toLocaleDateString('es-ES', { weekday: 'short' }),
       fullLabel: date.toLocaleDateString(),
-      value: round(value, 2),
-      emojis: record?.emojis ?? [],
-    };
-  });
-};
-
-const aggregateWeeklySeries = (entries) => {
-  const byWeek = new Map();
-  entries.forEach((entry) => {
-    const key = isoWeekKey(entry.date);
-    const prev = byWeek.get(key) ?? { totalValence: 0, count: 0, emojis: [] };
-    byWeek.set(key, {
-      totalValence: prev.totalValence + (entry.scores?.valence ?? 0),
-      count: prev.count + 1,
-      emojis: [...prev.emojis, ...(entry.emojis ?? [])],
+      score,
+      hasData,
+      scoreLabel: hasData ? scoreToLabel(score) : 'Sin registro',
+      emojis: stats?.emojis ?? [],
     });
-  });
-
-  const weeks = [];
-  const reference = new Date();
-  reference.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 8; i += 1) {
-    const date = new Date(reference);
-    date.setDate(reference.getDate() - i * 7);
-    weeks.push({ date, key: isoWeekKey(date) });
   }
 
-  return weeks.reverse().map((item) => {
-    const record = byWeek.get(item.key);
-    const value = record ? record.totalValence / record.count : 0;
-    const weekRange = `${item.key}`;
-    return {
-      label: weekRange,
-      value: round(value, 2),
-      emojis: record?.emojis ?? [],
-    };
-  });
+  return result;
 };
 
+// Últimas 8 semanas (0 = esta semana, 7 = hace 7 semanas)
+const buildLast8WeeksSeries = (entries) => {
+  const today = startOfDay(new Date());
+  const weekBuckets = Array.from({ length: 8 }, () => ({
+    scoreSum: 0,
+    count: 0,
+  }));
+
+  entries.forEach((entry) => {
+    const day = startOfDay(entry.date);
+    const diffMs = today.getTime() - day.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return;
+    if (diffDays >= 56) return; // más de 8 semanas
+
+    const weekIndex = Math.floor(diffDays / 7);
+    if (weekIndex < 0 || weekIndex > 7) return;
+
+    const score = computeMoodScore(entry);
+    weekBuckets[weekIndex].scoreSum += score;
+    weekBuckets[weekIndex].count += 1;
+  });
+
+  const labels = [
+    'Esta semana',
+    'Hace 1 semana',
+    'Hace 2 semanas',
+    'Hace 3 semanas',
+    'Hace 4 semanas',
+    'Hace 5 semanas',
+    'Hace 6 semanas',
+    'Hace 7 semanas',
+  ];
+
+  // De más antigua a más reciente (reverse)
+  return weekBuckets
+    .map((bucket, index) => {
+      if (!bucket.count) {
+        return {
+          label: labels[index],
+          score: 0,
+          hasData: false,
+          scoreLabel: 'Sin registro',
+        };
+      }
+      const avg = bucket.scoreSum / bucket.count;
+      const score = round(avg, 1);
+      return {
+        label: labels[index],
+        score,
+        hasData: true,
+        scoreLabel: scoreToLabel(score),
+      };
+    })
+    .reverse();
+};
+
+// Emojis más usados
 const buildEmotionFrequency = (entries) => {
   const counts = {};
   entries.forEach((entry) => {
@@ -131,21 +176,22 @@ const buildEmotionFrequency = (entries) => {
       counts[emoji] = (counts[emoji] ?? 0) + 1;
     });
   });
+
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([emoji, value]) => ({ emoji, value }));
 };
 
-const valueToHeight = (value) => {
-  const min = -2;
-  const max = 2;
-  const normalized = (value - min) / (max - min);
-  return `${Math.round(normalized * 100)}%`;
+// Score 0..100 -> altura %
+const scoreToHeightPct = (score) => {
+  const clamped = Math.max(0, Math.min(100, score));
+  return `${clamped}%`;
 };
 
-const Bar = ({ label, value, colors, highlighted }) => {
-  const height = valueToHeight(value);
+// -------------------- UI helpers --------------------
+const Bar = ({ label, score, scoreLabel, colors, highlighted, hasData }) => {
+  const height = hasData ? scoreToHeightPct(score) : '0%';
   return (
     <View style={styles.barContainer}>
       <View style={styles.barTrack}>
@@ -154,13 +200,21 @@ const Bar = ({ label, value, colors, highlighted }) => {
             styles.barFill,
             {
               height,
-              backgroundColor: highlighted ? colors.primary : colors.primary + '77',
+              backgroundColor: hasData
+                ? highlighted
+                  ? colors.primary
+                  : colors.primary + '77'
+                : colors.muted,
             },
           ]}
         />
       </View>
-      <Text style={[styles.barValue, { color: colors.text }]}>{value.toFixed(1)}</Text>
-      <Text style={[styles.barLabel, { color: colors.subText }]}>{label}</Text>
+      <Text style={[styles.barValue, { color: colors.text }]}>
+        {scoreLabel}
+      </Text>
+      <Text style={[styles.barLabel, { color: colors.subText }]}>
+        {label}
+      </Text>
     </View>
   );
 };
@@ -169,15 +223,32 @@ const EmotionRow = ({ emoji, value, colors }) => (
   <View style={[styles.emotionRow, { borderColor: colors.muted }]}>
     <Text style={[styles.emotionEmoji, { color: colors.text }]}>{emoji}</Text>
     <Text style={[styles.emotionValue, { color: colors.subText }]}>
-      {value} apariciones
+      Registrada {value} veces
     </Text>
   </View>
 );
 
+// -------------------- Componente principal --------------------
 const MoodInsightsScreen = ({ navigation }) => {
   const { colors } = useTheme();
-  const user = auth.currentUser;
+  const {
+    horizontalPadding,
+    verticalPadding,
+    maxContentWidth,
+    safeTop,
+    safeBottom,
+  } = useResponsiveLayout({ maxContentWidth: 920, horizontalFactor: 0.06 });
 
+  const contentWidthStyle = useMemo(
+    () => ({
+      width: '100%',
+      maxWidth: maxContentWidth,
+      alignSelf: 'center',
+    }),
+    [maxContentWidth],
+  );
+
+  const user = auth.currentUser;
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -203,21 +274,25 @@ const MoodInsightsScreen = ({ navigation }) => {
           limit(400),
         );
 
-        const snapshot = await getDocs(moodsQuery.withConverter({
-          toFirestore: (value) => value,
-          fromFirestore: (snap) => {
-            const data = snap.data() ?? {};
-            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-            return {
-              id: snap.id,
-              emojis: Array.isArray(data.emojis) ? data.emojis : [],
-              scores: data.scores ?? {},
-              moodLabel: data.moodLabel ?? 'neutral',
-              createdAt,
-              date: createdAt,
-            };
-          },
-        }));
+        const snapshot = await getDocs(
+          moodsQuery.withConverter({
+            toFirestore: (value) => value,
+            fromFirestore: (snap) => {
+              const data = snap.data() ?? {};
+              const createdAt = data.createdAt?.toDate
+                ? data.createdAt.toDate()
+                : new Date();
+              return {
+                id: snap.id,
+                emojis: Array.isArray(data.emojis) ? data.emojis : [],
+                scores: data.scores ?? {},
+                moodLabel: data.moodLabel ?? 'neutral',
+                createdAt,
+                date: createdAt,
+              };
+            },
+          }),
+        );
 
         const nextEntries = snapshot.docs.map((docSnap) => docSnap.data());
         setEntries(nextEntries);
@@ -232,147 +307,373 @@ const MoodInsightsScreen = ({ navigation }) => {
     fetchData();
   }, [user?.uid]);
 
-  const weeklySeries = useMemo(() => aggregateDailySeries(entries), [entries]);
-  const monthlySeries = useMemo(() => aggregateWeeklySeries(entries), [entries]);
-  const emotionFrequency = useMemo(() => buildEmotionFrequency(entries), [entries]);
+  const dailySeries = useMemo(
+    () => buildLast7DaysSeries(entries),
+    [entries],
+  );
+  const weeklySeries = useMemo(
+    () => buildLast8WeeksSeries(entries),
+    [entries],
+  );
+  const emotionFrequency = useMemo(
+    () => buildEmotionFrequency(entries),
+    [entries],
+  );
 
-  const averageValence = useMemo(() => {
-    if (!entries.length) {
-      return 0;
-    }
-    const total = entries.reduce((acc, entry) => acc + (entry.scores?.valence ?? 0), 0);
-    return round(total / entries.length, 2);
+  const averageScore = useMemo(() => {
+    if (!entries.length) return null;
+    const total = entries.reduce(
+      (acc, entry) => acc + computeMoodScore(entry),
+      0,
+    );
+    return round(total / entries.length, 1);
   }, [entries]);
 
+  const averageScoreLabel =
+    averageScore === null ? 'Sin registros aún' : scoreToLabel(averageScore);
+
   const averagePerEntry = useMemo(() => {
-    if (!entries.length) {
-      return 0;
-    }
-    const totalEmotions = entries.reduce((acc, entry) => acc + (entry.emojis?.length ?? 0), 0);
+    if (!entries.length) return 0;
+    const totalEmotions = entries.reduce(
+      (acc, entry) => acc + (entry.emojis?.length ?? 0),
+      0,
+    );
     return round(totalEmotions / entries.length, 2);
   }, [entries]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.text }]}>Patrones emocionales</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>
-              Registra hasta {EMOTIONS_PER_ENTRY_TARGET} emociones diarias y observa tus tendencias.
-            </Text>
-          </View>
-        </View>
-
-        {loading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.subText }]}>
-              Analizando tus registros recientes...
-            </Text>
-          </View>
-        ) : error ? (
-          <View style={styles.loading}>
-            <Ionicons name="warning-outline" size={20} color={colors.danger} />
-            <Text style={[styles.loadingText, { color: colors.danger }]}>
-              No pudimos cargar tus datos. Intenta de nuevo más tarde.
-            </Text>
-          </View>
-        ) : (
-          <>
-            <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryLabel, { color: colors.subText }]}>Promedio valencia</Text>
-                  <Text style={[styles.summaryValue, { color: colors.text }]}>{averageValence}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryLabel, { color: colors.subText }]}>Emociones por registro</Text>
-                  <Text style={[styles.summaryValue, { color: colors.text }]}>
-                    {averagePerEntry} / {EMOTIONS_PER_ENTRY_TARGET}
-                  </Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryLabel, { color: colors.subText }]}>Registros</Text>
-                  <Text style={[styles.summaryValue, { color: colors.text }]}>{entries.length}</Text>
-                </View>
-              </View>
-              <Text style={[styles.summaryHint, { color: colors.subText }]}>
-                Busca registrar emociones variadas cada día para obtener recomendaciones más precisas.
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: safeTop,
+          paddingBottom: safeBottom,
+        },
+      ]}
+    >
+      <StatusBar
+        barStyle={colors.statusBarStyle}
+        backgroundColor={colors.background}
+      />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContainer,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingTop: verticalPadding,
+            paddingBottom: verticalPadding,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="always"
+      >
+        <View style={[styles.content, contentWidthStyle]}>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={[styles.backButton, { borderColor: colors.muted }]}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
+              <Text style={[styles.backText, { color: colors.text }]}>
+                Volver
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.headerText}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Resumen de tu ánimo
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.subText }]}>
+                Te mostramos tus registros con palabras simples: Día difícil, Día
+                normal o Buen día.
               </Text>
             </View>
+          </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Últimos 7 días</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
-                Promedio de valencia emocional por jornada (de -2 a 2).
+          {/* ESTADO DE CARGA / ERROR */}
+          {loading ? (
+            <View
+              style={[
+                styles.loading,
+                { backgroundColor: colors.surface, borderColor: colors.muted },
+              ]}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.subText }]}>
+                Analizando tus registros recientes...
               </Text>
-              <View style={[styles.chart, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
-                {weeklySeries.map((item) => (
-                  <Bar
-                    key={item.fullLabel}
-                    label={item.label}
-                    value={item.value}
-                    colors={colors}
-                    highlighted={item.value >= 0}
-                  />
-                ))}
-              </View>
             </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Últimas 8 semanas</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
-                Tendencia semanal basada en tus registros de ánimo.
+          ) : error ? (
+            <View
+              style={[
+                styles.loading,
+                { backgroundColor: colors.surface, borderColor: colors.danger },
+              ]}
+            >
+              <Ionicons
+                name="warning-outline"
+                size={20}
+                color={colors.danger}
+              />
+              <Text style={[styles.loadingText, { color: colors.danger }]}>
+                No pudimos cargar tus datos. Intenta de nuevo más tarde.
               </Text>
-              <View style={[styles.chartHorizontal, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
-                {monthlySeries.map((item) => (
-                  <View key={item.label} style={styles.weekRow}>
-                    <View style={styles.weekInfo}>
-                      <Text style={[styles.weekLabel, { color: colors.text }]}>{item.label}</Text>
-                      <Text style={[styles.weekValue, { color: colors.subText }]}>{item.value.toFixed(2)}</Text>
-                    </View>
-                    <View style={styles.weekBarTrack}>
-                      <View
-                        style={[
-                          styles.weekBarFill,
-                          { width: `${(item.value + 2) * 25}%`, backgroundColor: colors.primary },
-                        ]}
-                      />
-                    </View>
+            </View>
+          ) : (
+            <>
+              {/* RESUMEN SIMPLE */}
+              <View
+                style={[
+                  styles.summaryCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.muted,
+                  },
+                ]}
+              >
+                <Text style={[styles.summaryTitle, { color: colors.text }]}>
+                  Resumen rápido
+                </Text>
+
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryItem}>
+                    <Text
+                      style={[
+                        styles.summaryLabel,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Cómo han sido tus días
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryValue,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {averageScoreLabel}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryHelp,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Tomamos todos tus registros recientes y los resumimos en
+                      una frase.
+                    </Text>
                   </View>
-                ))}
-              </View>
-            </View>
 
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Emociones más frecuentes</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
-                Basado en tus últimos {DAYS_TO_FETCH} días de seguimiento.
-              </Text>
-              <View style={styles.emotionList}>
-                {emotionFrequency.length ? (
-                  emotionFrequency.map((item) => (
-                    <EmotionRow key={item.emoji} emoji={item.emoji} value={item.value} colors={colors} />
-                  ))
-                ) : (
-                  <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
-                    Aún no hay suficientes datos para mostrar tendencias.
-                  </Text>
-                )}
+                  <View style={styles.summaryItem}>
+                    <Text
+                      style={[
+                        styles.summaryLabel,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Emociones por registro
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryValue,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {averagePerEntry} / {EMOTIONS_PER_ENTRY_TARGET}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryHelp,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Anotar varias emociones por día ayuda a entender mejor tus
+                      patrones.
+                    </Text>
+                  </View>
+
+                  <View style={styles.summaryItem}>
+                    <Text
+                      style={[
+                        styles.summaryLabel,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Registros analizados
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryValue,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {entries.length}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.summaryHelp,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Mientras más registras, más clara se vuelve la foto de tu
+                      ánimo.
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={[styles.summaryHint, { color: colors.subText }]}
+                >
+                  Si algún día no registras nada, lo verás como "Sin registro"
+                  en los gráficos.
+                </Text>
               </View>
-            </View>
-          </>
-        )}
+
+              {/* ÚLTIMOS 7 DÍAS */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Cómo te has sentido esta semana
+                </Text>
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { color: colors.subText },
+                  ]}
+                >
+                  Cada día se resume como: Día difícil, Día normal, Buen día o
+                  Sin registro.
+                </Text>
+
+                <View
+                  style={[
+                    styles.chart,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.muted,
+                    },
+                  ]}
+                >
+                  {dailySeries.map((item) => (
+                    <Bar
+                      key={item.fullLabel}
+                      label={item.label}
+                      score={item.score}
+                      scoreLabel={item.scoreLabel}
+                      colors={colors}
+                      highlighted={item.hasData && item.score >= 67}
+                      hasData={item.hasData}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              {/* ÚLTIMAS 8 SEMANAS */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Tendencia de las últimas semanas
+                </Text>
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { color: colors.subText },
+                  ]}
+                >
+                  Si en una semana no registraste emociones, se muestra como
+                  "Sin registro".
+                </Text>
+
+                <View
+                  style={[
+                    styles.chartHorizontal,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.muted,
+                    },
+                  ]}
+                >
+                  {weeklySeries.map((item) => (
+                    <View key={item.label} style={styles.weekRow}>
+                      <View style={styles.weekInfo}>
+                        <Text
+                          style={[
+                            styles.weekLabel,
+                            { color: colors.text },
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.weekValue,
+                            { color: colors.subText },
+                          ]}
+                        >
+                          {item.scoreLabel}
+                        </Text>
+                      </View>
+                      <View style={styles.weekBarTrack}>
+                        <View
+                          style={[
+                            styles.weekBarFill,
+                            {
+                              width: item.hasData
+                                ? scoreToHeightPct(item.score)
+                                : '0%',
+                              backgroundColor: item.hasData
+                                ? colors.primary
+                                : colors.muted,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {/* EMOCIONES MÁS FRECUENTES */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Emociones que más se repiten
+                </Text>
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { color: colors.subText },
+                  ]}
+                >
+                  Contamos cuántas veces elegiste cada emoción en los últimos{' '}
+                  {DAYS_TO_FETCH} días.
+                </Text>
+
+                <View style={styles.emotionList}>
+                  {emotionFrequency.length ? (
+                    emotionFrequency.map((item) => (
+                      <EmotionRow
+                        key={item.emoji}
+                        emoji={item.emoji}
+                        value={item.value}
+                        colors={colors}
+                      />
+                    ))
+                  ) : (
+                    <Text
+                      style={[
+                        styles.sectionSubtitle,
+                        { color: colors.subText },
+                      ]}
+                    >
+                      Aún no hay suficientes datos. Registra cómo te sientes
+                      para ver aquí tus emociones más frecuentes.
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -384,16 +685,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+  },
   content: {
-    paddingHorizontal: 20,
-    paddingBottom: 36,
+    width: '100%',
     gap: 20,
   },
   header: {
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 1,
   },
   backButton: {
     flexDirection: 'row',
@@ -425,6 +729,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 16,
+    borderWidth: 1,
   },
   loadingText: {
     fontSize: 13,
@@ -433,7 +738,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     padding: 18,
-    gap: 12,
+    gap: 14,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -452,6 +761,9 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  summaryHelp: {
+    fontSize: 11,
   },
   summaryHint: {
     fontSize: 12,
@@ -485,7 +797,7 @@ const styles = StyleSheet.create({
     height: 140,
     width: 20,
     borderRadius: 12,
-    backgroundColor: 'rgba(99,102,241,0.08)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
@@ -494,8 +806,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   barValue: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    textAlign: 'center',
   },
   barLabel: {
     fontSize: 11,
@@ -525,7 +838,7 @@ const styles = StyleSheet.create({
   weekBarTrack: {
     height: 10,
     borderRadius: 6,
-    backgroundColor: 'rgba(99,102,241,0.1)',
+    backgroundColor: 'rgba(148,163,184,0.18)',
   },
   weekBarFill: {
     height: '100%',

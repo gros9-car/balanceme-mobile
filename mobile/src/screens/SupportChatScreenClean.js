@@ -10,26 +10,33 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../context/ThemeContext';
 
 const botName = 'Balancito';
 
 // ---------------- NLP helpers ----------------
-const removeAccents = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const removeAccents = (s) =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 const norm = (s) =>
-  removeAccents((s || '')
-    .toLowerCase()
-    .replace(/[^a-z\s]/gi, ' ')
-    .replace(/\s+/g, ' '))
+  removeAccents(
+    (s || '')
+      .toLowerCase()
+      .replace(/[^a-z\s]/gi, ' ')
+      .replace(/\s+/g, ' '),
+  )
     .trim()
     .replace(/([a-z])\1{1,}/g, '$1');
 
 const levenshtein = (a, b) => {
   if (a === b) return 0;
-  const m = a.length, n = b.length;
+  const m = a.length;
+  const n = b.length;
   if (m === 0) return n;
   if (n === 0) return m;
   const dp = new Array(n + 1);
@@ -100,7 +107,16 @@ const bodyAreas = [
 const moodCategories = [
   {
     name: 'ansiedad',
-    keywords: ['ansiedad', 'ansioso', 'ansiosa', 'angustia', 'nervioso', 'nerviosa', 'preocupado', 'preocupada'],
+    keywords: [
+      'ansiedad',
+      'ansioso',
+      'ansiosa',
+      'angustia',
+      'nervioso',
+      'nerviosa',
+      'preocupado',
+      'preocupada',
+    ],
     replies: [
       'La ansiedad puede sentirse abrumadora. Probemos 3 respiraciones 4-4-6 ahora mismo.',
       'Te acompano. Observa 5 cosas que ves, 4 que tocas y 3 sonidos.',
@@ -109,7 +125,16 @@ const moodCategories = [
   },
   {
     name: 'estres',
-    keywords: ['estres', 'estresado', 'estresada', 'presion', 'agotado', 'agotada', 'saturado', 'saturada'],
+    keywords: [
+      'estres',
+      'estresado',
+      'estresada',
+      'presion',
+      'agotado',
+      'agotada',
+      'saturado',
+      'saturada',
+    ],
     replies: [
       'Parece mucha presion. Elige una tarea pequena de 2 minutos y empecemos.',
       'Tomemos agua y 30s de respiracion. Que puedes delegar o posponer hoy?',
@@ -146,14 +171,52 @@ const moodCategories = [
 ];
 
 const intents = {
-  crisis: ['suicid', 'autoles', 'hacerme dano', 'hacerme daño', 'no quiero vivir', 'quitarme la vida'],
-  panic: ['ataque de panico', 'ataque de panico', 'hipervent', 'no puedo respirar'],
-  breathing_guide: ['respirar', 'respiracion', 'respiración', 'guiame a respirar', 'ayudame a respirar', 'ayudame a respirar'],
-  stretch_guide: ['estirar', 'estiramiento', 'alongar', 'descontracturar', 'estirar hombros', 'estirar cuello'],
-  ask_steps: ['como hago', 'como puedo', 'que puedo hacer', 'pasos', 'guia', 'guia', 'ayudame', 'ayudame'],
+  crisis: [
+    'suicid',
+    'autoles',
+    'hacerme dano',
+    'hacerme daño',
+    'no quiero vivir',
+    'quitarme la vida',
+  ],
+  panic: [
+    'ataque de panico',
+    'ataque de pánico',
+    'hipervent',
+    'no puedo respirar',
+  ],
+  breathing_guide: [
+    'respirar',
+    'respiracion',
+    'respiración',
+    'guiame a respirar',
+    'ayudame a respirar',
+  ],
+  stretch_guide: [
+    'estirar',
+    'estiramiento',
+    'alongar',
+    'descontracturar',
+    'estirar hombros',
+    'estirar cuello',
+  ],
+  ask_steps: [
+    'como hago',
+    'como puedo',
+    'que puedo hacer',
+    'pasos',
+    'guia',
+    'ayudame',
+  ],
   tips: ['tips', 'consejos', 'ideas', 'recomendaciones'],
   plan: ['plan', 'rutina', 'propuesta', 'agenda'],
-  resources: ['psicolog', 'terapia', 'profesional', 'hablar con alguien', 'ayuda profesional'],
+  resources: [
+    'psicolog',
+    'terapia',
+    'profesional',
+    'hablar con alguien',
+    'ayuda profesional',
+  ],
 };
 
 const parseIntent = (t) => {
@@ -167,8 +230,14 @@ const parseIntent = (t) => {
   if (hit(intents.resources)) return { type: 'resources' };
   if (hit(intents.ask_steps)) return { type: 'ask_steps' };
 
-  const m = t.match(/(\d+)\s*(s|seg|min|mins|minuto|minutos|segundo|segundos)/);
-  const durationSec = m ? (m[2].startsWith('s') ? parseInt(m[1], 10) : parseInt(m[1], 10) * 60) : undefined;
+  const m = t.match(
+    /(\d+)\s*(s|seg|min|mins|minuto|minutos|segundo|segundos)/,
+  );
+  const durationSec = m
+    ? m[2].startsWith('s')
+      ? parseInt(m[1], 10)
+      : parseInt(m[1], 10) * 60
+    : undefined;
   return { type: 'none', durationSec };
 };
 
@@ -177,26 +246,69 @@ const createMessageGenerator = () => {
   let templateIndex = 0;
   let lastReply = '';
   const recent = [];
+
   const remember = (reply) => {
     recent.push(reply);
     if (recent.length > 4) recent.shift();
   };
+
   const chooseVariant = (arr) => {
     if (!arr || arr.length === 0) return '';
     let choice = arr[Math.floor(Math.random() * arr.length)];
     let guard = 0;
-    while (arr.length > 1 && (recent.includes(choice) || choice === lastReply) && guard < 8) {
+    while (
+      arr.length > 1 &&
+      (recent.includes(choice) || choice === lastReply) &&
+      guard < 8
+    ) {
       choice = arr[(templateIndex++) % arr.length];
       guard++;
     }
     return choice;
   };
-  const stopWords = new Set(['yo','me','mi','mis','con','de','del','la','el','los','las','y','o','a','en','un','una','que','por','para','muy','mucho','tengo','siento','estoy','es','esta','esto','esa','ese','hoy','ahora']);
+
+  const stopWords = new Set([
+    'yo',
+    'me',
+    'mi',
+    'mis',
+    'con',
+    'de',
+    'del',
+    'la',
+    'el',
+    'los',
+    'las',
+    'y',
+    'o',
+    'a',
+    'en',
+    'un',
+    'una',
+    'que',
+    'por',
+    'para',
+    'muy',
+    'mucho',
+    'tengo',
+    'siento',
+    'estoy',
+    'es',
+    'esta',
+    'esto',
+    'esa',
+    'ese',
+    'hoy',
+    'ahora',
+  ]);
+
   const buildEcho = (raw) => {
     const tokens = norm(raw).split(/\s+/).filter(Boolean);
     const terms = [];
     for (const t of tokens) {
-      if (t.length >= 4 && !stopWords.has(t) && !terms.includes(t)) terms.push(t);
+      if (t.length >= 4 && !stopWords.has(t) && !terms.includes(t)) {
+        terms.push(t);
+      }
       if (terms.length >= 2) break;
     }
     if (terms.length === 0) return '';
@@ -212,83 +324,184 @@ const createMessageGenerator = () => {
 
     // Seguridad
     if (nlu.type === 'crisis') {
-      const reply = 'Siento que estes pasando por esto. Tu seguridad importa. Si estas en peligro o piensas hacerte dano, contacta emergencias o alguien de confianza ahora mismo. Puedo quedarme contigo y respirar juntos.';
-      lastReply = reply; remember(reply); return reply;
+      const reply =
+        'Siento que estes pasando por esto. Tu seguridad importa. Si estas en peligro o piensas hacerte dano, contacta emergencias o alguien de confianza ahora mismo. Puedo quedarme contigo y respirar juntos.';
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
     if (nlu.type === 'panic' || nlu.type === 'breathing_guide') {
-      const secs = nlu.durationSec && nlu.durationSec >= 20 ? nlu.durationSec : 60;
+      const secs =
+        nlu.durationSec && nlu.durationSec >= 20 ? nlu.durationSec : 60;
       const reply = `Hagamos respiracion 4-4-6 durante ${secs}s: inhala 4s, sosten 4s y exhala 6s. Mano en pecho y otra en abdomen. Dime si quieres otra ronda o grounding.`;
-      lastReply = reply; remember(reply); return reply;
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
 
-    // Area corporal
+    // Área corporal
     const area = bodyAreas.find((a) => fuzzy(text, a.keywords));
     if (area) {
       let reply = area.reply;
       if (reply === lastReply || recent.includes(reply)) {
         reply = `${reply} Estoy contigo.`;
       }
-      lastReply = reply; remember(reply); return reply;
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
 
     // Estirar / plan / tips / recursos
     if (nlu.type === 'stretch_guide') {
-      const reply = 'Soltemos tension: 1) hombros a orejas 5s y suelta (x3); 2) oreja a hombro 15s por lado; 3) barbilla al pecho 10s. Como se siente?';
-      lastReply = reply; remember(reply); return reply;
+      const reply =
+        'Soltemos tension: 1) hombros a orejas 5s y suelta (x3); 2) oreja a hombro 15s por lado; 3) barbilla al pecho 10s. Como se siente?';
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
     if (nlu.type === 'plan') {
-      const reply = 'Plan breve: ahora 1) respirar 60s; luego 2) una tarea de 2 minutos; despues 3) un vaso de agua y check-in. Te parece?';
-      lastReply = reply; remember(reply); return reply;
+      const reply =
+        'Plan breve: ahora 1) respirar 60s; luego 2) una tarea de 2 minutos; despues 3) un vaso de agua y check-in. Te parece?';
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
     if (nlu.type === 'tips' || nlu.type === 'ask_steps') {
-      const reply = 'Puedo ayudarte con: 1) Respirar 4-4-6 (1 min) 2) Estirar hombros/cuello (30s) 3) Grounding 5-4-3-2-1. Dime "respirar", "estirar" o "grounding".';
-      lastReply = reply; remember(reply); return reply;
+      const reply =
+        'Puedo ayudarte con: 1) Respirar 4-4-6 (1 min) 2) Estirar hombros/cuello (30s) 3) Grounding 5-4-3-2-1. Dime "respirar", "estirar" o "grounding".';
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
     if (nlu.type === 'resources') {
-      const reply = 'Buscar apoyo es valiente. Habla con alguien de confianza o con un profesional de salud mental. Si quieres, pensamos juntos como dar el primer paso.';
-      lastReply = reply; remember(reply); return reply;
+      const reply =
+        'Buscar apoyo es valiente. Habla con alguien de confianza o con un profesional de salud mental. Si quieres, pensamos juntos como dar el primer paso.';
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
 
-    // Emocion/mood
+    // Emoción/mood
     const mood = moodCategories.find((c) => fuzzy(text, c.keywords));
     if (mood) {
       let reply = chooseVariant(mood.replies);
       const echo = buildEcho(text);
       if (echo) reply = `${reply} ${echo}`.trim();
-      lastReply = reply; remember(reply); return reply;
+      lastReply = reply;
+      remember(reply);
+      return reply;
     }
 
     // Plantilla de apoyo rotando sin repetir recientes
     let base = templates[(templateIndex++) % templates.length];
     let guard = 0;
-    while (guard < templates.length + 2 && (recent.includes(base) || base === lastReply)) {
+    while (
+      guard < templates.length + 2 &&
+      (recent.includes(base) || base === lastReply)
+    ) {
       base = templates[(templateIndex++) % templates.length];
       guard++;
     }
     const reply = `${base} Deseas que pensemos en un pequeno paso a seguir?`;
-    lastReply = reply; remember(reply); return reply;
+    lastReply = reply;
+    remember(reply);
+    return reply;
+  };
+};
+
+// ---------------- Responsividad ----------------
+const useResponsiveSupportChat = () => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const isSmall = width < 360;
+  const isTablet = width >= 768;
+
+  const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
+  const maxContentWidth = Math.min(900, width * 0.95);
+
+  const baseFont = isSmall ? 13 : 14;
+  const headerTitleFont = isSmall ? 18 : 20;
+  const headerSubtitleFont = isSmall ? 11 : 12;
+
+  const bubbleMaxWidth = isTablet ? '60%' : '75%';
+  const composerVerticalPadding = isSmall ? 10 : 16;
+  const inputMinHeight = 44;
+  const inputMaxHeight = Math.max(100, height * 0.22);
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: insets.top + 60,
+    android: 0,
+    default: 0,
+  });
+
+  return {
+    isSmall,
+    horizontalPadding,
+    maxContentWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    bubbleMaxWidth,
+    composerVerticalPadding,
+    inputMinHeight,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop: insets.top,
+    safeBottom: insets.bottom,
   };
 };
 
 // ---------------- UI ----------------
-const MessageBubble = ({ item, colors }) => {
+const MessageBubble = ({ item, colors, bubbleMaxWidth, baseFont }) => {
   const isUser = item.role === 'user';
-  const bubbleStyle = isUser ? styles.userBubble : [styles.botBubble, { backgroundColor: colors.muted }];
+  const bubbleBase = isUser ? styles.userBubble : styles.botBubble;
+  const bubbleStyle = [
+    bubbleBase,
+    {
+      maxWidth: bubbleMaxWidth,
+      padding: baseFont,
+      backgroundColor: isUser ? colors.primary : colors.muted,
+    },
+  ];
   const textColor = isUser ? colors.primaryContrast : colors.text;
 
   return (
-    <View style={[styles.messageRow, isUser ? styles.messageRowUser : styles.messageRowBot]}>
+    <View
+      style={[
+        styles.messageRow,
+        isUser ? styles.messageRowUser : styles.messageRowBot,
+      ]}
+    >
       {!isUser ? (
-        <View style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}>
+        <View
+          style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}
+        >
           <Ionicons name="heart" size={16} color={colors.primary} />
         </View>
       ) : null}
-      <View style={[bubbleStyle, isUser && { backgroundColor: colors.primary }]}>
-        <Text style={[styles.messageAuthor, { color: textColor }]}>{isUser ? 'Tu' : botName}</Text>
-        <Text style={[styles.messageText, { color: textColor }]}>{item.text}</Text>
+      <View style={bubbleStyle}>
+        <Text
+          style={[
+            styles.messageAuthor,
+            { color: textColor, fontSize: baseFont - 2 },
+          ]}
+        >
+          {isUser ? 'Tú' : botName}
+        </Text>
+        <Text
+          style={[
+            styles.messageText,
+            { color: textColor, fontSize: baseFont, lineHeight: baseFont * 1.45 },
+          ]}
+        >
+          {item.text}
+        </Text>
       </View>
       {isUser ? (
-        <View style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}>
+        <View
+          style={[styles.avatar, { backgroundColor: colors.primary + '22' }]}
+        >
           <Ionicons name="person" size={16} color={colors.primary} />
         </View>
       ) : null}
@@ -298,6 +511,22 @@ const MessageBubble = ({ item, colors }) => {
 
 export default function SupportChatScreenClean({ navigation }) {
   const { colors } = useTheme();
+  const {
+    isSmall,
+    horizontalPadding,
+    maxContentWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    bubbleMaxWidth,
+    composerVerticalPadding,
+    inputMinHeight,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop,
+    safeBottom,
+  } = useResponsiveSupportChat();
+
   const generateRef = useRef(createMessageGenerator());
   const [messages, setMessages] = useState([
     {
@@ -308,57 +537,175 @@ export default function SupportChatScreenClean({ navigation }) {
   ]);
   const [draft, setDraft] = useState('');
 
+  // ref para autoscroll
+  const listRef = useRef(null);
+
+  const scrollToBottom = () => {
+    if (listRef.current) {
+      listRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
   const handleSend = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
 
-    const userMessage = { id: `user-${Date.now()}`, role: 'user', text: trimmed };
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text: trimmed,
+    };
     const botMessage = {
       id: `bot-${Date.now()}`,
       role: 'bot',
       text: generateRef.current(trimmed),
     };
+
     setMessages((prev) => [...prev, userMessage, botMessage]);
     setDraft('');
+
+    // pequeño timeout para asegurar que FlatList haya renderizado
+    setTimeout(scrollToBottom, 50);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: safeTop,
+          paddingBottom: safeBottom,
+        },
+      ]}
+    >
+      <StatusBar
+        barStyle={colors.statusBarStyle}
+        backgroundColor={colors.background}
+      />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={[styles.header, { borderBottomColor: colors.muted }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+        {/* HEADER RESPONSIVO */}
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: isSmall ? 12 : 16,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.85}
+          >
             <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
+            <Text
+              style={[
+                styles.backText,
+                { color: colors.text, fontSize: baseFont },
+              ]}
+            >
+              Volver
+            </Text>
           </TouchableOpacity>
           <View style={styles.headerTitleBlock}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>{botName}</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.subText }]}>Tu companero de apoyo emocional</Text>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.text, fontSize: headerTitleFont },
+              ]}
+            >
+              {botName}
+            </Text>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                { color: colors.subText, fontSize: headerSubtitleFont },
+              ]}
+              numberOfLines={1}
+            >
+              Tu companero de apoyo emocional
+            </Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
 
+        {/* MENSAJES RESPONSIVOS + AUTOSCROLL */}
         <FlatList
+          ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesContainer}
-          renderItem={(info) => <MessageBubble item={info.item} colors={colors} />}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={scrollToBottom}
+          onLayout={scrollToBottom}
+          contentContainerStyle={[
+            styles.messagesContainer,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: horizontalPadding,
+              paddingBottom: horizontalPadding / 2,
+              width: '100%',
+              maxWidth: maxContentWidth,
+              alignSelf: 'center',
+            },
+          ]}
+          renderItem={({ item }) => (
+            <MessageBubble
+              item={item}
+              colors={colors}
+              bubbleMaxWidth={bubbleMaxWidth}
+              baseFont={baseFont}
+            />
+          )}
         />
 
-        <View style={[styles.composer, { borderColor: colors.muted }]}>
+        {/* COMPOSER RESPONSIVO */}
+        <View
+          style={[
+            styles.composer,
+            {
+              borderTopColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: composerVerticalPadding,
+            },
+          ]}
+        >
           <TextInput
             value={draft}
             onChangeText={setDraft}
             placeholder="Comparte lo que sientes ahora..."
             placeholderTextColor={colors.subText}
-            style={[styles.input, { color: colors.text }]}
             multiline
+            style={[
+              styles.input,
+              {
+                color: colors.text,
+                minHeight: inputMinHeight,
+                maxHeight: inputMaxHeight,
+                paddingHorizontal: isSmall ? 12 : 16,
+                paddingVertical: isSmall ? 8 : 10,
+                fontSize: baseFont,
+              },
+            ]}
           />
-          <TouchableOpacity style={[styles.sendButton, { backgroundColor: colors.primary }]} onPress={handleSend} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              {
+                backgroundColor: colors.primary,
+                opacity: draft.trim() ? 1 : 0.6,
+              },
+            ]}
+            onPress={handleSend}
+            activeOpacity={0.85}
+            disabled={!draft.trim()}
+          >
             <Ionicons name="send" size={18} color={colors.primaryContrast} />
           </TouchableOpacity>
         </View>
@@ -372,45 +719,62 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderBottomWidth: 1,
     gap: 12,
   },
   backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 14, fontWeight: '500' },
+  backText: { fontWeight: '500' },
   headerTitleBlock: { flex: 1 },
-  headerTitle: { fontSize: 20, fontWeight: '700' },
-  headerSubtitle: { fontSize: 12, fontWeight: '500' },
+  headerTitle: { fontWeight: '700' },
+  headerSubtitle: { fontWeight: '500' },
   headerSpacer: { width: 32 },
-  messagesContainer: { padding: 20, gap: 12 },
-  messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  messagesContainer: {
+    gap: 12,
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   messageRowUser: { justifyContent: 'flex-end' },
   messageRowBot: { justifyContent: 'flex-start' },
-  avatar: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  userBubble: { maxWidth: '75%', padding: 12, borderRadius: 16, borderBottomRightRadius: 4 },
-  botBubble: { maxWidth: '75%', padding: 12, borderRadius: 16, borderBottomLeftRadius: 4 },
-  messageAuthor: { fontSize: 11, fontWeight: '600', marginBottom: 4 },
-  messageText: { fontSize: 14, lineHeight: 20 },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userBubble: {
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+  },
+  botBubble: {
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+  },
+  messageAuthor: { marginBottom: 4 },
+  messageText: {},
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderTopWidth: 1,
   },
   input: {
     flex: 1,
-    minHeight: 48,
-    maxHeight: 120,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     borderWidth: 1,
     borderColor: 'transparent',
     backgroundColor: 'transparent',
   },
-  sendButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
-

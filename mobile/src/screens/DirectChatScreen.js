@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -28,9 +29,55 @@ import {
   writeBatch,
   limit,
 } from "firebase/firestore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { auth, db } from "./firebase/config";
 import { useTheme } from "../context/ThemeContext";
+
+// === Hook de responsividad específico para el chat ===
+const useResponsiveChat = () => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const isSmall = width < 360;
+  const isTablet = width >= 768;
+
+  const horizontalPadding = isSmall ? 12 : 20;
+  const headerVerticalPadding = isSmall ? 10 : 14;
+  const composerVerticalPadding = isSmall ? 10 : 16;
+
+  const bubbleMaxWidth = isTablet ? "60%" : "75%";
+  const baseFont = isSmall ? 13 : 14;
+  const headerTitleFont = isSmall ? 16 : 18;
+  const headerSubtitleFont = isSmall ? 11 : 12;
+
+  // Limita cuánto puede crecer el TextInput con el teclado abierto
+  const inputMaxHeight = Math.max(80, height * 0.22);
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: insets.top + 52, // status bar + header
+    android: 0,
+    default: 0,
+  });
+
+  return {
+    width,
+    height,
+    isSmall,
+    isTablet,
+    horizontalPadding,
+    headerVerticalPadding,
+    composerVerticalPadding,
+    bubbleMaxWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop: insets.top,
+    safeBottom: insets.bottom,
+  };
+};
 
 // Genera un identificador de chat único ordenando ambos UID.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
@@ -59,11 +106,24 @@ const deriveProfile = (data = {}) => {
 };
 
 // Renderiza cada burbuja de mensaje adaptándose al remitente actual.
-const MessageRow = ({ item, colors, currentUser }) => {
+const MessageRow = ({
+  item,
+  colors,
+  currentUser,
+  bubbleMaxWidth,
+  baseFont,
+}) => {
   const isUser = item.senderId === currentUser;
-  const bubbleStyle = isUser
-    ? styles.userBubble
-    : [styles.botBubble, { backgroundColor: colors.muted }];
+
+  const bubbleBase = isUser ? styles.userBubble : styles.botBubble;
+  const bubbleStyle = [
+    bubbleBase,
+    {
+      maxWidth: bubbleMaxWidth,
+      padding: baseFont, // se adapta un poco al tamaño base
+      backgroundColor: isUser ? colors.primary : colors.muted,
+    },
+  ];
   const textColor = isUser ? colors.primaryContrast : colors.text;
 
   return (
@@ -80,16 +140,22 @@ const MessageRow = ({ item, colors, currentUser }) => {
           <Ionicons name="person" size={16} color={colors.primary} />
         </View>
       ) : null}
-      <View
-        style={[bubbleStyle, isUser && { backgroundColor: colors.primary }]}
-      >
-        <Text style={[styles.messageText, { color: textColor }]}>
+      <View style={bubbleStyle}>
+        <Text
+          style={[
+            styles.messageText,
+            { color: textColor, fontSize: baseFont, lineHeight: baseFont * 1.45 },
+          ]}
+        >
           {item.text}
         </Text>
         <Text
           style={[
             styles.messageTime,
-            { color: isUser ? colors.primaryContrast : colors.subText },
+            {
+              color: isUser ? colors.primaryContrast : colors.subText,
+              fontSize: baseFont - 3,
+            },
           ]}
         >
           {formatDateTime(item.createdAt)}
@@ -123,6 +189,22 @@ export default function DirectChatScreen({ navigation, route }) {
     email: friendEmail,
   });
   const [deleting, setDeleting] = useState(false);
+
+  const {
+    isSmall,
+    horizontalPadding,
+    headerVerticalPadding,
+    composerVerticalPadding,
+    bubbleMaxWidth,
+    baseFont,
+    headerTitleFont,
+    headerSubtitleFont,
+    inputMaxHeight,
+    keyboardVerticalOffset,
+    safeTop,
+    safeBottom,
+  } = useResponsiveChat();
+
   const resolvedFriendName = useMemo(
     () => friendProfile?.name ?? friendName,
     [friendProfile?.name, friendName],
@@ -210,7 +292,6 @@ export default function DirectChatScreen({ navigation, route }) {
       });
       setDraft("");
     } catch (error) {
-      // A falta de notificacion global, mostramos alerta local
       Alert.alert("Error", "No pudimos enviar el mensaje. Intenta nuevamente.");
     }
   };
@@ -295,7 +376,14 @@ export default function DirectChatScreen({ navigation, route }) {
   if (!allowed) {
     return (
       <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background,
+            paddingTop: safeTop,
+            paddingBottom: safeBottom,
+          },
+        ]}
       >
         <StatusBar
           barStyle={colors.statusBarStyle}
@@ -313,7 +401,14 @@ export default function DirectChatScreen({ navigation, route }) {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: safeTop,
+          paddingBottom: safeBottom,
+        },
+      ]}
     >
       <StatusBar
         barStyle={colors.statusBarStyle}
@@ -321,25 +416,52 @@ export default function DirectChatScreen({ navigation, route }) {
       />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View style={[styles.header, { borderBottomColor: colors.muted }]}>
+        {/* HEADER RESPONSIVO */}
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: headerVerticalPadding,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.85}
           >
             <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>
+            <Text
+              style={[
+                styles.backText,
+                { color: colors.text, fontSize: baseFont },
+              ]}
+            >
               Volver
             </Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
+            <Text
+              style={[
+                styles.headerTitle,
+                { color: colors.text, fontSize: headerTitleFont },
+              ]}
+              numberOfLines={1}
+            >
               {resolvedFriendName}
             </Text>
-            <Text style={[styles.headerSubtitle, { color: colors.subText }]}>
+            <Text
+              style={[
+                styles.headerSubtitle,
+                { color: colors.subText, fontSize: headerSubtitleFont },
+              ]}
+              numberOfLines={1}
+            >
               {resolvedFriendEmail}
             </Text>
           </View>
@@ -365,18 +487,43 @@ export default function DirectChatScreen({ navigation, route }) {
           </View>
         </View>
 
+        {/* LISTA DE MENSAJES RESPONSIVA */}
         <FlatList
           ref={listRef}
           data={messages}
           inverted
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messagesContent}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.messagesContent,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: horizontalPadding,
+              paddingBottom: horizontalPadding / 2,
+            },
+          ]}
           renderItem={({ item }) => (
-            <MessageRow item={item} colors={colors} currentUser={user.uid} />
+            <MessageRow
+              item={item}
+              colors={colors}
+              currentUser={user.uid}
+              bubbleMaxWidth={bubbleMaxWidth}
+              baseFont={baseFont}
+            />
           )}
         />
 
-        <View style={[styles.composer, { borderTopColor: colors.muted }]}>
+        {/* BARRA DE TEXTO RESPONSIVA */}
+        <View
+          style={[
+            styles.composer,
+            {
+              borderTopColor: colors.muted,
+              paddingHorizontal: horizontalPadding,
+              paddingVertical: composerVerticalPadding,
+            },
+          ]}
+        >
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -384,7 +531,14 @@ export default function DirectChatScreen({ navigation, route }) {
             placeholderTextColor={colors.subText}
             style={[
               styles.input,
-              { color: colors.text, borderColor: colors.muted },
+              {
+                color: colors.text,
+                borderColor: colors.muted,
+                paddingHorizontal: isSmall ? 12 : 16,
+                paddingVertical: isSmall ? 8 : 10,
+                maxHeight: inputMaxHeight,
+                fontSize: baseFont,
+              },
             ]}
             multiline
           />
@@ -415,8 +569,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
     borderBottomWidth: 1,
     gap: 12,
   },
@@ -426,19 +578,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   backText: {
-    fontSize: 14,
     fontWeight: "500",
   },
   headerInfo: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
     fontWeight: "700",
   },
-  headerSubtitle: {
-    fontSize: 12,
-  },
+  headerSubtitle: {},
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
@@ -453,7 +601,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   messagesContent: {
-    padding: 20,
+    paddingBottom: 12,
     gap: 12,
   },
   messageRow: {
@@ -475,40 +623,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userBubble: {
-    maxWidth: "75%",
-    padding: 12,
     borderRadius: 16,
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    maxWidth: "75%",
-    padding: 12,
     borderRadius: 16,
     borderBottomLeftRadius: 4,
   },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  messageText: {},
   messageTime: {
-    fontSize: 11,
     marginTop: 6,
   },
   composer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderTopWidth: 1,
   },
   input: {
     flex: 1,
     borderWidth: 1,
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    maxHeight: 120,
   },
   sendButton: {
     width: 44,
