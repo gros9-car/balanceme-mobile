@@ -39,7 +39,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAppAlert } from '../context/AppAlertContext';
 
 
-// Pantalla de inicio de sesiÃ³n que valida credenciales y entra a la app.
+// Pantalla de inicio de sesión que valida credenciales y entra a la app.
 
 export default function LoginScreen({ navigation }) {
 
@@ -80,12 +80,11 @@ export default function LoginScreen({ navigation }) {
 
     if (!emailTrim) newErrors.email = 'El correo es requerido';
 
-    else if (!/\S+@\S+\.\S+/.test(emailTrim)) newErrors.email = 'Correo invÃ¡lido';
+    else if (!/\S+@\S+\.\S+/.test(emailTrim)) newErrors.email = 'Correo inválido';
 
-    if (!password) newErrors.password = 'La contraseÃ±a es requerida';
+    if (!password) newErrors.password = 'La contraseña es requerida';
 
-    else if (password.length < 6) newErrors.password = 'La contraseÃ±a debe tener al menos 6 caracteres';
-
+    else if (password.length < 6) newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) return;
@@ -100,7 +99,7 @@ export default function LoginScreen({ navigation }) {
 
       setIsLoading(false);
 
-      showAlert('Bienvenido', 'Inicio de sesion exitoso');
+      showAlert('Bienvenido', 'Inicio de sesión exitoso');
 
       navigation.navigate('Home');
 
@@ -126,7 +125,8 @@ export default function LoginScreen({ navigation }) {
 
         setErrors({});
 
-        Alert.alert('Error', 'Usuario o contraseÃ±a incorrecta');
+      
+         showAlert('Error', 'Usuario o contraseña incorrecta');
 
         return;
 
@@ -136,7 +136,7 @@ export default function LoginScreen({ navigation }) {
 
       if (error.code === 'auth/too-many-requests') {
 
-        Alert.alert('Error', 'Demasiados intentos. Intenta mas tarde.');
+        showAlert('Error', 'Demasiados intentos. Intenta mas tarde');
 
         return;
 
@@ -146,7 +146,7 @@ export default function LoginScreen({ navigation }) {
 
       if (error.code === 'auth/network-request-failed') {
 
-        Alert.alert('Error', 'Problema de red. Revisa tu conexion.');
+        showAlert('Error', 'Problema de red. Revisa tu conexión.');
 
         return;
 
@@ -154,7 +154,7 @@ export default function LoginScreen({ navigation }) {
 
 
 
-      Alert.alert('Error', 'No pudimos iniciar sesion.');
+      showAlert('Error', 'No pudimos iniciar sesión.');
 
     }
 
@@ -463,9 +463,20 @@ export default function LoginScreen({ navigation }) {
 
             </TouchableOpacity>
 
+            
+
           </View>
-
-
+          
+          <View style={[styles.loginLinkContainer, { marginTop: spacing }]}>
+          <TouchableOpacity
+            style={styles.knowUsLink}
+            onPress={() => navigation.navigate('AboutBalanceMe')}
+          >
+            <Text style={[styles.linkText, fontStyles.helper, { color: colors.accent }]}>
+              Conócenos
+            </Text>
+          </TouchableOpacity>
+          </View>
 
           <Text style={[styles.motivationalText, fontStyles.helper, { color: colors.subText }]}>Pequeños pasos crean grandes cambios.</Text>
 

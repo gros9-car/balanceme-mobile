@@ -20,27 +20,27 @@ export const HABIT_TAGS = [
   },
   {
     value: 'nutrition',
-    label: 'Alimentacion nutritiva',
+    label: 'Alimentación nutritiva',
     description: 'Plato balanceado o hidratacion adecuada.',
     aliases: ['alimentacion', 'nutricion'],
   },
   {
     value: 'mindfulness',
-    label: 'Mindfulness o respiracion',
-    description: 'Meditacion breve, respiraciones o pausa consciente.',
+    label: 'Mindfulness o respiración',
+    description: 'Meditación breve, respiraciones o pausa consciente.',
     aliases: ['mindfulness', 'respiracion'],
   },
   {
     value: 'gratitude',
-    label: 'Gratitud o reflexion',
+    label: 'Gratitud o reflexión',
     description: 'Registrar logros, agradecimientos o aprendizajes.',
-    aliases: ['gratitud', 'reflexion'],
+    aliases: ['gratitud', 'reflexión'],
   },
   {
     value: 'connection',
     label: 'Conexion social',
-    description: 'Conversacion significativa o compartir apoyo.',
-    aliases: ['social', 'companias'],
+    description: 'Conversación significativa o compartir apoyo.',
+    aliases: ['social', 'compañías'],
   },
   {
     value: 'rest',
@@ -57,20 +57,20 @@ export const HABIT_TAGS = [
   {
     value: 'creativity',
     label: 'Actividad creativa o foco',
-    description: 'Arte, musica, escritura o progreso personal.',
+    description: 'Arte, música, escritura o progreso personal.',
     aliases: ['creatividad', 'trabajo', 'productividad'],
   },
   {
     value: 'outdoors',
     label: 'Contacto con la naturaleza',
-    description: 'Jardineria, paseo o respirar aire libre.',
+    description: 'Jardinería, paseo o respirar aire libre.',
     aliases: ['naturaleza', 'exterior'],
   },
   {
     value: 'self_compassion',
-    label: 'Compasion contigo',
+    label: 'Compasión contigo',
     description: 'Autocuidado, palabras amables o ritual relajante.',
-    aliases: ['autocuidado', 'compasion'],
+    aliases: ['autocuidado', 'compasión'],
   },
 ];
 

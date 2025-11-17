@@ -71,342 +71,272 @@ const fuzzy = (text, keywords) => {
   return false;
 };
 
-// ---------------- Knowledge & responses ----------------
-const templates = [
-  'Gracias por compartirlo. Estoy aqui para escucharte.',
-  'Respira profundo unos segundos. Estoy contigo en esto.',
-  'Lo que sientes es valido. Estoy aqui para acompanarte.',
-];
-
-const bodyAreas = [
+// ---------------- Intents y flujos guiados para la app ----------------
+const appIntents = [
   {
-    area: 'hombros',
-    keywords: ['hombro', 'hombros', 'trapecio', 'trapecios', 'espalda alta'],
-    reply:
-      'Noto que mencionas tension en los hombros. Probemos ahora: 1) 3 respiraciones 4-4-6; 2) encoge hombros a las orejas 5s y suelta (x3); 3) inclina la cabeza a cada lado 15s. Quieres guia de 30s?',
-  },
-  {
-    area: 'cuello',
-    keywords: ['cuello', 'nuca', 'cervical'],
-    reply:
-      'Parece que hay tension en el cuello. Propongo: 1) barbilla al pecho 10s; 2) mira a la derecha e izquierda 10s; 3) oreja a hombro 15s por lado. Lo hacemos ahora?',
-  },
-  {
-    area: 'espalda',
-    keywords: ['espalda', 'lumbares', 'lumbar', 'dorsal'],
-    reply:
-      'Para la espalda: 1) postura neutra y 3 respiraciones profundas; 2) gato-vaca suave 5 repeticiones; 3) abraza tus rodillas 15s si es comodo. Te sirve intentarlo?',
-  },
-  {
-    area: 'mandibula',
-    keywords: ['mandibula', 'apretar dientes', 'bruxismo'],
-    reply:
-      'La mandibula cargada es comun con la tension. Prueba: separa suavemente los dientes; masajea cerca de las orejas 20s; respira 4-4-6 tres veces. Quieres mas ideas?',
-  },
-];
-
-const moodCategories = [
-  {
-    name: 'ansiedad',
+    id: 'about_app',
     keywords: [
-      'ansiedad',
-      'ansioso',
-      'ansiosa',
-      'angustia',
-      'nervioso',
-      'nerviosa',
-      'preocupado',
-      'preocupada',
-    ],
-    replies: [
-      'La ansiedad puede sentirse abrumadora. Probemos 3 respiraciones 4-4-6 ahora mismo.',
-      'Te acompano. Observa 5 cosas que ves, 4 que tocas y 3 sonidos.',
-      'Pausa breve: hombros abajo y mandibula suelta. Cual es el pensamiento mas insistente?',
+      'que es balanceme',
+      'que es la app',
+      'para que sirve la app',
+      'como funciona balanceme',
+      'balancito',
     ],
   },
   {
-    name: 'estres',
+    id: 'create_goal',
     keywords: [
-      'estres',
-      'estresado',
-      'estresada',
-      'presion',
-      'agotado',
-      'agotada',
-      'saturado',
-      'saturada',
-    ],
-    replies: [
-      'Parece mucha presion. Elige una tarea pequena de 2 minutos y empecemos.',
-      'Tomemos agua y 30s de respiracion. Que puedes delegar o posponer hoy?',
-      'Priorizamos: una cosa importante y una facil. Con cual vas primero?',
+      'crear meta',
+      'nueva meta',
+      'nuevo habito',
+      'nuevo hábito',
+      'objetivo',
+      'configurar meta',
     ],
   },
   {
-    name: 'tristeza',
-    keywords: ['triste', 'tristeza', 'bajon', 'deprim', 'llorar', 'solo', 'sola'],
-    replies: [
-      'Siento que te sientas asi. Nombrarlo ya es un paso. Que podria darte un poco de alivio ahora?',
-      'Gracias por compartirlo. Te gustaria escribir tres frases sobre lo que sientes?',
-      'Valido lo que sientes. Hay alguien o algo que te de consuelo?',
+    id: 'log_mood',
+    keywords: [
+      'registrar animo',
+      'registrar ánimo',
+      'estado de animo',
+      'estado de ánimo',
+      'como me siento',
+      'diario emocional',
     ],
   },
   {
-    name: 'enojo',
-    keywords: ['enojo', 'molesto', 'molesta', 'furioso', 'furiosa', 'rabia', 'ira'],
-    replies: [
-      'El enojo es senal de limites. Movamos el cuerpo 30s antes de responder. Que lo detono?',
-      'Tiene sentido que lo sientas. Quieres escribir un borrador sin enviarlo?',
-      'Respiremos y aclaremos limites: que necesitas pedir o proteger?',
+    id: 'view_report',
+    keywords: [
+      'ver reporte',
+      'reporte semanal',
+      'resumen',
+      'estadisticas',
+      'estadísticas',
+      'grafico',
+      'gráfico',
     ],
   },
   {
-    name: 'positivo',
-    keywords: ['bien', 'contento', 'contenta', 'agradecido', 'agradecida', 'feliz', 'alegre'],
-    replies: [
-      'Que bueno! Celebremos ese momento. Que lo hizo posible?',
-      'Excelente. Que habito pequeno ayuda a sostener esa sensacion?',
-      'Genial. Como puedes repetir lo que funciono hoy?',
+    id: 'notifications',
+    keywords: [
+      'recordatorio',
+      'notificacion',
+      'notificación',
+      'alarma',
+      'avisos',
+    ],
+  },
+  {
+    id: 'profile',
+    keywords: [
+      'perfil',
+      'cuenta',
+      'cerrar sesion',
+      'cerrar sesión',
+      'tema oscuro',
+      'modo oscuro',
+      'modo claro',
+      'configuracion',
+      'configuración',
     ],
   },
 ];
 
-const intents = {
-  crisis: [
-    'suicid',
-    'autoles',
-    'hacerme dano',
-    'hacerme daño',
-    'no quiero vivir',
-    'quitarme la vida',
-  ],
-  panic: [
-    'ataque de panico',
-    'ataque de pánico',
-    'hipervent',
-    'no puedo respirar',
-  ],
-  breathing_guide: [
-    'respirar',
-    'respiracion',
-    'respiración',
-    'guiame a respirar',
-    'ayudame a respirar',
-  ],
-  stretch_guide: [
-    'estirar',
-    'estiramiento',
-    'alongar',
-    'descontracturar',
-    'estirar hombros',
-    'estirar cuello',
-  ],
-  ask_steps: [
-    'como hago',
-    'como puedo',
-    'que puedo hacer',
-    'pasos',
-    'guia',
-    'ayudame',
-  ],
-  tips: ['tips', 'consejos', 'ideas', 'recomendaciones'],
-  plan: ['plan', 'rutina', 'propuesta', 'agenda'],
-  resources: [
-    'psicolog',
-    'terapia',
-    'profesional',
-    'hablar con alguien',
-    'ayuda profesional',
-  ],
-};
-
-const parseIntent = (t) => {
-  const hit = (arr) => arr.some((k) => fuzzy(t, [k]));
-  if (hit(intents.crisis)) return { type: 'crisis' };
-  if (hit(intents.panic)) return { type: 'panic' };
-  if (hit(intents.breathing_guide)) return { type: 'breathing_guide' };
-  if (hit(intents.stretch_guide)) return { type: 'stretch_guide' };
-  if (hit(intents.plan)) return { type: 'plan' };
-  if (hit(intents.tips)) return { type: 'tips' };
-  if (hit(intents.resources)) return { type: 'resources' };
-  if (hit(intents.ask_steps)) return { type: 'ask_steps' };
-
-  const m = t.match(
-    /(\d+)\s*(s|seg|min|mins|minuto|minutos|segundo|segundos)/,
-  );
-  const durationSec = m
-    ? m[2].startsWith('s')
-      ? parseInt(m[1], 10)
-      : parseInt(m[1], 10) * 60
-    : undefined;
-  return { type: 'none', durationSec };
+const flows = {
+  create_goal: {
+    start: 'askType',
+    nodes: {
+      askType: {
+        text:
+          'Perfecto, te ayudo a crear una meta. ¿Qué tipo de meta quieres crear? (por ejemplo: "hábito diario", "meta puntual" o "meta semanal")',
+        options: [
+          {
+            label: 'Hábito diario',
+            next: 'habitDaily',
+            keywords: ['habito', 'hábito', 'diario'],
+          },
+          {
+            label: 'Meta puntual',
+            next: 'singleGoal',
+            keywords: ['puntual', 'una vez'],
+          },
+          {
+            label: 'Meta semanal',
+            next: 'weekly',
+            keywords: ['semanal', 'semana'],
+          },
+        ],
+      },
+      habitDaily: {
+        text:
+          'Para crear un hábito diario:\n1) Ve a la sección "Metas".\n2) Toca el botón "Nueva meta".\n3) Elige el tipo "Hábito diario".\n4) Define nombre, frecuencia y horario.\n\nCuando termines, podrás marcar el hábito como completado cada día desde la misma pantalla.',
+        options: [],
+      },
+      singleGoal: {
+        text:
+          'Para crear una meta puntual:\n1) Ve a "Metas".\n2) Toca "Nueva meta".\n3) Selecciona "Meta puntual".\n4) Define qué quieres lograr y una fecha límite.\n\nAsí BalanceMe podrá recordarte y mostrar tu avance.',
+        options: [],
+      },
+      weekly: {
+        text:
+          'Para crear una meta semanal:\n1) Entra a "Metas".\n2) Pulsa "Nueva meta".\n3) Elige "Meta semanal".\n4) Indica cuántos días a la semana quieres cumplirla.\n\nTus reportes reflejarán cuántas veces la cumpliste cada semana.',
+        options: [],
+      },
+    },
+  },
+  log_mood: {
+    start: 'explain',
+    nodes: {
+      explain: {
+        text:
+          'Para registrar tu estado de ánimo:\n1) Ve a la sección "Ánimo" o "Diario".\n2) Elige el emoji o etiqueta que mejor te represente.\n3) (Opcional) Escribe una nota breve sobre lo que te pasó.\n\nAsí podrás ver cómo cambias con el tiempo en los reportes.',
+        options: [],
+      },
+    },
+  },
+  view_report: {
+    start: 'explain',
+    nodes: {
+      explain: {
+        text:
+          'Para ver tus reportes:\n1) Ve a la pestaña "Progreso" o "Reportes".\n2) Elige el rango de fechas (por ejemplo, esta semana).\n3) Revisa el gráfico de ánimo, hábitos cumplidos y metas avanzadas.\n\nSi quieres, dime qué quieres entender y te explico el gráfico.',
+        options: [],
+      },
+    },
+  },
 };
 
 // ---------------- Message generator ----------------
 const createMessageGenerator = () => {
-  let templateIndex = 0;
-  let lastReply = '';
-  const recent = [];
+  let currentFlowId = null;
+  let currentNodeId = null;
 
-  const remember = (reply) => {
-    recent.push(reply);
-    if (recent.length > 4) recent.shift();
-  };
-
-  const chooseVariant = (arr) => {
-    if (!arr || arr.length === 0) return '';
-    let choice = arr[Math.floor(Math.random() * arr.length)];
-    let guard = 0;
-    while (
-      arr.length > 1 &&
-      (recent.includes(choice) || choice === lastReply) &&
-      guard < 8
-    ) {
-      choice = arr[(templateIndex++) % arr.length];
-      guard++;
+  const findIntent = (textNorm) => {
+    for (const intent of appIntents) {
+      if (fuzzy(textNorm, intent.keywords)) return intent.id;
     }
-    return choice;
+    return null;
   };
 
-  const stopWords = new Set([
-    'yo',
-    'me',
-    'mi',
-    'mis',
-    'con',
-    'de',
-    'del',
-    'la',
-    'el',
-    'los',
-    'las',
-    'y',
-    'o',
-    'a',
-    'en',
-    'un',
-    'una',
-    'que',
-    'por',
-    'para',
-    'muy',
-    'mucho',
-    'tengo',
-    'siento',
-    'estoy',
-    'es',
-    'esta',
-    'esto',
-    'esa',
-    'ese',
-    'hoy',
-    'ahora',
-  ]);
+  const replyForIntent = (intentId) => {
+    switch (intentId) {
+      case 'about_app':
+        return (
+          'BalanceMe es una app para cuidar tu bienestar emocional.\n' +
+          'Con ella puedes:\n' +
+          '• Registrar cómo te sientes día a día.\n' +
+          '• Crear metas y hábitos saludables.\n' +
+          '• Ver reportes con tu progreso.\n\n' +
+          'Puedo guiarte para crear una meta, registrar tu ánimo o revisar tus reportes. ¿Qué te gustaría hacer?'
+        );
+      case 'notifications':
+        return (
+          'Para configurar recordatorios:\n' +
+          '1) Ve a la sección de "Configuración" o "Perfil".\n' +
+          '2) Entra a "Notificaciones" o "Recordatorios".\n' +
+          '3) Activa las alertas y ajusta horarios según tus metas.\n\n' +
+          'Así BalanceMe te avisará cuando sea momento de registrar tu ánimo o tus hábitos.'
+        );
+      case 'profile':
+        return (
+          'Desde tu perfil puedes:\n' +
+          '• Cambiar entre modo claro y oscuro.\n' +
+          '• Cerrar sesión.\n' +
+          '• Revisar datos de tu cuenta.\n\n' +
+          'Solo entra a "Perfil" desde el menú principal y ajusta lo que necesites.'
+        );
+      default:
+        return null;
+    }
+  };
 
-  const buildEcho = (raw) => {
-    const tokens = norm(raw).split(/\s+/).filter(Boolean);
-    const terms = [];
-    for (const t of tokens) {
-      if (t.length >= 4 && !stopWords.has(t) && !terms.includes(t)) {
-        terms.push(t);
+  const buildFlowReply = (node) => {
+    if (!node) {
+      return 'Hubo un problema al guiar el flujo. Intenta de nuevo, por favor.';
+    }
+    if (!node.options || node.options.length === 0) {
+      return node.text;
+    }
+    const optsText = node.options.map((o) => `• ${o.label}`).join('\n');
+    return `${node.text}\n\nOpciones:\n${optsText}`;
+  };
+
+  const startFlow = (flowId) => {
+    currentFlowId = flowId;
+    currentNodeId = flows[flowId].start;
+    const node = flows[flowId].nodes[currentNodeId];
+    return buildFlowReply(node);
+  };
+
+  const advanceFlow = (textNorm) => {
+    if (!currentFlowId || !currentNodeId) return null;
+    const flow = flows[currentFlowId];
+    const node = flow.nodes[currentNodeId];
+    if (!node || !node.options || node.options.length === 0) {
+      currentFlowId = null;
+      currentNodeId = null;
+      return null;
+    }
+
+    for (const opt of node.options) {
+      const kws = opt.keywords && opt.keywords.length ? opt.keywords : [opt.label];
+      if (fuzzy(textNorm, kws)) {
+        currentNodeId = opt.next;
+        const nextNode = flow.nodes[currentNodeId];
+        const reply = buildFlowReply(nextNode);
+        if (!nextNode.options || nextNode.options.length === 0) {
+          currentFlowId = null;
+          currentNodeId = null;
+        }
+        return reply;
       }
-      if (terms.length >= 2) break;
     }
-    if (terms.length === 0) return '';
-    if (terms.length === 1) return `Te leo: mencionas ${terms[0]}.`;
-    return `Te leo: mencionas ${terms[0]} y ${terms[1]}.`;
+
+    return (
+      'No me quedó claro qué opción elegiste.\n' +
+      'Puedes responder, por ejemplo, "hábito diario", "meta puntual" o "meta semanal".'
+    );
   };
+
+  const fallback = () =>
+    'Puedo ayudarte con:\n' +
+    '• Crear una meta u hábito\n' +
+    '• Registrar tu estado de ánimo\n' +
+    '• Ver tus reportes\n' +
+    '• Configurar notificaciones\n\n' +
+    'Escríbeme algo como: "quiero crear una meta" o "cómo registro mi ánimo".';
 
   return (input) => {
-    const text = norm(input);
-    if (!text) return 'Estoy aqui para conversar cuando lo necesites.';
-
-    const nlu = parseIntent(text);
-
-    // Seguridad
-    if (nlu.type === 'crisis') {
-      const reply =
-        'Siento que estes pasando por esto. Tu seguridad importa. Si estas en peligro o piensas hacerte dano, contacta emergencias o alguien de confianza ahora mismo. Puedo quedarme contigo y respirar juntos.';
-      lastReply = reply;
-      remember(reply);
-      return reply;
-    }
-    if (nlu.type === 'panic' || nlu.type === 'breathing_guide') {
-      const secs =
-        nlu.durationSec && nlu.durationSec >= 20 ? nlu.durationSec : 60;
-      const reply = `Hagamos respiracion 4-4-6 durante ${secs}s: inhala 4s, sosten 4s y exhala 6s. Mano en pecho y otra en abdomen. Dime si quieres otra ronda o grounding.`;
-      lastReply = reply;
-      remember(reply);
-      return reply;
+    const textNorm = norm(input);
+    if (!textNorm) {
+      return 'Cuéntame qué quieres hacer en la app y te guío paso a paso.';
     }
 
-    // Área corporal
-    const area = bodyAreas.find((a) => fuzzy(text, a.keywords));
-    if (area) {
-      let reply = area.reply;
-      if (reply === lastReply || recent.includes(reply)) {
-        reply = `${reply} Estoy contigo.`;
-      }
-      lastReply = reply;
-      remember(reply);
-      return reply;
+    // Si ya estamos en un flujo, intentamos avanzar
+    if (currentFlowId && currentNodeId) {
+      const flowReply = advanceFlow(textNorm);
+      if (flowReply) return flowReply;
     }
 
-    // Estirar / plan / tips / recursos
-    if (nlu.type === 'stretch_guide') {
-      const reply =
-        'Soltemos tension: 1) hombros a orejas 5s y suelta (x3); 2) oreja a hombro 15s por lado; 3) barbilla al pecho 10s. Como se siente?';
-      lastReply = reply;
-      remember(reply);
-      return reply;
+    // Detectar nuevo intent
+    const intentId = findIntent(textNorm);
+
+    if (intentId === 'create_goal') {
+      return startFlow('create_goal');
     }
-    if (nlu.type === 'plan') {
-      const reply =
-        'Plan breve: ahora 1) respirar 60s; luego 2) una tarea de 2 minutos; despues 3) un vaso de agua y check-in. Te parece?';
-      lastReply = reply;
-      remember(reply);
-      return reply;
+    if (intentId === 'log_mood') {
+      return startFlow('log_mood');
     }
-    if (nlu.type === 'tips' || nlu.type === 'ask_steps') {
-      const reply =
-        'Puedo ayudarte con: 1) Respirar 4-4-6 (1 min) 2) Estirar hombros/cuello (30s) 3) Grounding 5-4-3-2-1. Dime "respirar", "estirar" o "grounding".';
-      lastReply = reply;
-      remember(reply);
-      return reply;
-    }
-    if (nlu.type === 'resources') {
-      const reply =
-        'Buscar apoyo es valiente. Habla con alguien de confianza o con un profesional de salud mental. Si quieres, pensamos juntos como dar el primer paso.';
-      lastReply = reply;
-      remember(reply);
-      return reply;
+    if (intentId === 'view_report') {
+      return startFlow('view_report');
     }
 
-    // Emoción/mood
-    const mood = moodCategories.find((c) => fuzzy(text, c.keywords));
-    if (mood) {
-      let reply = chooseVariant(mood.replies);
-      const echo = buildEcho(text);
-      if (echo) reply = `${reply} ${echo}`.trim();
-      lastReply = reply;
-      remember(reply);
-      return reply;
-    }
+    const direct = replyForIntent(intentId);
+    if (direct) return direct;
 
-    // Plantilla de apoyo rotando sin repetir recientes
-    let base = templates[(templateIndex++) % templates.length];
-    let guard = 0;
-    while (
-      guard < templates.length + 2 &&
-      (recent.includes(base) || base === lastReply)
-    ) {
-      base = templates[(templateIndex++) % templates.length];
-      guard++;
-    }
-    const reply = `${base} Deseas que pensemos en un pequeno paso a seguir?`;
-    lastReply = reply;
-    remember(reply);
-    return reply;
+    // Fallback genérico
+    return fallback();
   };
 };
 
@@ -533,7 +463,7 @@ export default function SupportChatScreenClean({ navigation }) {
     {
       id: 'intro',
       role: 'bot',
-      text: `Hola, soy ${botName}. Gracias por acercarte. Cuentame, en que te gustaria trabajar hoy?`,
+      text: `Hola, soy ${botName}. Puedo guiarte para usar BalanceMe: crear metas, registrar tu ánimo o ver tus reportes. ¿Qué te gustaría hacer?`,
     },
   ]);
   const [draft, setDraft] = useState('');
@@ -565,7 +495,6 @@ export default function SupportChatScreenClean({ navigation }) {
     setMessages((prev) => [...prev, userMessage, botMessage]);
     setDraft('');
 
-    // pequeño timeout para asegurar que FlatList haya renderizado
     setTimeout(scrollToBottom, 50);
   };
 
@@ -597,7 +526,9 @@ export default function SupportChatScreenClean({ navigation }) {
         >
           <PageHeader
             title={botName}
-            subtitle="Tu compañero de apoyo emocional"
+            subtitle="Asistente de BalanceMe"
+            titleStyle={{ fontSize: headerTitleFont }}
+            subtitleStyle={{ fontSize: headerSubtitleFont }}
           />
         </View>
 
@@ -644,7 +575,7 @@ export default function SupportChatScreenClean({ navigation }) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Comparte lo que sientes ahora..."
+            placeholder="Cuéntame qué quieres hacer en BalanceMe..."
             placeholderTextColor={colors.subText}
             multiline
             style={[

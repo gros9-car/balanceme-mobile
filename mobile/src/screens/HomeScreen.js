@@ -42,7 +42,7 @@ const emojiCodePoints = {
 
 const quickActions = [
   {
-    title: 'Registrar animo',
+    title: 'Registrar ánimo',
     description: 'Elige hasta cinco emociones y recibe sugerencias personalizadas.',
     icon: 'happy-outline',
     color: '#8b5cf6',
@@ -56,7 +56,7 @@ const quickActions = [
     target: 'MoodInsights',
   },
   {
-    title: 'Habitos diarios',
+    title: 'Hábitos diarios',
     description: 'Lleva el control de tus micro rutinas para mantener el balance.',
     icon: 'calendar-outline',
     color: '#f97316',
@@ -64,28 +64,28 @@ const quickActions = [
   },
   {
     title: 'Progreso semanal',
-    description: 'Configura metas y revisa tu avance automaticamente.',
+    description: 'Configura metas y revisa tu avance automáticamente.',
     icon: 'analytics-outline',
     color: '#0ea5e9',
     target: 'Progress',
   },
   {
     title: 'Herramientas de autocuidado',
-    description: 'Accede a respiraciones, meditaciones y relajacion offline.',
+    description: 'Accede a respiraciones, meditaciones y relajación offline.',
     icon: 'leaf-outline',
     color: '#22c55e',
     target: 'SelfCare',
   },
   {
     title: 'Recursos de emergencia',
-    description: 'Acceso rapido a estrategias y contactos profesionales.',
+    description: 'Acceso rápido a estrategias y contactos profesionales.',
     icon: 'alert-circle-outline',
     color: '#ef4444',
     target: 'Emergency',
   },
   {
     title: 'Foro de ayuda',
-    description: 'Comparte experiencias y motivacion con la comunidad.',
+    description: 'Comparte experiencias y motivación con la comunidad.',
     icon: 'people-outline',
     color: '#ec4899',
     target: 'HelpForum',
@@ -109,20 +109,20 @@ const quickActions = [
 const emergencyContacts = [
   {
     id: 'linea-minsal',
-    label: 'Linea Salud Mental MINSAL *4141',
-    detail: 'Apoyo telefonico 24/7',
+    label: 'Línea Salud Mental MINSAL *4141',
+    detail: 'Apoyo telefónico 24/7',
     phone: '*4141',
   },
   {
     id: 'salud-responde',
     label: 'Salud Responde 600 360 7777',
-    detail: 'Orientacion en salud y crisis',
+    detail: 'Orientación en salud y crisis',
     phone: '6003607777',
   },
   {
     id: 'linea-libre',
-    label: 'Linea Libre 1515 (INJUV)',
-    detail: 'Apoyo para jovenes (10:00-22:00)',
+    label: 'Línea Libre 1515 (INJUV)',
+    detail: 'Apoyo para jóvenes (10:00-22:00)',
     phone: '1515',
   },
   {
@@ -132,7 +132,7 @@ const emergencyContacts = [
     url: 'https://www.quedate.cl',
   },
 ];
-console.log('soy dross')
+
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
@@ -391,7 +391,7 @@ useEffect(() => {
         return;
       }
       if (target === 'Exercises') {
-        showAlert('Muy pronto', 'Estamos preparando esta secci├│n para ti.');
+        showAlert('Muy pronto', 'Estamos preparando esta sección para ti.');
         return;
       }
       navigation.navigate(target);
@@ -623,7 +623,7 @@ useEffect(() => {
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('Habits')} activeOpacity={0.85}>
                 <Ionicons name="leaf-outline" size={22} color={colors.text} />
-                <Text style={[styles.menuOptionText, { color: colors.text }]}>Habitos</Text>
+                <Text style={[styles.menuOptionText, { color: colors.text }]}>Hábitos</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.subText} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('Journal')} activeOpacity={0.85}>
@@ -643,13 +643,13 @@ useEffect(() => {
               </TouchableOpacity>
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('Settings')} activeOpacity={0.85}>
                 <Ionicons name="settings-outline" size={22} color={colors.text} />
-                <Text style={[styles.menuOptionText, { color: colors.text }]}>Configuracion</Text>
+                <Text style={[styles.menuOptionText, { color: colors.text }]}>Configuración</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.subText} />
               </TouchableOpacity>
               <View style={[styles.menuDivider, { backgroundColor: colors.muted }]} />
               <TouchableOpacity style={styles.menuOption} onPress={() => handleMenuOption('logout')} activeOpacity={0.85}>
                 <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-                <Text style={[styles.menuOptionText, { color: colors.danger }]}>Cerrar sesion</Text>
+                <Text style={[styles.menuOptionText, { color: colors.danger }]}>Cerrar sesión</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.danger} />
               </TouchableOpacity>
             </View>

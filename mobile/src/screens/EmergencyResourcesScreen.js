@@ -54,55 +54,55 @@ const CRISIS_STRATEGIES = [
 
 const PROFESSIONAL_CONTACTS = [
   {
-    id: 'linea-minsal',
-    name: 'Linea Salud Mental MINSAL *4141',
+    id: 'línea-minsal',
+    name: 'Línea Salud Mental MINSAL *4141',
     location: 'Cobertura nacional (desde celulares)',
-    type: 'Prevencion del suicidio y crisis 24/7',
+    type: 'Prevención del suicidio y crisis 24/7',
     action: { kind: 'phone', value: '*4141', label: 'Llamar *4141' },
   },
   {
     id: 'salud-responde',
     name: 'Salud Responde MINSAL',
     location: 'Cobertura nacional',
-    type: 'Orientacion en salud y apoyo psicologico 24/7',
+    type: 'Orientación en salud y apoyo psicológico 24/7',
     action: { kind: 'phone', value: '6003607777', label: 'Llamar 600 360 7777' },
   },
   {
     id: 'emergencias-samu',
-    name: 'Emergencias Medicas SAMU',
+    name: 'Emergencias médicas SAMU',
     location: 'Cobertura nacional',
-    type: 'Servicios de emergencia medica general',
+    type: 'Servicios de emergencia médica general',
     action: { kind: 'phone', value: '131', label: 'Llamar 131' },
   },
   {
     id: 'emergencias-carabineros',
     name: 'Carabineros de Chile',
     location: 'Cobertura nacional',
-    type: 'Emergencias de seguridad publica',
+    type: 'Emergencias de seguridad pública',
     action: { kind: 'phone', value: '133', label: 'Llamar 133' },
   },
   {
     id: 'linea-libre',
-    name: 'Linea Libre Fono 1515 (INJUV)',
+    name: 'Línea Libre Fono 1515 (INJUV)',
     location: 'Cobertura nacional',
-    type: 'Apoyo psicologico para jovenes (lunes a sabado, 10:00 a 22:00 hrs)',
+    type: 'Apoyo psicológico para jóvenes (lunes a sábado, 10:00 a 22:00 hrs)',
     action: { kind: 'phone', value: '1515', label: 'Llamar 1515' },
   },
   {
     id: 'quedate-cl',
     name: 'Programa quedate.cl',
-    location: 'Red nacional (enfoque en Region Metropolitana)',
-    type: 'Prevencion del suicidio y promocion de salud mental',
+    location: 'Red nacional (enfoque en Región Metropolitana)',
+    type: 'Prevención del suicidio y promoción de salud mental',
     action: { kind: 'web', value: 'https://www.quedate.cl', label: 'Abrir quedate.cl' },
   },
   {
     id: 'centros-salud',
     name: 'Centros de Salud Familiar (CESFAM)',
     location: 'Cobertura nacional',
-    type: 'Atencion primaria y derivacion en salud mental (requiere inscripcion)',
+    type: 'Atención primaria y derivación en salud mental (requiere inscripción)',
     action: {
       kind: 'info',
-      value: 'Acercate al CESFAM mas cercano o llama a tu municipio para obtener informacion de contacto.',
+      value: 'Acércate al CESFAM más cercano o llama a tu municipio para obtener información de contacto.',
       label: 'Ver indicaciones',
     },
   },
@@ -119,7 +119,8 @@ const EmergencyResourcesScreen = ({ navigation }) => {
 
     if (contact.action.kind === 'phone') {
       const normalized = contact.action.value.replace(/\s+/g, '');
-      const url = `tel:${normalized}`;
+      const encodedNumber = encodeURIComponent(normalized);
+      const url = `tel:${encodedNumber}`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);

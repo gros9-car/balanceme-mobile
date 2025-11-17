@@ -13,23 +13,30 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { updateProfile } from 'firebase/auth';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  setDoc,
+} from 'firebase/firestore';
+import { deleteUser, updateProfile } from 'firebase/auth';
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
+import { useAppAlert } from '../context/AppAlertContext';
 
-// Renderiza una fila informativa del perfil si existe un valor para mostrar.
 const ProfileRow = ({ icon, label, value, colors }) => {
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
 
   return (
     <View style={styles.row}>
-      <View style={[styles.rowIcon, { backgroundColor: colors.muted }]}> 
+      <View style={[styles.rowIcon, { backgroundColor: colors.muted }]}>
         <Ionicons name={icon} size={18} color={colors.primary} />
       </View>
       <View style={styles.rowContent}>
@@ -40,28 +47,26 @@ const ProfileRow = ({ icon, label, value, colors }) => {
   );
 };
 
-// Pantalla de perfil que sincroniza datos del usuario y permite editar nombre y foto.
 export default function ProfileScreen({ navigation }) {
   const { colors, effectiveTheme } = useTheme();
+  const { showAlert } = useAppAlert();
   const user = auth.currentUser;
+
   const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =
     useResponsiveLayout({ maxContentWidth: 920, horizontalFactor: 0.06 });
+
   const contentWidthStyle = useMemo(
     () => ({
       width: '100%',
       maxWidth: maxContentWidth,
       alignSelf: 'center',
     }),
-    [maxContentWidth],
+    [maxContentWidth]
   );
 
   const fallbackName = useMemo(() => {
-    if (user?.displayName?.trim()) {
-      return user.displayName.trim();
-    }
-    if (user?.email?.trim()) {
-      return user.email.trim().split('@')[0];
-    }
+    if (user?.displayName?.trim()) return user.displayName.trim();
+    if (user?.email?.trim()) return user.email.trim().split('@')[0];
     return 'Sin nombre';
   }, [user?.displayName, user?.email]);
 
@@ -70,15 +75,13 @@ export default function ProfileScreen({ navigation }) {
   const [pendingName, setPendingName] = useState(fallbackName);
   const [isEditingName, setIsEditingName] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
-    // Descarga los datos guardados en Firestore y sincroniza nombre/foto locales.
     let isMounted = true;
 
     const fetchUserProfile = async () => {
-      if (!user?.uid) {
-        return;
-      }
+      if (!user?.uid) return;
 
       try {
         const profileRef = doc(db, 'users', user.uid);
@@ -88,17 +91,12 @@ export default function ProfileScreen({ navigation }) {
           const name = typeof data?.name === 'string' ? data.name.trim() : '';
           const photo = typeof data?.photoURL === 'string' ? data.photoURL.trim() : '';
 
-          if (isMounted && name) {
-            setProfileName(name);
-          }
-          if (isMounted && photo) {
-            setProfilePhoto(photo);
-          }
+          if (isMounted && name) setProfileName(name);
+          if (isMounted && photo) setProfilePhoto(photo);
+
           return;
         }
-      } catch (error) {
-        // No necesitamos hacer nada especial si falla la carga
-      }
+      } catch (error) {}
 
       if (isMounted) {
         setProfileName(fallbackName);
@@ -107,36 +105,31 @@ export default function ProfileScreen({ navigation }) {
     };
 
     fetchUserProfile();
-
     return () => {
       isMounted = false;
     };
   }, [user?.uid, user?.photoURL, fallbackName]);
 
   useEffect(() => {
-    // Mantiene el input en modo edición alineado al nombre oficial.
     setPendingName(profileName);
   }, [profileName]);
 
-  // Obtiene la fecha de creación de la cuenta en formato local.
   const joinDate = useMemo(() => {
     const creationTime = user?.metadata?.creationTime;
-    if (!creationTime) {
-      return null;
-    }
+    if (!creationTime) return null;
+
     const date = new Date(creationTime);
     return date.toLocaleDateString();
   }, [user?.metadata?.creationTime]);
 
-  const moodText = effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu día';
+  const moodText =
+    effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu día';
+
   const avatarLetter = profileName?.charAt(0)?.toUpperCase() ?? '?';
 
-  // Guarda el nuevo nombre tanto en Firestore como en Firebase Auth.
   const handleSaveName = async () => {
     const normalized = pendingName.trim();
-    if (!user?.uid) {
-      return;
-    }
+    if (!user?.uid) return;
     if (!normalized) {
       Alert.alert('Nombre requerido', 'Ingresa un nombre válido.');
       return;
@@ -147,9 +140,11 @@ export default function ProfileScreen({ navigation }) {
     }
 
     setSavingName(true);
+
     try {
       await setDoc(doc(db, 'users', user.uid), { name: normalized }, { merge: true });
       await updateProfile(user, { displayName: normalized });
+
       setProfileName(normalized);
       setIsEditingName(false);
     } catch (error) {
@@ -159,10 +154,68 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  // Cancela el modo edición y restaura el valor original.
   const handleCancelNameEdit = () => {
     setPendingName(profileName);
     setIsEditingName(false);
+  };
+
+  const deleteCollectionInBatches = async (collectionRef, batchSize = 200) => {
+    while (true) {
+      const snapshot = await getDocs(query(collectionRef, limit(batchSize)));
+      if (snapshot.empty) break;
+
+      const deletions = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
+      await Promise.all(deletions);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?.uid || deletingAccount) return;
+
+    showAlert(
+      'Eliminar cuenta',
+      'Esta acción borrará tu cuenta y tus datos emocionales.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              const uid = user.uid;
+
+              const refs = [
+                'moods',
+                'habits',
+                'journal',
+                'goals',
+                'goalSnapshots',
+                'weeklyReports',
+                'friendships',
+              ].map((col) => collection(db, 'users', uid, col));
+
+              for (const ref of refs) await deleteCollectionInBatches(ref);
+
+              await deleteDoc(doc(db, 'users', uid));
+
+              await deleteUser(user);
+
+              showAlert({
+                title: 'Cuenta eliminada',
+                message: 'Tu cuenta fue borrada.',
+                onConfirm: () =>
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
+              });
+            } catch (error) {
+              showAlert({ title: 'Error', message: 'No pudimos eliminar tu cuenta.' });
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!user) {
@@ -174,14 +227,11 @@ export default function ProfileScreen({ navigation }) {
         ]}
       >
         <StatusBar barStyle={colors.statusBarStyle} />
-        <View
-          style={[
-            styles.emptyState,
-            { paddingHorizontal: horizontalPadding, paddingVertical: verticalPadding },
-          ]}
-        >
+        <View style={[styles.emptyState, { paddingHorizontal: horizontalPadding }]}>
           <Ionicons name="lock-closed-outline" size={32} color={colors.subText} />
-          <Text style={[styles.emptyText, { color: colors.subText }]}>Debes iniciar sesion para ver tu perfil.</Text>
+          <Text style={[styles.emptyText, { color: colors.subText }]}>
+            Debes iniciar sesión para ver tu perfil.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -195,6 +245,7 @@ export default function ProfileScreen({ navigation }) {
       ]}
     >
       <StatusBar barStyle={colors.statusBarStyle} />
+
       <View
         style={[
           styles.topBarContainer,
@@ -205,93 +256,129 @@ export default function ProfileScreen({ navigation }) {
         ]}
       >
         <View style={contentWidthStyle}>
-          <PageHeader
-            title="Perfil"
-            subtitle="Revisa y actualiza tus datos personales."
-          />
+          <PageHeader title="Perfil" subtitle="Revisa y actualiza tus datos personales." />
         </View>
       </View>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
           {
             paddingHorizontal: horizontalPadding,
-            paddingTop: verticalPadding,
+            paddingTop: 8, // REDUCIDO
             paddingBottom: verticalPadding,
           },
         ]}
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
           <View
-            style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline }]}
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, shadowColor: colors.outline },
+            ]}
           >
-          <View
-            style={[styles.avatar, profilePhoto ? styles.avatarWithBorder : { backgroundColor: colors.primary }]}
-          >
-            {profilePhoto ? (
-              <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
-            ) : (
-              <Text style={[styles.avatarText, { color: colors.primaryContrast }]}>{avatarLetter}</Text>
-            )}
-          </View>
+            <View
+              style={[
+                styles.avatar,
+                profilePhoto ? styles.avatarWithBorder : { backgroundColor: colors.primary },
+              ]}
+            >
+              {profilePhoto ? (
+                <Image source={{ uri: profilePhoto }} style={styles.avatarImage} />
+              ) : (
+                <Text style={[styles.avatarText, { color: colors.primaryContrast }]}>
+                  {avatarLetter}
+                </Text>
+              )}
+            </View>
 
-          {isEditingName ? (
-            <View style={styles.editContainer}>
-              <TextInput
-                value={pendingName}
-                onChangeText={setPendingName}
-                placeholder="Tu nombre"
-                placeholderTextColor={colors.subText}
-                style={[styles.editInput, { borderColor: colors.muted, color: colors.text }]}
-                autoFocus
-              />
-              <View style={styles.editActions}>
+            {isEditingName ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  value={pendingName}
+                  onChangeText={setPendingName}
+                  placeholder="Tu nombre"
+                  placeholderTextColor={colors.subText}
+                  style={[styles.editInput, { borderColor: colors.muted, color: colors.text }]}
+                  autoFocus
+                />
+                <View style={styles.editActions}>
+                  <TouchableOpacity
+                    style={[styles.editActionButton, { borderColor: colors.muted }]}
+                    onPress={handleCancelNameEdit}
+                    disabled={savingName}
+                  >
+                    <Text style={[styles.editActionText, { color: colors.subText }]}>
+                      Cancelar
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.editActionButton,
+                      { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={handleSaveName}
+                    disabled={savingName}
+                  >
+                    {savingName ? (
+                      <ActivityIndicator size="small" color={colors.primaryContrast} />
+                    ) : (
+                      <Text
+                        style={[styles.editActionText, { color: colors.primaryContrast }]}
+                      >
+                        Guardar
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.nameRow}>
+                <Text style={[styles.name, { color: colors.text }]}>{profileName}</Text>
                 <TouchableOpacity
-                  style={[styles.editActionButton, { borderColor: colors.muted }]}
-                  onPress={handleCancelNameEdit}
-                  disabled={savingName}
-                  activeOpacity={0.8}
+                  style={[styles.editButton, { backgroundColor: colors.muted }]}
+                  onPress={() => setIsEditingName(true)}
                 >
-                  <Text style={[styles.editActionText, { color: colors.subText }]}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.editActionButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={handleSaveName}
-                  disabled={savingName}
-                  activeOpacity={0.8}
-                >
-                  {savingName ? (
-                    <ActivityIndicator size="small" color={colors.primaryContrast} />
-                  ) : (
-                    <Text style={[styles.editActionText, { color: colors.primaryContrast }]}>Guardar</Text>
-                  )}
+                  <Ionicons name="create-outline" size={16} color={colors.text} />
                 </TouchableOpacity>
               </View>
-            </View>
-          ) : (
-            <View style={styles.nameRow}>
-              <Text style={[styles.name, { color: colors.text }]}>{profileName}</Text>
-              <TouchableOpacity
-                style={[styles.editButton, { backgroundColor: colors.muted }]}
-                onPress={() => setIsEditingName(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="create-outline" size={16} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-          )}
+            )}
 
-          <Text style={[styles.caption, { color: colors.subText }]}>{moodText}</Text>
-        </View>
+            <Text style={[styles.caption, { color: colors.subText }]}>{moodText}</Text>
+          </View>
 
-        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.muted }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de la cuenta</Text>
-          <ProfileRow icon="mail-outline" label="Correo" value={user.email} colors={colors} />
-          <ProfileRow icon="person-circle-outline" label="UID" value={user.uid} colors={colors} />
-          <ProfileRow icon="calendar-outline" label="Miembro desde" value={joinDate} colors={colors} />
-        </View>
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de la cuenta</Text>
+
+            <ProfileRow icon="mail-outline" label="Correo" value={user.email} colors={colors} />
+            <ProfileRow icon="person-circle-outline" label="UID" value={user.uid} colors={colors} />
+            <ProfileRow icon="calendar-outline" label="Miembro desde" value={joinDate} colors={colors} />
+
+            <TouchableOpacity
+              style={[
+                styles.deleteButton,
+                {
+                  borderColor: colors.danger,
+                  backgroundColor: effectiveTheme === 'dark' ? '#1f0a0a' : '#fef2f2',
+                },
+              ]}
+              onPress={handleDeleteAccount}
+              disabled={deletingAccount}
+            >
+              {deletingAccount ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <View style={styles.deleteContent}>
+                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  <Text style={[styles.deleteText, { color: colors.danger }]}>
+                    Eliminar mi cuenta
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -313,24 +400,26 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 20,
   },
+
+  // 🔥 AJUSTADO PARA REDUCIR ESPACIO ENTRE TÍTULO Y NOMBRE
   card: {
     alignItems: 'center',
     borderRadius: 24,
-    paddingVertical: 32,
+    paddingVertical: 20, // antes 32
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 12, // antes 16
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 12,
     elevation: 6,
   },
+
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     overflow: 'hidden',
   },
   avatarWithBorder: {
@@ -345,6 +434,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '700',
   },
+
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,6 +447,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   editContainer: {
     width: '100%',
     gap: 12,
@@ -387,6 +478,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
   name: {
     fontSize: 24,
     fontWeight: '700',
@@ -395,6 +487,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
   section: {
     borderWidth: 1,
     borderRadius: 24,
@@ -405,6 +498,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+
+  deleteButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,6 +543,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+
   emptyState: {
     flex: 1,
     alignItems: 'center',

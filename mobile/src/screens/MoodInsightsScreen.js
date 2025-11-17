@@ -61,9 +61,9 @@ const computeMoodScore = (entry) => {
 // 3 categorías: Semana difícil, Semana normal, Buena semana
 const scoreToLabel = (score) => {
   const s = Math.max(0, Math.min(100, score));
-  if (s <= 33) return 'Semana difícil';
-  if (s <= 66) return 'Semana normal';
-  return 'Buena semana';
+  if (s <= 33) return 'Difícil';
+  if (s <= 66) return 'Normal';
+  return 'Bueno';
 };
 
 const buildDailyStatsMap = (entries) => {
@@ -136,14 +136,14 @@ const buildLast8WeeksSeries = (entries) => {
   });
 
   const labels = [
-    'Esta semana',
-    'Hace 1 semana',
-    'Hace 2 semanas',
-    'Hace 3 semanas',
-    'Hace 4 semanas',
-    'Hace 5 semanas',
-    'Hace 6 semanas',
-    'Hace 7 semanas',
+    'Hoy',
+    'Hace 1 día',
+    'Hace 2 días',
+    'Hace 3 días',
+    'Hace 4 días',
+    'Hace 5 días',
+    'Hace 6 días',
+    'Hace 7 días',
   ];
 
   // De más antigua a más reciente (reverse)
@@ -552,10 +552,10 @@ const MoodInsightsScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* ÚLTIMAS 8 SEMANAS */}
+              {/* ÚLTIMOS 8 días */}
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Tendencia de las últimas semanas
+                  Tendencia de los últimos días
                 </Text>
                 <Text
                   style={[
@@ -563,7 +563,7 @@ const MoodInsightsScreen = ({ navigation }) => {
                     { color: colors.subText },
                   ]}
                 >
-                  Si en una semana no registraste emociones, se muestra como
+                  Si en un día no registraste emociones, se muestra como
                   "Sin registro".
                 </Text>
 

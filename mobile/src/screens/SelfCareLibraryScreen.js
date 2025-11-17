@@ -17,21 +17,21 @@ import PageHeader from '../components/PageHeader';
 const BREATHING_EXERCISES = [
   {
     id: 'box',
-    title: 'Respiracion cuadrada',
+    title: 'Respiración cuadrada',
     duration: '4 minutos',
-    focus: 'Calma rapida y estabilidad',
+    focus: 'Calma rápida y estabilidad',
     steps: [
       'Inhala por la nariz contando cuatro segundos.',
       'Mantiene el aire en los pulmones durante cuatro segundos.',
       'Exhala por la boca otros cuatro segundos.',
-      'Permanece con los pulmones vacios por cuatro segundos y repite el ciclo.',
+      'Permanece con los pulmones vacíos por cuatro segundos y repite el ciclo.',
     ],
   },
   {
     id: '478',
-    title: 'Respiracion 4-7-8',
+    title: 'Respiración 4-7-8',
     duration: '3 minutos',
-    focus: 'Preparacion para el descanso',
+    focus: 'Preparación para el descanso',
     steps: [
       'Coloca la lengua detras de los dientes superiores.',
       'Inhala por la nariz contando cuatro segundos.',
@@ -41,9 +41,9 @@ const BREATHING_EXERCISES = [
   },
   {
     id: 'coherence',
-    title: 'Respiracion coherente',
+    title: 'Respiración coherente',
     duration: '5 minutos',
-    focus: 'Ritmo cardiaco equilibrado',
+    focus: 'Ritmo cardíaco equilibrado',
     steps: [
       'Inhala por la nariz durante cinco segundos.',
       'Exhala por la boca durante cinco segundos.',
@@ -52,7 +52,7 @@ const BREATHING_EXERCISES = [
   },
   {
     id: 'alternate',
-    title: 'Respiracion alternada',
+    title: 'Respiración alternada',
     duration: '6 minutos',
     focus: 'Claridad y enfoque mental',
     steps: [
@@ -63,9 +63,9 @@ const BREATHING_EXERCISES = [
   },
   {
     id: 'diaphragmatic',
-    title: 'Respiracion diafragmatica',
+    title: 'Respiración diafragmática',
     duration: '7 minutos',
-    focus: 'Liberar tension corporal',
+    focus: 'Liberar tensión corporal',
     steps: [
       'Coloca una mano en el pecho y otra sobre el abdomen.',
       'Inhala por la nariz inflando el abdomen y manteniendo el pecho relajado.',
@@ -78,19 +78,19 @@ const BREATHING_EXERCISES = [
 const MEDITATIONS = [
   {
     id: 'meditation-5',
-    title: 'Meditacion guiada breve',
+    title: 'Meditación guiada breve',
     duration: '5 minutos',
-    summary: 'Enfoca tu atencion en la respiracion y regresa cuando la mente divague.',
+    summary: 'Enfoca tu atención en la respiración y regresa cuando la mente divague.',
     description:
-      'Busca una postura comoda, cierra los ojos y sigue el ritmo de la respiracion. Cuando aparezca un pensamiento, reconocelo y vuelve a la respiracion sin juicio.',
+      'Busca una postura cómoda, cierra los ojos y sigue el ritmo de la respiración. Cuando aparezca un pensamiento, reconócelo y vuelve a la respiración sin juicio.',
   },
   {
     id: 'meditation-10',
-    title: 'Meditacion de compasion',
+    title: 'Meditación de compasión',
     duration: '10 minutos',
     summary: 'Cultiva amabilidad contigo misma y luego hacia otras personas.',
     description:
-      'Inicia deseandote bienestar: “Que este en paz, que este a salvo, que este en equilibrio”. Luego extiende el mismo deseo a personas cercanas y finalmente a toda la comunidad.',
+      'Inicia deseándote bienestar: “Que esté en paz, que esté a salvo, que esté en equilibrio”. Luego extiende el mismo deseo a personas cercanas y finalmente a toda la comunidad.',
   },
   {
     id: 'meditation-15',
@@ -105,24 +105,24 @@ const MEDITATIONS = [
 const RELAXATION_TECHNIQUES = [
   {
     id: 'pmr-seated',
-    title: 'Relajacion progresiva sentada',
+    title: 'Relajación progresiva sentada',
     duration: '8 minutos',
-    summary: 'Practica gradualmente desde los pies hasta el rostro para soltar tension.',
+    summary: 'Practica gradualmente desde los pies hasta el rostro para soltar tensión.',
     steps: [
-      'Sientate con la espalda recta y los pies firmes en el suelo.',
-      'Tensa los musculos de los pies durante cinco segundos y libera de golpe.',
+      'Siéntate con la espalda recta y los pies firmes en el suelo.',
+      'Tensa los músculos de los pies durante cinco segundos y libera de golpe.',
       'Continua con pantorrillas, muslos, abdomen, manos, brazos y rostro.',
       'Respira profundo entre cada zona para notar la diferencia.',
     ],
   },
   {
     id: 'pmr-lying',
-    title: 'Relajacion progresiva acostada',
+    title: 'Relajación progresiva acostada',
     duration: '12 minutos',
     summary: 'Ideal antes de dormir o posterior a una jornada demandante.',
     steps: [
-      'Acuestate boca arriba con los brazos a los costados y las palmas hacia arriba.',
-      'Tensa cada grupo muscular al inhalar y sueltalo al exhalar, avanzando desde los pies hasta la cabeza.',
+      'Acuéstate boca arriba con los brazos a los costados y las palmas hacia arriba.',
+      'Tensa cada grupo muscular al inhalar y suéltalo al exhalar, avanzando desde los pies hasta la cabeza.',
       'Permanece dos minutos en silencio prestando atencion al ritmo de tu respiracion.',
     ],
   },
@@ -160,6 +160,7 @@ const BreathingCard = ({
         </Text>
       </TouchableOpacity>
     </View>
+
     {isActive ? (
       <View style={[styles.stepBox, { borderColor: colors.primary + '55' }]}>
         <Text style={[styles.stepLabel, { color: colors.primary }]}>
@@ -190,14 +191,23 @@ const ExpandableCard = ({ title, subtitle, children, colors }) => {
         onPress={() => setOpen((prev) => !prev)}
         activeOpacity={0.85}
       >
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
           {subtitle ? (
             <Text style={[styles.cardSubtitle, { color: colors.subText }]}>{subtitle}</Text>
           ) : null}
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.subText} />
+
+        {/* 🔥 Caja uniforme para las flechas */}
+        <View style={styles.chevronBox}>
+          <Ionicons
+            name={open ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.subText}
+          />
+        </View>
       </TouchableOpacity>
+
       {open ? <View style={styles.cardBody}>{children}</View> : null}
     </View>
   );
@@ -240,9 +250,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
   };
 
   const handleNext = () => {
-    if (!currentExercise) {
-      return;
-    }
+    if (!currentExercise) return;
     if (stepIndex + 1 >= currentExercise.steps.length) {
       setActiveExercise(null);
       setStepIndex(0);
@@ -254,6 +262,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
+
       <View style={{ paddingHorizontal: horizontalPadding, paddingVertical: 16 }}>
         <PageHeader
           title="Biblioteca de autocuidado"
@@ -266,15 +275,17 @@ const SelfCareLibraryScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="always"
       >
+        {/* --- Sección respiración --- */}
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="leaf-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Respiracion guiada</Text>
             <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
-              Cinco ejercicios seleccionados para regular tu sistema nervioso sin necesidad de conexion.
+              Cinco ejercicios seleccionados para regular tu sistema nervioso sin necesidad de conexión.
             </Text>
           </View>
         </View>
+
         {BREATHING_EXERCISES.map((exercise) => (
           <BreathingCard
             key={exercise.id}
@@ -288,6 +299,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
           />
         ))}
 
+        {/* --- Sección meditaciones --- */}
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>
@@ -297,6 +309,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
+
         {MEDITATIONS.map((item) => (
           <ExpandableCard
             key={item.id}
@@ -308,6 +321,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
           </ExpandableCard>
         ))}
 
+        {/* --- Sección relajación progresiva --- */}
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="body-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>
@@ -317,6 +331,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
+
         {RELAXATION_TECHNIQUES.map((item) => (
           <ExpandableCard
             key={item.id}
@@ -339,6 +354,10 @@ const SelfCareLibraryScreen = ({ navigation }) => {
 
 export default SelfCareLibraryScreen;
 
+/* -------------------------------- */
+/* ----------- ESTILOS ------------ */
+/* -------------------------------- */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -348,6 +367,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 16,
   },
+
   sectionIntro: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -367,6 +387,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 12,
   },
+
   card: {
     borderWidth: 1,
     borderRadius: 18,
@@ -374,11 +395,22 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 12,
   },
+
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+
+  /* 🔥 Caja uniforme para flechas */
+  chevronBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   cardTitle: {
     fontSize: 15,
     fontWeight: '600',
@@ -390,6 +422,7 @@ const styles = StyleSheet.create({
   cardBody: {
     gap: 10,
   },
+
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -402,6 +435,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+
   stepBox: {
     borderWidth: 1,
     borderRadius: 14,
@@ -428,6 +462,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+
   listRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

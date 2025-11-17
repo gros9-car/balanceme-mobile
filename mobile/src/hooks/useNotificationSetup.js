@@ -1,6 +1,10 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+
+import { db } from "../screens/firebase/config";
 
 let ensureChannelPromise;
 let permissionGranted = false;
@@ -51,6 +55,49 @@ const requestPermissionsAsync = async () => {
   return permissionGranted;
 };
 
+// Registra el dispositivo para recibir notificaciones push de Expo y devuelve el token.
+export const registerForPushNotificationsAsync = async () => {
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") {
+    return null;
+  }
+
+  const projectId =
+    Constants?.expoConfig?.extra?.eas?.projectId ||
+    Constants?.easConfig?.projectId;
+
+  const tokenResponse = await Notifications.getExpoPushTokenAsync(
+    projectId ? { projectId } : undefined,
+  );
+
+  return tokenResponse?.data ?? null;
+};
+
+// Guarda/actualiza el token push en Firestore bajo el usuario autenticado.
+const savePushTokenForUserAsync = async (userUid, token) => {
+  if (!userUid || !token) {
+    return;
+  }
+
+  const ref = doc(db, "users", userUid, "devices", token);
+  await setDoc(
+    ref,
+    {
+      token,
+      platform: Platform.OS,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+};
+
 // Envía una notificación local asegurando permisos y canal.
 export const sendLocalNotification = async ({ title, body, data }) => {
   if (!permissionGranted) {
@@ -73,15 +120,42 @@ export const sendLocalNotification = async ({ title, body, data }) => {
   });
 };
 
-// Hook que inicializa permisos de notificación y expone su estado.
-export const useNotificationSetup = () => {
+// Hook que inicializa permisos de notificación, registra el token y expone su estado.
+export const useNotificationSetup = (userUid) => {
   const [hasPermission, setHasPermission] = useState(null);
 
   useEffect(() => {
-    requestPermissionsAsync().then((granted) => {
+    let isMounted = true;
+
+    const setup = async () => {
+      const granted = await requestPermissionsAsync();
+      if (!isMounted) {
+        return;
+      }
+
       setHasPermission(granted);
-    });
-  }, []);
+
+      if (!granted || !userUid) {
+        return;
+      }
+
+      try {
+        await ensureAndroidChannel();
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await savePushTokenForUserAsync(userUid, token);
+        }
+      } catch {
+        // En caso de error al registrar el token, seguimos sin bloquear la app.
+      }
+    };
+
+    setup();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userUid]);
 
   return hasPermission;
 };

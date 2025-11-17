@@ -144,8 +144,8 @@ export default function HabitsScreen({ navigation }) {
   const handleSave = async () => {
     if (!user?.uid) {
       showAlert({
-        title: 'Sesion requerida',
-        message: 'Inicia sesion para registrar tus habitos.',
+        title: 'Sesión requerida',
+        message: 'Inicia sesión para registrar tus hábitos.',
         onConfirm: () => {
           navigation?.replace?.('Login');
         },
@@ -156,8 +156,8 @@ export default function HabitsScreen({ navigation }) {
     const trimmed = draft.trim();
     if (!selectedHabits.length && !trimmed) {
       showAlert({
-        title: 'Seleccion requerida',
-        message: 'Elige al menos un habito o escribe una nota.',
+        title: 'Selección requerida',
+        message: 'Elige al menos un hábito o escribe una nota.',
       });
       return;
     }
@@ -165,7 +165,7 @@ export default function HabitsScreen({ navigation }) {
     if (hasTodayEntry) {
       showAlert({
         title: 'Registro existente',
-        message: 'Solo puedes registrar tus habitos una vez por dia.',
+        message: 'Solo puedes registrar tus hábitos una vez por día.',
       });
       return;
     }
@@ -175,7 +175,7 @@ export default function HabitsScreen({ navigation }) {
       .filter(Boolean);
     const contentParts = [];
     if (presetLabels.length) {
-      contentParts.push(`Habitos realizados: ${presetLabels.join(', ')}`);
+      contentParts.push(`Hábitos realizados: ${presetLabels.join(', ')}`);
     }
     if (trimmed) {
       contentParts.push(trimmed);
@@ -197,13 +197,13 @@ export default function HabitsScreen({ navigation }) {
       setDraft('');
       setSelectedHabits([]);
       showAlert({
-        title: 'Habitos registrados',
+        title: 'Hábitos registrados',
         message: 'Tu entrada fue analizada y guardada correctamente.',
       });
     } catch (error) {
       showAlert({
         title: 'Error',
-        message: 'No pudimos guardar tus habitos. Intenta nuevamente.',
+        message: 'No pudimos guardar tus hábitos. Intenta nuevamente.',
       });
     } finally {
       setSaving(false);
@@ -235,8 +235,8 @@ export default function HabitsScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <PageHeader
-          title="Habitos diarios"
-          subtitle="Escribe como cuidaste tu bienestar hoy y recibe sugerencias."
+          title="Hábitos diarios"
+          subtitle="Escribe cómo cuidaste tu bienestar hoy y recibe sugerencias."
         />
 
         <View
@@ -250,29 +250,29 @@ export default function HabitsScreen({ navigation }) {
               <Ionicons name="leaf-outline" size={18} color={colors.primary} />
             </View>
             <View style={styles.badgeTextBlock}>
-              <Text style={[styles.badgeLabel, { color: colors.subText }]}>Habitos de hoy</Text>
+              <Text style={[styles.badgeLabel, { color: colors.subText }]}>hábitos de hoy</Text>
               <Text style={[styles.badgeValue, { color: colors.text }]}>{todayLabel}</Text>
             </View>
           </View>
           {hasTodayEntry ? (
             <Text style={[styles.infoText, { color: colors.subText }]}>
-              Ya registraste tus habitos del dia. Manana tendremos nuevas sugerencias para ti.
+              Ya registraste tus hábitos del día. Mañana tendremos nuevas sugerencias para ti.
             </Text>
           ) : (
             <Text style={[styles.infoText, { color: colors.subText }]}>
-              Selecciona los habitos que realizaste hoy y complementa con detalles si lo deseas.
+              Selecciona los hábitos que realizaste hoy y complementa con detalles si lo deseas.
             </Text>
           )}
           <View style={styles.presetSection}>
             <View style={styles.presetHeader}>
-              <Text style={[styles.presetTitle, { color: colors.text }]}>Habitos frecuentes</Text>
+              <Text style={[styles.presetTitle, { color: colors.text }]}>hábitos frecuentes</Text>
               <Text style={[styles.presetCounter, { color: colors.subText }]}>
                 {selectedHabits.length}/{MAX_PRESET_SELECTION}
               </Text>
             </View>
             <Text style={[styles.presetHelper, { color: colors.subText }]}>
               {hasTodayEntry
-                ? 'Espera al dia siguiente para registrar nuevos habitos.'
+                ? 'Espera al día siguiente para registrar nuevos hábitos.'
                 : 'Toca para marcar lo que realizaste. Puedes seleccionar hasta tres opciones.'}
             </Text>
             <View style={styles.presetGrid}>
@@ -313,7 +313,7 @@ export default function HabitsScreen({ navigation }) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Agrega un detalle breve o reflexion adicional (opcional)."
+            placeholder="Agrega un detalle breve o reflexión adicional (opcional)."
             placeholderTextColor={colors.subText}
             multiline
             textAlignVertical="top"

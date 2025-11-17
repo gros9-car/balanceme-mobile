@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Keyboard,
@@ -73,8 +74,6 @@ export default function ForgotPasswordScreen({ navigation }) {
     horizontalPadding,
     verticalPadding,
     maxContentWidth,
-    titleFont,
-    subtitleFont,
     formTitleFont,
     labelFont,
     inputHeight,
@@ -166,7 +165,9 @@ export default function ForgotPasswordScreen({ navigation }) {
             styles.scrollContainer,
             {
               paddingHorizontal: horizontalPadding,
-              paddingVertical: verticalPadding,
+              // menos espacio arriba para que no quede tan abajo
+              paddingTop: Math.max(verticalPadding * 0.4, 12),
+              paddingBottom: Math.max(verticalPadding, 24),
             },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -381,7 +382,8 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    // clave: no centrar verticalmente
+    justifyContent: 'flex-start',
   },
   logoContainer: {
     width: 64,

@@ -1,33 +1,18 @@
 import React, { useMemo, useState } from 'react';
-
 import {
-
   View,
-
   Text,
-
   TextInput,
-
   TouchableOpacity,
-
   ScrollView,
-
   StyleSheet,
-
   ActivityIndicator,
-
   SafeAreaView,
-
   StatusBar,
-
   Alert,
-
   Modal,
-
   Platform,
-
   KeyboardAvoidingView,
-
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -39,8 +24,8 @@ import { doc, setDoc } from 'firebase/firestore';
 
 
 import { auth, db } from './firebase/config';
-
 import { useTheme } from '../context/ThemeContext';
+import { useAppAlert } from '../context/AppAlertContext';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 
@@ -50,8 +35,8 @@ import useResponsiveLayout from '../hooks/useResponsiveLayout';
 const EMAIL_REGEX = /\S+@\S+\.\S+/;
 
 export default function RegisterScreen({ navigation }) {
-
   const { colors } = useTheme();
+  const { showAlert } = useAppAlert();
   const {
     horizontalPadding,
     verticalPadding,
@@ -109,7 +94,7 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-  // Aplica validaciones b├ísicas sobre nombre, correo y contrase├▒as.
+  // Aplica validaciones básicas sobre nombre, correo y contraseñas.
 
   const validateForm = () => {
 
@@ -121,9 +106,9 @@ export default function RegisterScreen({ navigation }) {
 
       nextErrors.name = 'El nombre es requerido';
 
-    } else if (formData.name.trim().length < 2) {
+    } else if (formData.name.trim().length < 5) {
 
-      nextErrors.name = 'El nombre debe tener al menos 2 caracteres';
+      nextErrors.name = 'El nombre debe tener al menos 5 carácteres';
 
     }
 
@@ -135,7 +120,7 @@ export default function RegisterScreen({ navigation }) {
 
     } else if (!EMAIL_REGEX.test(formData.email)) {
 
-      nextErrors.email = 'Correo invalido';
+      nextErrors.email = 'Correo inválido';
 
     }
 
@@ -145,20 +130,19 @@ export default function RegisterScreen({ navigation }) {
 
     if (!password) {
 
-      nextErrors.password = 'La contrasena es requerida';
+      nextErrors.password = 'La contraseña es requerida';
 
     } else {
 
       const patterns = [
 
-        { regex: /.{8,}/, message: 'Debe tener al menos 8 caracteres' },
+        { regex: /.{8,}/, message: 'Debe tener al menos 8 carácteres' },
 
-        { regex: /[A-Z]/, message: 'Incluye al menos una letra mayuscula' },
+        { regex: /[A-Z]/, message: 'Incluye al menos una letra mayúscula' },
 
-        { regex: /[a-z]/, message: 'Incluye al menos una letra minuscula' },
+        { regex: /[a-z]/, message: 'Incluye al menos una letra minúscula' },
 
-        { regex: /[0-9]/, message: 'Incluye al menos un numero' },
-
+        { regex: /[0-9]/, message: 'Incluye al menos un número' },
         { regex: /[^A-Za-z0-9]/, message: 'Incluye al menos un caracter especial' },
 
       ];
@@ -169,7 +153,7 @@ export default function RegisterScreen({ navigation }) {
 
       if (failed) {
 
-        nextErrors.password = `La contrasena no cumple la politica: ${failed.message}.`;
+        nextErrors.password = `La contraseña no cumple la política: ${failed.message}.`;
 
       }
 
@@ -179,12 +163,11 @@ export default function RegisterScreen({ navigation }) {
 
     if (!formData.confirmPassword) {
 
-      nextErrors.confirmPassword = 'Confirma tu contrasena';
+      nextErrors.confirmPassword = 'Confirma tu contraseña';
 
     } else if (formData.confirmPassword !== password) {
 
-      nextErrors.confirmPassword = 'Las contrasenas no coinciden';
-
+      nextErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
 
@@ -195,7 +178,7 @@ export default function RegisterScreen({ navigation }) {
 
   };
 
-  console.log('Hola hola');
+
 
 
 
@@ -249,9 +232,9 @@ export default function RegisterScreen({ navigation }) {
 
       } else {
 
-        Alert.alert('Bienvenido a BalanceMe', 'Tu cuenta est├í lista.', [
+        Alert.alert('Bienvenid@ a BalanceMe', 'Tu cuenta está lista.', [
 
-          { text: 'Ir a iniciar sesion', onPress: () => navigation?.navigate?.('Login') },
+          { text: 'Ir a iniciar sesión', onPress: () => navigation?.navigate?.('Login') },
 
         ]);
 
@@ -263,15 +246,14 @@ export default function RegisterScreen({ navigation }) {
 
       if (error.code === 'auth/email-already-in-use') {
 
-        message = 'Ese correo ya esta registrado.';
+        message = 'El correo ingresado ya está registrado.';
 
       } else if (error.code === 'auth/invalid-email') {
 
-        message = 'Correo invalido.';
-
+        message = 'Correo inválido.';
       } else if (error.code === 'auth/weak-password') {
 
-        message = 'La contrasena es muy debil.';
+        message = 'La contraseña es muy débil.';
 
       }
 
@@ -359,7 +341,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Nombre completo</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Nombre</Text>
 
             <View
 
@@ -403,7 +385,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Correo electronico</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Correo electrónico</Text>
 
             <View
 
@@ -451,7 +433,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Contrase├▒a</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Contraseña</Text>
 
             <View
 
@@ -477,7 +459,7 @@ export default function RegisterScreen({ navigation }) {
 
                 onChangeText={(text) => handleInputChange('password', text)}
 
-                placeholder="Minimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
 
                 placeholderTextColor={colors.subText}
 
@@ -503,7 +485,15 @@ export default function RegisterScreen({ navigation }) {
 
             </View>
 
-            {errors.password ? <Text style={[styles.errorText, { color: colors.danger }]}>{errors.password}</Text> : null}
+            {errors.password ? (
+              <Text style={[styles.errorText, { color: colors.danger }]}>
+                {errors.password}
+              </Text>
+            ) : (
+              <Text style={[styles.helperText, { color: colors.subText }]}>
+                Mínimo 8 caracteres, con mayúsculas, minúsculas, número y símbolo.
+              </Text>
+            )}
 
           </View>
 
@@ -511,7 +501,7 @@ export default function RegisterScreen({ navigation }) {
 
           <View style={styles.inputGroup}>
 
-            <Text style={[styles.label, { color: colors.text }]}>Confirmar contrase├▒a</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Confirmar contraseña</Text>
 
             <View
 
@@ -537,7 +527,7 @@ export default function RegisterScreen({ navigation }) {
 
                 onChangeText={(text) => handleInputChange('confirmPassword', text)}
 
-                placeholder="Repite tu contrasena"
+                placeholder="Repite tu contraseña"
 
                 placeholderTextColor={colors.subText}
 
@@ -575,9 +565,19 @@ export default function RegisterScreen({ navigation }) {
 
           <Text style={[styles.termsText, { color: colors.subText }]}>Al registrarte aceptas nuestros{' '}
 
-            <Text style={[styles.linkText, { color: colors.accent }]}>terminos y condiciones</Text>{' '}y{' '}
+              <Text
+    style={[styles.linkText, { color: colors.accent }]}
+    onPress={() => navigation?.navigate?.('TermsAndConditions')}
+  >
+    términos y condiciones
+  </Text>{' '}y{' '}
 
-            <Text style={[styles.linkText, { color: colors.accent }]}>politica de privacidad</Text>.
+            <Text
+  style={[styles.linkText, { color: colors.accent }]}
+  onPress={() => navigation?.navigate?.('PrivacyPolicy')}
+>
+  política de privacidad
+</Text>
 
           </Text>
 
@@ -629,7 +629,7 @@ export default function RegisterScreen({ navigation }) {
 
             <TouchableOpacity onPress={() => navigation?.navigate?.('Login')}>
 
-              <Text style={[styles.loginLinkText, { color: colors.accent }]}> Inicia sesi├│n</Text>
+              <Text style={[styles.loginLinkText, { color: colors.accent }]}> Inicia sesión</Text>
 
             </TouchableOpacity>
 
@@ -637,7 +637,7 @@ export default function RegisterScreen({ navigation }) {
 
 
 
-          <Text style={[styles.motivationalText, { color: colors.subText }]}>Tu bienestar tambien merece agenda.</Text>
+          <Text style={[styles.motivationalText, { color: colors.subText }]}>Tu bienestar también merece agenda.</Text>
 
         </View>
 
@@ -667,7 +667,7 @@ export default function RegisterScreen({ navigation }) {
 
             <Text style={[styles.modalTitle, { color: colors.text }]}>Cuenta creada</Text>
 
-            <Text style={[styles.modalText, { color: colors.subText }]}>Todo listo para que inicies sesion y continues tu camino.</Text>
+            <Text style={[styles.modalText, { color: colors.subText }]}>Todo listo para que inicies sesión y continues tu camino.</Text>
 
             <TouchableOpacity
 
@@ -679,7 +679,7 @@ export default function RegisterScreen({ navigation }) {
 
             >
 
-              <Text style={[styles.modalButtonText, { color: colors.primaryContrast }]}>Ir a iniciar sesion</Text>
+              <Text style={[styles.modalButtonText, { color: colors.primaryContrast }]}>Ir a iniciar sesión</Text>
 
             </TouchableOpacity>
 
@@ -985,6 +985,10 @@ const styles = StyleSheet.create({
 
     textAlign: 'center',
 
+  },
+  helperText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 
   modalOverlay: {
