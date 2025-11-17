@@ -40,11 +40,11 @@
     "plugins": [
       "expo-font"
     ],
+    "owner": "kesc",
     "extra": {
       "eas": {
-        "projectId": "ff19d106-424a-4f61-aa8a-394f282f1c08"
+        "projectId": "740e848e-d406-4522-aef3-88d3f3ad7fda"
       }
-    },
-    "owner": "esc16"
+    }
   }
 }

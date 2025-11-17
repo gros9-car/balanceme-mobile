@@ -18,6 +18,7 @@ import { updateProfile } from 'firebase/auth';
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 // Renderiza una fila informativa del perfil si existe un valor para mostrar.
@@ -203,17 +204,11 @@ export default function ProfileScreen({ navigation }) {
           },
         ]}
       >
-        <View style={[styles.topBar, { backgroundColor: colors.surface, borderColor: colors.muted }, contentWidthStyle]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <Text style={[styles.topBarTitle, { color: colors.text }]}>Perfil</Text>
-          <View style={styles.topBarSpacer} />
+        <View style={contentWidthStyle}>
+          <PageHeader
+            title="Perfil"
+            subtitle="Revisa y actualiza tus datos personales."
+          />
         </View>
       </View>
       <ScrollView
@@ -309,30 +304,6 @@ const styles = StyleSheet.create({
   },
   topBarContainer: {
     width: '100%',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  topBarSpacer: {
-    width: 60,
   },
   scrollContainer: {
     flexGrow: 1,

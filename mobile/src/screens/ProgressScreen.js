@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { useGoalProgress } from '../hooks/useGoalProgress';
 import { GoalFormModal } from '../components/progress/GoalFormModal';
@@ -284,37 +285,10 @@ const ProgressScreen = ({ navigation }) => {
         contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
-          {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={[styles.backButton, { borderColor: colors.muted }]}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="chevron-back"
-                size={22}
-                color={colors.text}
-              />
-              <Text
-                style={[styles.backLabel, { color: colors.text }]}
-              >
-                Volver
-              </Text>
-            </TouchableOpacity>
-            <View style={styles.headerText}>
-              <Text
-                style={[styles.title, { color: colors.text }]}
-              >
-                Progreso semanal
-              </Text>
-              <Text
-                style={[styles.subtitle, { color: colors.subText }]}
-              >
-                Semana del {weekLabel}
-              </Text>
-            </View>
-          </View>
+          <PageHeader
+            title="Progreso semanal"
+            subtitle={`Semana del ${weekLabel}`}
+          />
 
           {/* RESUMEN SEMANAL */}
           <View
@@ -753,35 +727,6 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     gap: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 13,
   },
   summaryCard: {
     borderWidth: 1,

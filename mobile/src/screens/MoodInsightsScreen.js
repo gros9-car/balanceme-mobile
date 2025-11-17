@@ -22,6 +22,7 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 const DAYS_TO_FETCH = 60;
@@ -369,28 +370,10 @@ const MoodInsightsScreen = ({ navigation }) => {
         contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
-          {/* HEADER */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={[styles.backButton, { borderColor: colors.muted }]}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="chevron-back" size={22} color={colors.text} />
-              <Text style={[styles.backText, { color: colors.text }]}>
-                Volver
-              </Text>
-            </TouchableOpacity>
-            <View style={styles.headerText}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Resumen de tu ánimo
-              </Text>
-              <Text style={[styles.subtitle, { color: colors.subText }]}>
-                Te mostramos tus registros con palabras simples: Día difícil, Día
-                normal o Buen día.
-              </Text>
-            </View>
-          </View>
+          <PageHeader
+            title="Resumen de tu ánimo"
+            subtitle="Te mostramos tus registros con palabras simples: Día difícil, Día normal o Buen día."
+          />
 
           {/* ESTADO DE CARGA / ERROR */}
           {loading ? (
@@ -692,36 +675,6 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     gap: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-    marginTop: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 13,
   },
   loading: {
     flexDirection: 'row',

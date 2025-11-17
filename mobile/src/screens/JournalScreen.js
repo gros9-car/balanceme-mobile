@@ -25,6 +25,7 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 
 const MONTHLY_TARGET = 10;
 const MAX_TAGS_PER_ENTRY = 5;
@@ -212,41 +213,10 @@ const JournalScreen = ({ navigation }) => {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text
-              style={[
-                styles.backText,
-                { color: colors.text, fontSize: baseFont },
-              ]}
-            >
-              Volver
-            </Text>
-          </TouchableOpacity>
-          <Text
-            style={[
-              styles.title,
-              { color: colors.text, fontSize: titleFont },
-            ]}
-          >
-            Diario emocional
-          </Text>
-          <Text
-            style={[
-              styles.subtitle,
-              { color: colors.subText, fontSize: subtitleFont },
-            ]}
-          >
-            Lleva el registro de tus experiencias y etiqueta tus emociones para
-            analizarlas luego.
-          </Text>
-        </View>
+        <PageHeader
+          title="Diario emocional"
+          subtitle="Lleva el registro de tus experiencias y etiqueta tus emociones para analizarlas luego."
+        />
 
         {/* PROGRESO MENSUAL */}
         <View
@@ -567,26 +537,6 @@ const styles = StyleSheet.create({
     gap: 24,
     alignItems: 'stretch',
   },
-  header: {
-    gap: 10,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  backText: {
-    fontWeight: '500',
-  },
-  title: {
-    fontWeight: '700',
-  },
-  subtitle: {},
   progressCard: {
     borderWidth: 1,
     borderRadius: 20,

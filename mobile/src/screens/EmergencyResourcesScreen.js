@@ -7,12 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Linking,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
+import { useAppAlert } from '../context/AppAlertContext';
 
 const CRISIS_STRATEGIES = [
   {
@@ -109,6 +110,7 @@ const PROFESSIONAL_CONTACTS = [
 
 const EmergencyResourcesScreen = ({ navigation }) => {
   const { colors } = useTheme();
+  const { showAlert } = useAppAlert();
 
   const handleAction = async (contact) => {
     if (!contact?.action) {
@@ -122,7 +124,7 @@ const EmergencyResourcesScreen = ({ navigation }) => {
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert('No disponible', 'No se pudo iniciar la llamada desde este dispositivo.');
+        showAlert('No disponible', 'No se pudo iniciar la llamada desde este dispositivo.');
       }
       return;
     }
@@ -132,13 +134,13 @@ const EmergencyResourcesScreen = ({ navigation }) => {
       if (supported) {
         await Linking.openURL(contact.action.value);
       } else {
-        Alert.alert('No disponible', 'No se pudo abrir el enlace en este dispositivo.');
+        showAlert('No disponible', 'No se pudo abrir el enlace en este dispositivo.');
       }
       return;
     }
 
     if (contact.action.kind === 'info') {
-      Alert.alert(contact.name, contact.action.value);
+      showAlert(contact.name, contact.action.value);
     }
   };
 
@@ -150,20 +152,10 @@ const EmergencyResourcesScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="always"
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Recursos de emergencia</Text>
-          <Text style={[styles.subtitle, { color: colors.subText }]}>
-            Estrategias inmediatas y contactos profesionales disponibles cuando necesites apoyo urgente.
-          </Text>
-        </View>
+        <PageHeader
+          title="Recursos de emergencia"
+          subtitle="Estrategias inmediatas y contactos profesionales disponibles cuando necesites apoyo urgente."
+        />
 
         <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="flash-outline" size={22} color={colors.primary} />
@@ -257,30 +249,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 28,
     gap: 16,
-  },
-  header: {
-    gap: 12,
-    marginTop: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 13,
   },
   sectionCard: {
     flexDirection: 'row',

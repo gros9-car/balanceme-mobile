@@ -24,6 +24,7 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { computeMoodAverages, moodScoreToLabel } from '../utils/moodAnalysis';
 
@@ -368,31 +369,21 @@ export default function MoodTrackerScreen({ navigation }) {
         contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
-          <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-
-          <View style={styles.headerContent}>
-            <View
-              style={[
-                styles.logoContainer,
-                { backgroundColor: colors.primary, shadowColor: colors.primary },
-              ]}
-            >
-              <Ionicons name="happy-outline" size={30} color={colors.primaryContrast} />
-            </View>
-            <Text style={[styles.title, { color: colors.text }]}>Estado de animo</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>Elige hasta 3 emociones que describan como te sientes hoy.</Text>
-          </View>
-        </View>
-
-        <View
+          <PageHeader
+            title="Estado de animo"
+            subtitle="Elige hasta 3 emociones que describan como te sientes hoy."
+            rightContent={
+              <View
+                style={[
+                  styles.logoContainer,
+                  { backgroundColor: colors.primary, shadowColor: colors.primary },
+                ]}
+              >
+                <Ionicons name="happy-outline" size={30} color={colors.primaryContrast} />
+              </View>
+            }
+          />
+          <View
           style={[
             styles.card,
             { backgroundColor: colors.surface, shadowColor: colors.outline },
@@ -510,26 +501,6 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 24,
   },
-  header: {
-    gap: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  headerContent: {
-    alignItems: 'center',
-    gap: 12,
-  },
   logoContainer: {
     width: 60,
     height: 60,
@@ -540,15 +511,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
   },
   card: {
     borderRadius: 24,

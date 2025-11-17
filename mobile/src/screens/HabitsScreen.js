@@ -9,7 +9,6 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +24,10 @@ import {
 
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import { analyzeHabitsEntry, mapHabitCategoriesToLabels } from '../utils/habitAnalysis';
 import { HABIT_TAGS, HABIT_TAG_LABEL_LOOKUP, normalizeHabitTag } from '../constants/habitTags';
+import { useAppAlert } from '../context/AppAlertContext';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,6 +51,7 @@ const MAX_PRESET_SELECTION = 3;
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const { showAlert } = useAppAlert();
   const user = auth.currentUser;
 
   const [entries, setEntries] = useState([]);
@@ -141,19 +143,30 @@ export default function HabitsScreen({ navigation }) {
 
   const handleSave = async () => {
     if (!user?.uid) {
-      Alert.alert('Sesion requerida', 'Inicia sesion para registrar tus habitos.');
-      navigation?.replace?.('Login');
+      showAlert({
+        title: 'Sesion requerida',
+        message: 'Inicia sesion para registrar tus habitos.',
+        onConfirm: () => {
+          navigation?.replace?.('Login');
+        },
+      });
       return;
     }
 
     const trimmed = draft.trim();
     if (!selectedHabits.length && !trimmed) {
-      Alert.alert('Seleccion requerida', 'Elige al menos un habito o escribe una nota.');
+      showAlert({
+        title: 'Seleccion requerida',
+        message: 'Elige al menos un habito o escribe una nota.',
+      });
       return;
     }
 
     if (hasTodayEntry) {
-      Alert.alert('Registro existente', 'Solo puedes registrar tus habitos una vez por dia.');
+      showAlert({
+        title: 'Registro existente',
+        message: 'Solo puedes registrar tus habitos una vez por dia.',
+      });
       return;
     }
 
@@ -183,9 +196,15 @@ export default function HabitsScreen({ navigation }) {
       });
       setDraft('');
       setSelectedHabits([]);
-      Alert.alert('Habitos registrados', 'Tu entrada fue analizada y guardada correctamente.');
+      showAlert({
+        title: 'Habitos registrados',
+        message: 'Tu entrada fue analizada y guardada correctamente.',
+      });
     } catch (error) {
-      Alert.alert('Error', 'No pudimos guardar tus habitos. Intenta nuevamente.');
+      showAlert({
+        title: 'Error',
+        message: 'No pudimos guardar tus habitos. Intenta nuevamente.',
+      });
     } finally {
       setSaving(false);
     }
@@ -215,20 +234,10 @@ export default function HabitsScreen({ navigation }) {
         contentContainerStyle={[styles.scrollContainer, contentStyle]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Habitos diarios</Text>
-          <Text style={[styles.subtitle, { color: colors.subText }]}>
-            Escribe como cuidaste tu bienestar hoy y recibe sugerencias.
-          </Text>
-        </View>
+        <PageHeader
+          title="Habitos diarios"
+          subtitle="Escribe como cuidaste tu bienestar hoy y recibe sugerencias."
+        />
 
         <View
           style={[
@@ -433,31 +442,6 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     gap: 24,
     alignItems: 'stretch',
-  },
-  header: {
-    gap: 8,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  backText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '400',
   },
   editorCard: {
     borderRadius: 24,

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 
 const BREATHING_EXERCISES = [
   {
@@ -253,16 +254,11 @@ const SelfCareLibraryScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
-      <View style={[styles.headerBar, { borderBottomColor: colors.muted }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-          <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Biblioteca de autocuidado</Text>
+      <View style={{ paddingHorizontal: horizontalPadding, paddingVertical: 16 }}>
+        <PageHeader
+          title="Biblioteca de autocuidado"
+          subtitle="Encuentra ejercicios prácticos para calmar tu mente y cuerpo."
+        />
       </View>
 
       <ScrollView
@@ -346,30 +342,6 @@ export default SelfCareLibraryScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    marginRight: 32,
-    fontSize: 18,
-    fontWeight: '600',
   },
   content: {
     paddingHorizontal: 20,

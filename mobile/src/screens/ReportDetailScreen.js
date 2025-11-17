@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { useGoals } from '../context/GoalContext';
 
@@ -49,6 +50,10 @@ const ReportDetailScreen = ({ navigation, route }) => {
   }, [routeReport, reportId, weeklyReports]);
 
   const goals = report?.goals ?? [];
+  const dateRangeLabel =
+    report?.weekStartDate && report?.weekEndDate
+      ? `${formatDate(report.weekStartDate)} - ${formatDate(report.weekEndDate)}`
+      : null;
 
   return (
     <SafeAreaView
@@ -71,25 +76,10 @@ const ReportDetailScreen = ({ navigation, route }) => {
         contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
-          <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backLabel, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <View style={styles.headerText}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Reporte semana {report?.weekKey ?? '--'}
-            </Text>
-            {report?.weekStartDate ? (
-              <Text style={[styles.subtitle, { color: colors.subText }]}>
-                {formatDate(report.weekStartDate)} - {formatDate(report.weekEndDate)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+          <PageHeader
+            title={`Reporte semana ${report?.weekKey ?? '--'}`}
+            subtitle={dateRangeLabel}
+          />
 
         {report ? (
           <View style={styles.section}>
@@ -174,35 +164,6 @@ const styles = StyleSheet.create({
   content: {
     width: '100%',
     gap: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 13,
   },
   section: {
     gap: 12,

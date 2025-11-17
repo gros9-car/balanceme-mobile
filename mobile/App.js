@@ -31,6 +31,7 @@ import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { GoalProvider } from "./src/context/GoalContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { defaultScreenOptions } from "./src/navigation/options";
+import { AppAlertProvider } from "./src/context/AppAlertContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -93,9 +94,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <GoalProvider>
-          <AppNavigator />
-        </GoalProvider>
+        <AppAlertProvider>
+          <GoalProvider>
+            <AppNavigator />
+          </GoalProvider>
+        </AppAlertProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

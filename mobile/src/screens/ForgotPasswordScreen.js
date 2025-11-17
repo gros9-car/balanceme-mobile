@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
-  Alert,
   Modal,
   Platform,
   Keyboard,
@@ -21,6 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
+import { useAppAlert } from '../context/AppAlertContext';
 
 // --- Hook de responsividad ---
 const useResponsiveForgot = () => {
@@ -67,6 +68,7 @@ const useResponsiveForgot = () => {
 // Pantalla de recuperación que valida el correo y envía el enlace de restablecimiento.
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
+  const { showAlert } = useAppAlert();
   const {
     horizontalPadding,
     verticalPadding,
@@ -113,7 +115,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         Keyboard.dismiss();
         setSuccessVisible(true);
       } else {
-        Alert.alert(
+        showAlert(
           'Revisa tu correo',
           'Te enviamos un enlace para restablecer tu contraseña.',
           [{ text: 'Entendido', onPress: () => navigation?.navigate?.('Login') }],
@@ -126,7 +128,10 @@ export default function ForgotPasswordScreen({ navigation }) {
       } else if (error.code === 'auth/invalid-email') {
         message = 'Correo inválido.';
       }
-      Alert.alert('Error', message);
+      showAlert({
+        title: 'Error',
+        message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -175,28 +180,20 @@ export default function ForgotPasswordScreen({ navigation }) {
               gap: 24,
             }}
           >
-            {/* HEADER */}
-            <View style={styles.header}>
-              <View
-                style={[
-                  styles.logoContainer,
-                  { backgroundColor: colors.primary, shadowColor: colors.primary },
-                ]}
-              >
-                <Ionicons name="heart" size={32} color={colors.primaryContrast} />
-              </View>
-              <Text style={[styles.title, { color: colors.text, fontSize: titleFont }]}>
-                BalanceMe
-              </Text>
-              <Text
-                style={[
-                  styles.subtitle,
-                  { color: colors.subText, fontSize: subtitleFont },
-                ]}
-              >
-                Recupera tu acceso
-              </Text>
-            </View>
+            <PageHeader
+              title="Recupera tu acceso"
+              subtitle="Ingresa tu correo para restablecer tu contraseña."
+              rightContent={
+                <View
+                  style={[
+                    styles.logoContainer,
+                    { backgroundColor: colors.primary, shadowColor: colors.primary },
+                  ]}
+                >
+                  <Ionicons name="heart" size={32} color={colors.primaryContrast} />
+                </View>
+              }
+            />
 
             {/* FORM CARD */}
             <View
@@ -386,10 +383,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  header: {
-    alignItems: 'center',
-    gap: 8,
-  },
   logoContainer: {
     width: 64,
     height: 64,
@@ -401,12 +394,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  title: {
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    textAlign: 'center',
   },
   formContainer: {
     borderRadius: 24,

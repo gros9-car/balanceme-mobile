@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 
 const botName = 'Balancito';
 
@@ -588,52 +589,16 @@ export default function SupportChatScreenClean({ navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        {/* HEADER RESPONSIVO */}
         <View
-          style={[
-            styles.header,
-            {
-              borderBottomColor: colors.muted,
-              paddingHorizontal: horizontalPadding,
-              paddingVertical: isSmall ? 12 : 16,
-            },
-          ]}
+          style={{
+            paddingHorizontal: horizontalPadding,
+            paddingVertical: isSmall ? 12 : 16,
+          }}
         >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text
-              style={[
-                styles.backText,
-                { color: colors.text, fontSize: baseFont },
-              ]}
-            >
-              Volver
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.headerTitleBlock}>
-            <Text
-              style={[
-                styles.headerTitle,
-                { color: colors.text, fontSize: headerTitleFont },
-              ]}
-            >
-              {botName}
-            </Text>
-            <Text
-              style={[
-                styles.headerSubtitle,
-                { color: colors.subText, fontSize: headerSubtitleFont },
-              ]}
-              numberOfLines={1}
-            >
-              Tu companero de apoyo emocional
-            </Text>
-          </View>
-          <View style={styles.headerSpacer} />
+          <PageHeader
+            title={botName}
+            subtitle="Tu compañero de apoyo emocional"
+          />
         </View>
 
         {/* MENSAJES RESPONSIVOS + AUTOSCROLL */}
@@ -716,18 +681,6 @@ export default function SupportChatScreenClean({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontWeight: '500' },
-  headerTitleBlock: { flex: 1 },
-  headerTitle: { fontWeight: '700' },
-  headerSubtitle: { fontWeight: '500' },
-  headerSpacer: { width: 32 },
   messagesContainer: {
     gap: 12,
     flexGrow: 1,

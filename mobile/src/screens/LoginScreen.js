@@ -35,9 +35,8 @@ import useResponsive from '../hooks/useResponsive';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { auth } from './firebase/config';
-
 import { useTheme } from '../context/ThemeContext';
-
+import { useAppAlert } from '../context/AppAlertContext';
 
 
 // Pantalla de inicio de sesiÃ³n que valida credenciales y entra a la app.
@@ -45,6 +44,7 @@ import { useTheme } from '../context/ThemeContext';
 export default function LoginScreen({ navigation }) {
 
   const { colors } = useTheme();
+  const { showAlert } = useAppAlert();
 
   const { isSmall, spacing, font } = useResponsive();
 
@@ -100,7 +100,7 @@ export default function LoginScreen({ navigation }) {
 
       setIsLoading(false);
 
-      Alert.alert('Bienvenido', 'Inicio de sesion exitoso');
+      showAlert('Bienvenido', 'Inicio de sesion exitoso');
 
       navigation.navigate('Home');
 

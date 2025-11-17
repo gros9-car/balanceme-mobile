@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,6 +32,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { auth, db } from "./firebase/config";
 import { useTheme } from "../context/ThemeContext";
+import PageHeader from "../components/PageHeader";
+import { useAppAlert } from "../context/AppAlertContext";
 
 // === Hook de responsividad específico para el chat ===
 const useResponsiveChat = () => {
@@ -179,6 +180,7 @@ export default function DirectChatScreen({ navigation, route }) {
   const friendEmail = route.params?.friendEmail ?? "";
 
   const { colors } = useTheme();
+  const { showAlert } = useAppAlert();
   const user = auth.currentUser;
 
   const [messages, setMessages] = useState([]);
@@ -292,7 +294,7 @@ export default function DirectChatScreen({ navigation, route }) {
       });
       setDraft("");
     } catch (error) {
-      Alert.alert("Error", "No pudimos enviar el mensaje. Intenta nuevamente.");
+      showAlert("Error", "No pudimos enviar el mensaje. Intenta nuevamente.");
     }
   };
 
@@ -336,7 +338,7 @@ export default function DirectChatScreen({ navigation, route }) {
     try {
       const deletedCount = await deleteChatMessages();
       setMessages([]);
-      Alert.alert(
+      showAlert(
         "Chat eliminado",
         deletedCount
           ? "Se borró el historial completo para ambos usuarios."
@@ -344,7 +346,7 @@ export default function DirectChatScreen({ navigation, route }) {
         [{ text: "Aceptar", onPress: () => navigation.goBack() }],
       );
     } catch (error) {
-      Alert.alert("Error", "No pudimos borrar el chat. Intenta nuevamente.");
+      showAlert("Error", "No pudimos borrar el chat. Intenta nuevamente.");
     } finally {
       setDeleting(false);
     }
@@ -355,7 +357,7 @@ export default function DirectChatScreen({ navigation, route }) {
     if (!user?.uid || !friendUid || deleting) {
       return;
     }
-    Alert.alert(
+    showAlert(
       "Eliminar chat",
       `Esta acción borrará el historial con ${resolvedFriendName}.`,
       [
@@ -419,72 +421,29 @@ export default function DirectChatScreen({ navigation, route }) {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        {/* HEADER RESPONSIVO */}
         <View
-          style={[
-            styles.header,
-            {
-              borderBottomColor: colors.muted,
-              paddingHorizontal: horizontalPadding,
-              paddingVertical: headerVerticalPadding,
-            },
-          ]}
+          style={{
+            paddingHorizontal: horizontalPadding,
+            paddingVertical: headerVerticalPadding,
+          }}
         >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text
-              style={[
-                styles.backText,
-                { color: colors.text, fontSize: baseFont },
-              ]}
-            >
-              Volver
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.headerInfo}>
-            <Text
-              style={[
-                styles.headerTitle,
-                { color: colors.text, fontSize: headerTitleFont },
-              ]}
-              numberOfLines={1}
-            >
-              {resolvedFriendName}
-            </Text>
-            <Text
-              style={[
-                styles.headerSubtitle,
-                { color: colors.subText, fontSize: headerSubtitleFont },
-              ]}
-              numberOfLines={1}
-            >
-              {resolvedFriendEmail}
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {deleting ? (
-              <ActivityIndicator size="small" color={colors.danger} />
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.headerActionButton,
-                  { borderColor: colors.muted },
-                ]}
-                onPress={confirmDeleteChat}
-                activeOpacity={0.85}
-              >
-                <Ionicons
-                  name="trash-outline"
-                  size={18}
-                  color={colors.danger}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+          <PageHeader
+            title={resolvedFriendName}
+            subtitle={resolvedFriendEmail}
+            rightContent={
+              deleting ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <TouchableOpacity
+                  style={[styles.headerActionButton, { borderColor: colors.muted }]}
+                  onPress={confirmDeleteChat}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                </TouchableOpacity>
+              )
+            }
+          />
         </View>
 
         {/* LISTA DE MENSAJES RESPONSIVA */}
@@ -565,32 +524,6 @@ export default function DirectChatScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    gap: 12,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  backText: {
-    fontWeight: "500",
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontWeight: "700",
-  },
-  headerSubtitle: {},
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
   },
   headerActionButton: {
     width: 36,

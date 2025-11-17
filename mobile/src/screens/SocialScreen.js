@@ -29,6 +29,7 @@ import {
 import { auth, db } from "./firebase/config";
 
 import { useTheme } from "../context/ThemeContext";
+import PageHeader from "../components/PageHeader";
 import useResponsiveLayout from "../hooks/useResponsiveLayout";
 
 // Traduce estados de amistad en etiquetas legibles para la UI.
@@ -512,27 +513,10 @@ export default function SocialScreen({ navigation }) {
         contentInsetAdjustmentBehavior="always"
       >
         <View style={[styles.content, contentWidthStyle]}>
-          <View style={styles.header}>
-          <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.muted }]}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-
-            <Text style={[styles.backText, { color: colors.text }]}>
-              Volver
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.title, { color: colors.text }]}>
-            Red de apoyo
-          </Text>
-
-          <Text style={[styles.subtitle, { color: colors.subText }]}>
-            Envia solicitudes, acepta amistades y conversa con quienes confias.
-          </Text>
-        </View>
+          <PageHeader
+            title="Red de apoyo"
+            subtitle="Envía solicitudes, acepta amistades y conversa con quienes confías."
+          />
 
         <View
           style={[
@@ -890,43 +874,6 @@ const styles = StyleSheet.create({
     gap: 20,
   },
 
-  header: {
-    gap: 8,
-  },
-
-  backButton: {
-    alignSelf: "flex-start",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 8,
-
-    borderWidth: 1,
-
-    borderRadius: 16,
-
-    paddingVertical: 8,
-
-    paddingHorizontal: 12,
-  },
-
-  backText: {
-    fontSize: 14,
-
-    fontWeight: "500",
-  },
-
-  title: {
-    fontSize: 24,
-
-    fontWeight: "700",
-  },
-
-  subtitle: {
-    fontSize: 14,
-  },
 
   card: {
     borderRadius: 24,

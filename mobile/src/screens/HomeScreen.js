@@ -9,7 +9,6 @@ import {
   StatusBar,
   Modal,
   Animated,
-  Alert,
   useWindowDimensions,
   Linking,
 } from 'react-native';
@@ -19,6 +18,7 @@ import { signOut } from 'firebase/auth';
 import { auth, db } from './firebase/config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
+import { useAppAlert } from '../context/AppAlertContext';
 
 // Pantalla principal que muestra resumen diario y accesos a herramientas clave.
 const emojiCodePoints = {
@@ -136,6 +136,7 @@ console.log('soy dross')
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
+  const { showAlert } = useAppAlert();
   const user = auth.currentUser;
   const slideAnim = useRef(new Animated.Value(-320)).current;
 
@@ -350,22 +351,22 @@ useEffect(() => {
         const supported = await Linking.canOpenURL(telUrl);
         if (supported) {
           await Linking.openURL(telUrl);
-        } else {
-          Alert.alert('No disponible', 'No se pudo iniciar la llamada en este dispositivo.');
-        }
+          } else {
+          showAlert('No disponible', 'No se pudo iniciar la llamada en este dispositivo.');
+          }
         return;
       }
       if (url) {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
           await Linking.openURL(url);
-        } else {
-          Alert.alert('No disponible', 'No pudimos abrir el enlace.');
-        }
+          } else {
+          showAlert('No disponible', 'No pudimos abrir el enlace.');
+          }
       }
-    } catch (error) {
-      Alert.alert('Error', 'Intenta nuevamente mas tarde.');
-    }
+      } catch (error) {
+      showAlert('Error', 'Intenta nuevamente mas tarde.');
+      }
   };
 
   // Cierra la sesi├│n del usuario y devuelve a la pantalla de login.
@@ -390,7 +391,7 @@ useEffect(() => {
         return;
       }
       if (target === 'Exercises') {
-        Alert.alert('Muy pronto', 'Estamos preparando esta secci├│n para ti.');
+        showAlert('Muy pronto', 'Estamos preparando esta secci├│n para ti.');
         return;
       }
       navigation.navigate(target);
@@ -412,25 +413,32 @@ useEffect(() => {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={[styles.menuButton, styles.menuFloating, { borderColor: colors.muted, backgroundColor: colors.surface }]}
-              onPress={toggleMenu}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="menu" size={20} color={colors.text} />
-            </TouchableOpacity>
-
-            <View style={styles.brand}>
-              <View
-                style={[styles.logoContainer, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={[
+                  styles.menuButton,
+                  styles.menuFloating,
+                  { borderColor: colors.muted, backgroundColor: colors.surface },
+                ]}
+                onPress={toggleMenu}
+                activeOpacity={0.85}
               >
-                <Ionicons name="heart" size={32} color={colors.primaryContrast} />
+                <Ionicons name="menu" size={20} color={colors.text} />
+              </TouchableOpacity>
+
+              <View style={styles.brand}>
+                <View
+                  style={[
+                    styles.logoContainer,
+                    { backgroundColor: colors.primary, shadowColor: colors.primary },
+                  ]}
+                >
+                  <Ionicons name="heart" size={32} color={colors.primaryContrast} />
+                </View>
+                <Text style={[styles.appTitle, { color: colors.text }]}>BalanceMe</Text>
+                <Text style={[styles.appSubtitle, { color: colors.subText }]}>Tu espacio de bienestar</Text>
               </View>
-              <Text style={[styles.appTitle, { color: colors.text }]}>BalanceMe</Text>
-              <Text style={[styles.appSubtitle, { color: colors.subText }]}>Tu espacio de bienestar</Text>
             </View>
-          </View>
 
           <View
             style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline, gap: cardSpacing }]}
@@ -669,10 +677,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingTop: 8,
+    paddingBottom: 16,
   },
   brand: {
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   logoContainer: {
     width: 64,
@@ -680,7 +689,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

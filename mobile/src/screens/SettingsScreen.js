@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
+import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 // Tarjeta de selección que permite elegir el modo de color deseado.
@@ -84,23 +85,11 @@ export default function SettingsScreen({ navigation }) {
           },
         ]}
       >
-        <View
-          style={[
-            styles.topBar,
-            { backgroundColor: colors.surface, borderColor: colors.muted },
-            contentWidthStyle,
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Volver</Text>
-          </TouchableOpacity>
-          <Text style={[styles.topBarTitle, { color: colors.text }]}>Configuracion</Text>
-          <View style={styles.topBarSpacer} />
+        <View style={contentWidthStyle}>
+          <PageHeader
+            title="Configuración"
+            subtitle="Personaliza BalanceMe para que coincida con tu estilo."
+          />
         </View>
       </View>
       <View
@@ -114,11 +103,6 @@ export default function SettingsScreen({ navigation }) {
         ]}
       >
         <View style={[styles.content, contentWidthStyle]}>
-          <Text style={[styles.title, { color: colors.text }]}>Configuracion</Text>
-          <Text style={[styles.subtitle, { color: colors.subText }]}>
-            Personaliza BalanceMe para que coincida con tu estilo.
-          </Text>
-
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Tema</Text>
             <Text style={[styles.sectionHelper, { color: colors.subText }]}>
@@ -163,43 +147,12 @@ const styles = StyleSheet.create({
   topBarWrapper: {
     width: '100%',
   },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  backText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  topBarSpacer: {
-    width: 60,
-  },
   contentWrapper: {
     width: '100%',
   },
   content: {
     width: '100%',
     gap: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  subtitle: {
-    fontSize: 14,
   },
   section: {
     gap: 16,
