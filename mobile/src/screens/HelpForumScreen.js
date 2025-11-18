@@ -32,6 +32,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
+import { formatDateTimeShort } from '../utils/dateTimeFormat';
 
 const FORUM_CATEGORIES = [
   { value: 'apoyo', label: 'Apoyo emocional' },
@@ -39,13 +40,7 @@ const FORUM_CATEGORIES = [
   { value: 'logros', label: 'Historias de avance' },
 ];
 
-const formatTimestamp = (value) => {
-  try {
-    return value.toDate().toLocaleString();
-  } catch (error) {
-    return new Date().toLocaleString();
-  }
-};
+const formatTimestamp = (value) => formatDateTimeShort(value);
 
 const buildAlias = (uid) => {
   if (!uid) {
@@ -132,7 +127,7 @@ const HelpForumScreen = ({ navigation }) => {
   const handlePublish = async () => {
     if (!user?.uid) {
       Alert.alert('Sesión requerida', 'Inicia sesión para participar en la comunidad.');
-      navigation?.replace?.('Login');
+      // Navegaci��n a Login la maneja el contenedor principal.
       return;
     }
 

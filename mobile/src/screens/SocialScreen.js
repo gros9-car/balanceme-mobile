@@ -215,6 +215,8 @@ export default function SocialScreen({ navigation }) {
             name: data.name ?? "Usuario",
 
             email: data.email ?? "",
+
+            hasUnread: Boolean(data.unread),
           };
 
           if (status === "accepted") {
@@ -628,6 +630,8 @@ export default function SocialScreen({ navigation }) {
 
               const friendEmail = profile.email ?? friend.email;
 
+              const hasUnread = Boolean(friend.hasUnread);
+
               return (
                 <View
                   key={friend.uid}
@@ -706,6 +710,8 @@ export default function SocialScreen({ navigation }) {
 
               const friendEmail = profile.email ?? friend.email;
 
+              const hasUnread = Boolean(friend.hasUnread);
+
               return (
                 <View
                   key={friend.uid}
@@ -724,11 +730,23 @@ export default function SocialScreen({ navigation }) {
                       />
 
                       <View>
-                        <Text
-                          style={[styles.friendName, { color: colors.text }]}
-                        >
-                          {friendName}
-                        </Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text
+                            style={[styles.friendName, { color: colors.text }]}
+                          >
+                            {friendName}
+                          </Text>
+                          {hasUnread ? (
+                            <View
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: colors.primary,
+                              }}
+                            />
+                          ) : null}
+                        </View>
 
                         <Text
                           style={[

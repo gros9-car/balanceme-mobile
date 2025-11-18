@@ -227,12 +227,6 @@ useEffect(() => {
         return;
       }
 
-      if (moodSnapshot.empty) {
-        setCurrentStreak(0);
-        setLastMood('calm');
-        return;
-      }
-
       const moodDaySet = new Set();
       const moodDayKeys = [];
       let latestEmojiName = 'calm';
@@ -260,12 +254,8 @@ useEffect(() => {
       const resolvedMood = emojiCodePoints[latestEmojiName] ? latestEmojiName : 'neutral';
       setLastMood(resolvedMood);
 
-      if (!moodDayKeys.length || habitSnapshot.empty) {
-        setCurrentStreak(0);
-        return;
-      }
-
       const habitDaySet = new Set();
+      const habitDayKeys = [];
       habitSnapshot.forEach((document) => {
         const data = document.data();
         if (!data) {
@@ -277,35 +267,33 @@ useEffect(() => {
           return;
         }
         const key = startOfDay(date).getTime();
-        habitDaySet.add(key);
+        if (!habitDaySet.has(key)) {
+          habitDaySet.add(key);
+          habitDayKeys.push(key);
+        }
       });
 
-      if (!habitDaySet.size) {
+      const allDayKeysSet = new Set([...moodDayKeys, ...habitDayKeys]);
+      if (!allDayKeysSet.size) {
         setCurrentStreak(0);
         return;
       }
 
-      const sharedDayKeys = moodDayKeys.filter((key) => habitDaySet.has(key));
+      const sortedKeys = Array.from(allDayKeysSet).sort((a, b) => b - a);
+      let streak = 0;
+      let expected = sortedKeys[0];
 
-      if (!sharedDayKeys.length) {
-        setCurrentStreak(0);
-      } else {
-        const sortedKeys = [...sharedDayKeys].sort((a, b) => b - a);
-        let streak = 0;
-        let expected = sortedKeys[0];
-
-        for (const dayKey of sortedKeys) {
-          const diff = Math.round((expected - dayKey) / dayMs);
-          if (diff === 0) {
-            streak += 1;
-            expected -= dayMs;
-          } else {
-            break;
-          }
+      for (const dayKey of sortedKeys) {
+        const diff = Math.round((expected - dayKey) / dayMs);
+        if (diff === 0) {
+          streak += 1;
+          expected -= dayMs;
+        } else {
+          break;
         }
-
-        setCurrentStreak(streak);
       }
+
+      setCurrentStreak(streak);
     } catch (error) {
       if (isMounted) {
         setCurrentStreak(0);
@@ -373,7 +361,6 @@ useEffect(() => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigation.replace('Login');
     } catch (error) {
       // Mantener un fallback silencioso por ahora
     }
@@ -450,19 +437,19 @@ useEffect(() => {
               <View style={styles.summaryStat}>
                 <Ionicons name="flame" size={20} color="#f97316" />
                 <Text style={[styles.summaryValue, { color: colors.text }]}>{currentStreak}</Text>
-                <Text style={[styles.summaryLabel, { color: colors.subText }]}>dias de racha</Text>
+                <Text style={[styles.summaryLabel, { color: colors.subText }]}>días de racha</Text>
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.muted }]} />
               <View style={styles.summaryStat}>
                 <Text style={styles.summaryEmoji}>{moodEmoji}</Text>
-                <Text style={[styles.summaryLabel, { color: colors.subText }]}>Ultimo registro</Text>
+                <Text style={[styles.summaryLabel, { color: colors.subText }]}>Último registro</Text>
               </View>
             </View>
             <Text style={[styles.tipHelper, { color: colors.subText }]}>{personalizedTip}</Text>
           </View>
 
           <View style={styles.actionsSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Acciones rapidas</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Acciones rápidas</Text>
             <View style={[styles.actionsGrid, { gap: cardSpacing, flexDirection: isWide ? 'row' : 'column', flexWrap: 'wrap' }]}>
               {quickActions.map((action) => (
                 <TouchableOpacity

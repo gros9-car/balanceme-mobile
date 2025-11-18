@@ -80,6 +80,8 @@ const appIntents = [
       'que es la app',
       'para que sirve la app',
       'como funciona balanceme',
+      'conocenos',
+      'conócenos',
       'balancito',
     ],
   },
@@ -323,16 +325,62 @@ const createMessageGenerator = () => {
     const intentId = findIntent(textNorm);
 
     if (intentId === 'create_goal') {
-      return startFlow('create_goal');
+      return (
+        'Para crear una meta en BalanceMe:\n' +
+        '1) Desde la pantalla principal entra a "Progreso".\n' +
+        '2) Toca el boton "Nueva meta".\n' +
+        '3) Elige si quieres seguir tu estado de animo, tus habitos o una meta personalizada.\n' +
+        '4) Ajusta el objetivo semanal y guarda.\n\n' +
+        'Despues podras ver tus metas activas y registrarlas desde la misma pantalla de Progreso.'
+      );
     }
     if (intentId === 'log_mood') {
-      return startFlow('log_mood');
+      return (
+        'Para registrar tu estado de animo:\n' +
+        '1) En la pantalla de inicio toca "Registrar animo".\n' +
+        '2) Elige hasta tres emojis que describan como te sientes.\n' +
+        '3) Revisa las sugerencias y pulsa "Guardar estado".\n\n' +
+        'Solo puedes registrar tu animo una vez al dia; la pantalla te mostrara cuanto falta para el siguiente registro.'
+      );
     }
     if (intentId === 'view_report') {
-      return startFlow('view_report');
+      return (
+        'Para ver tu progreso:\n' +
+        '1) Desde el inicio entra a la pantalla "Progreso semanal".\n' +
+        '2) Si aun no hay reporte de esta semana, toca "Generar reporte".\n' +
+        '3) Revisa el resumen de emociones, habitos y metas activas.\n\n' +
+        'Si quieres, dime que parte del reporte te gustaria entender mejor.'
+      );
     }
 
-    const direct = replyForIntent(intentId);
+    const direct = (() => {
+      switch (intentId) {
+        case 'about_app':
+          return (
+            'BalanceMe es una app para cuidar tu bienestar emocional.\n' +
+            'Con ella puedes:\n' +
+            '- Registrar como te sientes dia a dia.\n' +
+            '- Registrar habitos diarios.\n' +
+            '- Crear metas y ver tu progreso semanal.\n' +
+            '- Escribir en tu diario y usar la red de apoyo.\n\n' +
+            'Puedo guiarte para registrar tu animo, tus habitos o entender la pantalla de Progreso. Que te gustaria hacer?'
+          );
+        case 'notifications':
+          return (
+            'Por ahora BalanceMe envia notificaciones automaticas cuando se generan reportes semanales o recibes mensajes en la red de apoyo.\n' +
+            'Te recomiendo mantener activadas las notificaciones del sistema para la app.\n\n' +
+            'Aun no hay un panel de recordatorios configurables, pero puedes crear el habito de revisar tus pantallas de Animo, Habitos y Progreso cada dia.'
+          );
+        case 'profile':
+          return (
+            'En tu perfil puedes revisar y actualizar tus datos basicos y, si lo necesitas, eliminar tu cuenta.\n' +
+            'Para cambiar entre modo claro y oscuro entra a la pantalla "Configuracion".\n\n' +
+            'Tambien puedes cerrar sesion desde el menu lateral de la pantalla de inicio.'
+          );
+        default:
+          return replyForIntent(intentId);
+      }
+    })();
     if (direct) return direct;
 
     // Fallback genérico

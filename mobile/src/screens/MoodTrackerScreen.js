@@ -27,8 +27,10 @@ import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { computeMoodAverages, moodScoreToLabel } from '../utils/moodAnalysis';
+import { formatDateTimeShort } from '../utils/dateTimeFormat';
 
-const COOL_DOWN_HOURS = 12;
+// Permite registrar el estado de animo solo una vez cada 24 horas.
+const COOL_DOWN_HOURS = 24;
 const COOL_DOWN_MS = COOL_DOWN_HOURS * 60 * 60 * 1000;
 const MAX_EMOJIS_PER_ENTRY = 3;
 
@@ -300,7 +302,6 @@ export default function MoodTrackerScreen({ navigation }) {
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesión requerida', 'Inicia sesión para registrar tu estado de ánimo.');
-      navigation?.replace?.('Login');
       return;
     }
     if (isOnCooldown) {
@@ -314,6 +315,58 @@ export default function MoodTrackerScreen({ navigation }) {
 
     const agentResponse = agentPreview.suggestions.length ? agentPreview : buildAgentResponse(selectedEmojis);
     const entrySuggestions = agentResponse.suggestions.length ? agentResponse.suggestions : fallbackSuggestions.slice(0, 3);
+    const entrySummary = agentResponse.summary;
+    const createdAt = Timestamp.now();
+
+    setSaving(true);
+    try {
+      const moodsCollection = collection(db, 'users', user.uid, 'moods');
+      const score = computeMoodAverages(selectedEmojis);
+      await addDoc(moodsCollection, {
+        emojis: selectedEmojis,
+        suggestions: entrySuggestions,
+        agentSummary: entrySummary,
+        scores: score,
+        moodLabel: moodScoreToLabel(score),
+        createdAt,
+        createdAtServer: serverTimestamp(),
+      });
+
+      setSelectedEmojis([]);
+      setSuggestions(entrySuggestions);
+      setAgentSummary(entrySummary);
+      setLastSavedAt(createdAt.toDate());
+      const nextWindow = new Date(createdAt.toMillis() + COOL_DOWN_MS);
+      setCooldownEndsAt(nextWindow);
+
+      Alert.alert('Estado registrado', 'Tus emociones fueron guardadas correctamente.');
+    } catch (error) {
+      Alert.alert('Error', 'No pudimos guardar tu estado. Intenta nuevamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveMoodEntry = async () => {
+    if (!user?.uid) {
+      Alert.alert('Sesion requerida', 'Inicia sesion para registrar tu estado de animo.');
+      return;
+    }
+    if (isOnCooldown) {
+      Alert.alert('Espera un poco mas', 'Solo puedes registrar tu estado de animo una vez al dia.');
+      return;
+    }
+    if (!selectedEmojis.length) {
+      Alert.alert('Selecciona emojis', 'Elige al menos un emoji para continuar.');
+      return;
+    }
+
+    const agentResponse = agentPreview.suggestions.length
+      ? agentPreview
+      : buildAgentResponse(selectedEmojis);
+    const entrySuggestions = agentResponse.suggestions.length
+      ? agentResponse.suggestions
+      : fallbackSuggestions.slice(0, 3);
     const entrySummary = agentResponse.summary;
     const createdAt = Timestamp.now();
 
@@ -442,7 +495,7 @@ export default function MoodTrackerScreen({ navigation }) {
             { backgroundColor: colors.primary, shadowColor: colors.primary },
             isSaveDisabled && { backgroundColor: colors.muted, shadowOpacity: 0, elevation: 0 },
           ]}
-          onPress={handleSave}
+          onPress={saveMoodEntry}
           disabled={isSaveDisabled}
           activeOpacity={0.9}
         >
@@ -460,7 +513,9 @@ export default function MoodTrackerScreen({ navigation }) {
           <Text style={[styles.cooldownText, { color: colors.danger }]}>{cooldownMessage}</Text>
         ) : null}
         {lastSavedAt ? (
-          <Text style={[styles.cooldownText, { color: colors.subText }]}>Ultimo registro: {lastSavedAt.toLocaleString()}</Text>
+          <Text style={[styles.cooldownText, { color: colors.subText }]}>
+            Ultimo registro: {formatDateTimeShort(lastSavedAt)}
+          </Text>
         ) : null}
 
         {suggestions.length ? (

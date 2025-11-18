@@ -60,6 +60,7 @@ export default function HabitsScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasTodayEntry, setHasTodayEntry] = useState(false);
+  const [cooldownEndsAt, setCooldownEndsAt] = useState(null);
 
   const todayLabel = useMemo(() => formatDate(new Date()), []);
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
@@ -77,6 +78,7 @@ export default function HabitsScreen({ navigation }) {
     if (!user?.uid) {
       setEntries([]);
       setHasTodayEntry(false);
+      setCooldownEndsAt(null);
       setLoading(false);
       return undefined;
     }
@@ -109,22 +111,49 @@ export default function HabitsScreen({ navigation }) {
         });
 
         setEntries(nextEntries);
-        const today = startOfDay(new Date()).getTime();
-        const foundToday = nextEntries.some(
-          (entry) => startOfDay(entry.createdAt).getTime() === today,
-        );
-        setHasTodayEntry(foundToday);
+
+        // Usamos una ventana de 24 horas desde el último registro
+        // en lugar de limitarlo al cambio de día calendario.
+        const latestEntry = nextEntries[0] ?? null;
+        if (latestEntry?.createdAt instanceof Date) {
+          const nextWindow = new Date(latestEntry.createdAt.getTime() + DAY_MS);
+          setCooldownEndsAt(nextWindow);
+          setHasTodayEntry(nextWindow.getTime() > Date.now());
+        } else {
+          setCooldownEndsAt(null);
+          setHasTodayEntry(false);
+        }
         setLoading(false);
       },
       () => {
         setEntries([]);
         setHasTodayEntry(false);
+        setCooldownEndsAt(null);
         setLoading(false);
       },
     );
 
     return unsubscribe;
   }, [user?.uid]);
+
+  const cooldownMessage = useMemo(() => {
+    if (!cooldownEndsAt) {
+      return '';
+    }
+    const diffMs = cooldownEndsAt.getTime() - Date.now();
+    if (diffMs <= 0) {
+      return '';
+    }
+    const totalMinutes = Math.ceil(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) {
+      return `Podras registrar nuevos habitos en ${minutes} min.`;
+    }
+    return `Podras registrar nuevos habitos en ${hours} h ${minutes
+      .toString()
+      .padStart(2, '0')} min.`;
+  }, [cooldownEndsAt]);
 
   const toggleHabit = (value) => {
     if (hasTodayEntry) {
@@ -146,9 +175,6 @@ export default function HabitsScreen({ navigation }) {
       showAlert({
         title: 'Sesión requerida',
         message: 'Inicia sesión para registrar tus hábitos.',
-        onConfirm: () => {
-          navigation?.replace?.('Login');
-        },
       });
       return;
     }
@@ -346,6 +372,9 @@ export default function HabitsScreen({ navigation }) {
               </Text>
             )}
           </TouchableOpacity>
+          {cooldownMessage ? (
+            <Text style={[styles.infoText, { color: colors.danger }]}>{cooldownMessage}</Text>
+          ) : null}
         </View>
 
         <View style={styles.timelineHeader}>

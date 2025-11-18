@@ -1,10 +1,12 @@
 ﻿import { useEffect, useRef } from "react";
 import {
   collection,
+  doc,
   limit,
   onSnapshot,
   orderBy,
   query,
+  setDoc,
 } from "firebase/firestore";
 
 import { db } from "../screens/firebase/config";
@@ -110,6 +112,23 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
           if (previousMessageId === docSnapshot.id) {
             return;
           }
+
+          // Marca el chat como no leído para este usuario.
+          const friendshipRef = doc(
+            db,
+            "users",
+            userUid,
+            "friendships",
+            friendUid,
+          );
+          setDoc(
+            friendshipRef,
+            {
+              unread: true,
+              lastUnreadMessageId: docSnapshot.id,
+            },
+            { merge: true },
+          ).catch(() => undefined);
 
           sendLocalNotification({
             title: `Nuevo mensaje de ${displayName}`,

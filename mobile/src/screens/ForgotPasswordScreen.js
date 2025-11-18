@@ -23,6 +23,7 @@ import { auth } from './firebase/config';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 import { useAppAlert } from '../context/AppAlertContext';
+import { passwordPolicySummary } from '../utils/passwordPolicy';
 
 // --- Hook de responsividad ---
 const useResponsiveForgot = () => {
@@ -304,6 +305,15 @@ export default function ForgotPasswordScreen({ navigation }) {
                 )}
               </TouchableOpacity>
 
+              <Text
+                style={[
+                  styles.policyText,
+                  { color: colors.subText, fontSize: labelFont - 1 },
+                ]}
+              >
+                Recuerda: {passwordPolicySummary}
+              </Text>
+
               <TouchableOpacity
                 style={styles.backToLogin}
                 onPress={() => navigation?.navigate?.('Login')}
@@ -377,7 +387,9 @@ export default function ForgotPasswordScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    // El color de fondo real viene de ThemeContext a traves de SafeAreaView.
+    // Mantener transparente permite que el modo oscuro se aplique igual que en otras pantallas.
+    backgroundColor: 'transparent',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -459,6 +471,9 @@ const styles = StyleSheet.create({
   motivationalText: {
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  policyText: {
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,

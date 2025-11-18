@@ -101,7 +101,7 @@ export default function LoginScreen({ navigation }) {
 
       showAlert('Bienvenido', 'Inicio de sesión exitoso');
 
-      navigation.navigate('Home');
+      // Navegación a Home la maneja onAuthStateChanged.
 
     } catch (error) {
 

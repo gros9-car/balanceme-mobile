@@ -61,7 +61,7 @@ export default function ProfileScreen({ navigation }) {
       maxWidth: maxContentWidth,
       alignSelf: 'center',
     }),
-    [maxContentWidth],
+    [maxContentWidth]
   );
 
   const fallbackName = useMemo(() => {
@@ -96,9 +96,7 @@ export default function ProfileScreen({ navigation }) {
 
           return;
         }
-      } catch (error) {
-        // ignore, fall back to auth data
-      }
+      } catch (error) {}
 
       if (isMounted) {
         setProfileName(fallbackName);
@@ -125,7 +123,7 @@ export default function ProfileScreen({ navigation }) {
   }, [user?.metadata?.creationTime]);
 
   const moodText =
-    effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu d√≠a';
+    effectiveTheme === 'dark' ? 'Modo nocturno activo' : 'Listo para balancear tu dÌa';
 
   const avatarLetter = profileName?.charAt(0)?.toUpperCase() ?? '?';
 
@@ -133,7 +131,7 @@ export default function ProfileScreen({ navigation }) {
     const normalized = pendingName.trim();
     if (!user?.uid) return;
     if (!normalized) {
-      Alert.alert('Nombre requerido', 'Ingresa un nombre v√°lido.');
+      Alert.alert('Nombre requerido', 'Ingresa un nombre v·lido.');
       return;
     }
     if (normalized === profileName) {
@@ -176,7 +174,7 @@ export default function ProfileScreen({ navigation }) {
 
     showAlert(
       'Eliminar cuenta',
-      'Esta acci√≥n borrar√° tu cuenta y tus datos emocionales.',
+      'Esta acciÛn borrar· tu cuenta y tus datos emocionales.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -206,6 +204,8 @@ export default function ProfileScreen({ navigation }) {
               showAlert({
                 title: 'Cuenta eliminada',
                 message: 'Tu cuenta fue borrada.',
+                onConfirm: () =>
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] }),
               });
             } catch (error) {
               showAlert({ title: 'Error', message: 'No pudimos eliminar tu cuenta.' });
@@ -214,7 +214,7 @@ export default function ProfileScreen({ navigation }) {
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -230,7 +230,7 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.emptyState, { paddingHorizontal: horizontalPadding }]}>
           <Ionicons name="lock-closed-outline" size={32} color={colors.subText} />
           <Text style={[styles.emptyText, { color: colors.subText }]}>
-            Debes iniciar sesi√≥n para ver tu perfil.
+            Debes iniciar sesiÛn para ver tu perfil.
           </Text>
         </View>
       </SafeAreaView>
@@ -265,7 +265,7 @@ export default function ProfileScreen({ navigation }) {
           styles.scrollContainer,
           {
             paddingHorizontal: horizontalPadding,
-            paddingTop: 8,
+            paddingTop: 8, // REDUCIDO
             paddingBottom: verticalPadding,
           },
         ]}
@@ -349,40 +349,12 @@ export default function ProfileScreen({ navigation }) {
             <Text style={[styles.caption, { color: colors.subText }]}>{moodText}</Text>
           </View>
 
-          <View
-            style={[
-              styles.section,
-              { backgroundColor: colors.surface, borderColor: colors.muted },
-            ]}
-          >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Datos de la cuenta
-            </Text>
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Datos de la cuenta</Text>
 
             <ProfileRow icon="mail-outline" label="Correo" value={user.email} colors={colors} />
             <ProfileRow icon="person-circle-outline" label="UID" value={user.uid} colors={colors} />
-            <ProfileRow
-              icon="calendar-outline"
-              label="Miembro desde"
-              value={joinDate}
-              colors={colors}
-            />
-
-            <TouchableOpacity
-              style={[
-                styles.securityButton,
-                {
-                  borderColor: colors.accent,
-                  backgroundColor: effectiveTheme === 'dark' ? '#111827' : '#eef2ff',
-                },
-              ]}
-              onPress={() => navigation.navigate('ResetPassword')}
-            >
-              <Ionicons name="key-outline" size={18} color={colors.accent} />
-              <Text style={[styles.securityText, { color: colors.accent }]}>
-                Cambiar contrase√±a
-              </Text>
-            </TouchableOpacity>
+            <ProfileRow icon="calendar-outline" label="Miembro desde" value={joinDate} colors={colors} />
 
             <TouchableOpacity
               style={[
@@ -418,7 +390,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topBarContainer: {
-    paddingTop: 4,
+    width: '100%',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -428,17 +400,20 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 20,
   },
+
+  // ?? AJUSTADO PARA REDUCIR ESPACIO ENTRE TÕTULO Y NOMBRE
   card: {
     alignItems: 'center',
     borderRadius: 24,
-    paddingVertical: 20,
+    paddingVertical: 20, // antes 32
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 12, // antes 16
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 12,
     elevation: 6,
   },
+
   avatar: {
     width: 100,
     height: 100,
@@ -459,6 +434,7 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: '700',
   },
+
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -471,6 +447,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   editContainer: {
     width: '100%',
     gap: 12,
@@ -501,6 +478,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
   name: {
     fontSize: 24,
     fontWeight: '700',
@@ -509,6 +487,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+
   section: {
     borderWidth: 1,
     borderRadius: 24,
@@ -519,22 +498,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  securityButton: {
-    marginTop: 8,
-    marginBottom: 4,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  securityText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
   deleteButton: {
     marginTop: 12,
     borderWidth: 1,
@@ -553,6 +517,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -578,6 +543,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+
   emptyState: {
     flex: 1,
     alignItems: 'center',

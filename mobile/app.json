@@ -38,7 +38,8 @@
       "favicon": "./assets/AppIcons/Assets.xcassets/AppIcon.appiconset/32.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "owner": "kesc",
     "extra": {

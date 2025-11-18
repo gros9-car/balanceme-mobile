@@ -1,7 +1,13 @@
-﻿import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
+import {
+  getAuth,
+  initializeAuth,
+  getReactNativePersistence,
+} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDS1K8BtBeoViQxmZ8lDQGx1YPe0Z3Kx9I',
@@ -14,8 +20,26 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+let auth;
+
+if (Platform.OS === 'web') {
+  // En web usamos la auth por defecto del SDK.
+  auth = getAuth(app);
+} else if (
+  typeof initializeAuth === 'function' &&
+  typeof getReactNativePersistence === 'function'
+) {
+  // En React Native usamos AsyncStorage para persistir la sesión.
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} else {
+  // Fallback en caso de que la versión de Firebase no exponga las APIs anteriores.
+  auth = getAuth(app);
+}
+
 const db = getFirestore(app);
-const auth = getAuth(app);
 const storage = getStorage(app);
 
 export { auth, db, storage };

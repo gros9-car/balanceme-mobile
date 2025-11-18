@@ -27,6 +27,7 @@ import {
   deleteDoc,
   writeBatch,
   limit,
+  setDoc,
 } from "firebase/firestore";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -34,6 +35,7 @@ import { auth, db } from "./firebase/config";
 import { useTheme } from "../context/ThemeContext";
 import PageHeader from "../components/PageHeader";
 import { useAppAlert } from "../context/AppAlertContext";
+import { formatTimeHM } from "../utils/dateTimeFormat";
 
 // === Hook de responsividad específico para el chat ===
 const useResponsiveChat = () => {
@@ -83,12 +85,12 @@ const useResponsiveChat = () => {
 // Genera un identificador de chat único ordenando ambos UID.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
 
-// Convierte un timestamp de Firestore en una hora legible.
+// Convierte un timestamp de Firestore en una hora legible (HH:MM, sin segundos).
 const formatDateTime = (timestamp) => {
   try {
-    return timestamp.toDate().toLocaleTimeString();
+    return formatTimeHM(timestamp);
   } catch (error) {
-    return new Date().toLocaleTimeString();
+    return formatTimeHM(new Date());
   }
 };
 
@@ -275,6 +277,37 @@ export default function DirectChatScreen({ navigation, route }) {
 
     return unsubscribe;
   }, [user?.uid, friendUid]);
+
+  // Marca el chat como leído para el usuario actual cuando ve los mensajes.
+  const lastMarkedReadRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.uid || !friendUid || !messages.length) {
+      return;
+    }
+
+    const latest = messages[0];
+    if (!latest?.id) {
+      return;
+    }
+
+    if (lastMarkedReadRef.current === latest.id) {
+      return;
+    }
+
+    lastMarkedReadRef.current = latest.id;
+
+    const friendshipRef = doc(db, "users", user.uid, "friendships", friendUid);
+    setDoc(
+      friendshipRef,
+      {
+        unread: false,
+        lastReadMessageId: latest.id,
+        lastReadAt: serverTimestamp(),
+      },
+      { merge: true },
+    ).catch(() => undefined);
+  }, [messages, user?.uid, friendUid]);
 
   // Publica un mensaje si ambos usuarios son válidos y hay texto.
   const handleSend = async () => {

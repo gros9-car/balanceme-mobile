@@ -162,7 +162,6 @@ const JournalScreen = ({ navigation }) => {
   const handleSave = async () => {
     if (!user?.uid) {
       Alert.alert('Sesión requerida', 'Inicia sesión para escribir en tu diario.');
-      navigation?.replace?.('Login');
       return;
     }
 

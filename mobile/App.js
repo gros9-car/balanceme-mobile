@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useWindowDimensions } from "react-native";
+import { useWindowDimensions, View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import RegisterScreen from "./src/screens/RegisterScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
+import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
@@ -30,6 +31,7 @@ import { auth } from "./src/screens/firebase/config";
 import { useNotificationSetup } from "./src/hooks/useNotificationSetup";
 import { useFriendRequestNotifications } from "./src/hooks/useFriendRequestNotifications";
 import { useMessageNotifications } from "./src/hooks/useMessageNotifications";
+import { useSessionSecurity } from "./src/hooks/useSessionSecurity";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { GoalProvider } from "./src/context/GoalContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -44,27 +46,48 @@ const AppNavigator = () => {
   const { navigationTheme } = useTheme();
   const { width } = useWindowDimensions();
   const animation = width >= 768 ? "fade" : "slide_from_right";
-  const [userUid, setUserUid] = useState(auth.currentUser?.uid ?? null);
+  const [user, setUser] = useState(() => auth.currentUser ?? null);
+  const [initializing, setInitializing] = useState(true);
+  const userUid = user?.uid ?? null;
   const permissionStatus = useNotificationSetup(userUid);
   const notificationsEnabled = permissionStatus !== false;
+  const notificationHooksEnabled = Boolean(userUid);
 
   useNotificationNavigation();
+  useSessionSecurity(user);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUserUid(user?.uid ?? null);
+      setUser(user ?? null);
+      setInitializing(false);
     });
 
     return unsubscribe;
   }, []);
 
-  useFriendRequestNotifications({ enabled: notificationsEnabled, userUid });
-  useMessageNotifications({ enabled: notificationsEnabled, userUid });
+  // Para lógica interna (badges, contadores, etc.) queremos que
+  // los hooks corran siempre que haya usuario, aunque el sistema
+  // tenga deshabilitadas las notificaciones push.
+  useFriendRequestNotifications({ enabled: notificationHooksEnabled, userUid });
+  useMessageNotifications({ enabled: notificationHooksEnabled, userUid });
+
+  if (initializing) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer theme={navigationTheme} ref={navigationRef}>
       <Stack.Navigator
-        initialRouteName="Login"
         screenOptions={{
           ...defaultScreenOptions,
           headerShown: false,
@@ -73,29 +96,39 @@ const AppNavigator = () => {
           animation,
         }}
       >
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-
-        {/* Main */}
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Mood" component={MoodTrackerScreen} />
-        <Stack.Screen name="MoodInsights" component={MoodInsightsScreen} />
-        <Stack.Screen name="SelfCare" component={SelfCareLibraryScreen} />
-        <Stack.Screen name="Emergency" component={EmergencyResourcesScreen} />
-        <Stack.Screen name="Journal" component={JournalScreen} />
-        <Stack.Screen name="Habits" component={HabitsScreen} />
-        <Stack.Screen name="Progress" component={ProgressScreen} />
-        <Stack.Screen name="SupportChat" component={SupportChatScreen} />
-        <Stack.Screen name="HelpForum" component={HelpForumScreen} />
-        <Stack.Screen name="Social" component={SocialScreen} />
-        <Stack.Screen name="DirectChat" component={DirectChatScreen} />
-        <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
-        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-        <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
-        <Stack.Screen name="AboutBalanceMe" component={AboutBalanceMeScreen} />
+        {user ? (
+          <>
+            {/* Main */}
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="Mood" component={MoodTrackerScreen} />
+            <Stack.Screen name="MoodInsights" component={MoodInsightsScreen} />
+            <Stack.Screen name="SelfCare" component={SelfCareLibraryScreen} />
+            <Stack.Screen name="Emergency" component={EmergencyResourcesScreen} />
+            <Stack.Screen name="Journal" component={JournalScreen} />
+            <Stack.Screen name="Habits" component={HabitsScreen} />
+            <Stack.Screen name="Progress" component={ProgressScreen} />
+            <Stack.Screen name="SupportChat" component={SupportChatScreen} />
+            <Stack.Screen name="HelpForum" component={HelpForumScreen} />
+            <Stack.Screen name="Social" component={SocialScreen} />
+            <Stack.Screen name="DirectChat" component={DirectChatScreen} />
+            <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+            <Stack.Screen name="AboutBalanceMe" component={AboutBalanceMeScreen} />
+          </>
+        ) : (
+          <>
+            {/* Auth */}
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="AboutBalanceMe" component={AboutBalanceMeScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

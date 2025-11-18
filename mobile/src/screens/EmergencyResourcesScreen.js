@@ -119,8 +119,7 @@ const EmergencyResourcesScreen = ({ navigation }) => {
 
     if (contact.action.kind === 'phone') {
       const normalized = contact.action.value.replace(/\s+/g, '');
-      const encodedNumber = encodeURIComponent(normalized);
-      const url = `tel:${encodedNumber}`;
+      const url = `tel:${normalized}`;
       const supported = await Linking.canOpenURL(url);
       if (supported) {
         await Linking.openURL(url);
