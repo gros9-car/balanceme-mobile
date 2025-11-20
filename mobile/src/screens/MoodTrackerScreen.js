@@ -28,10 +28,15 @@ import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { computeMoodAverages, moodScoreToLabel } from '../utils/moodAnalysis';
 import { formatDateTimeShort } from '../utils/dateTimeFormat';
+import { getNextEmotionEnableDate } from '../utils/reminderRules';
+import {
+  cancelEmotionReminder,
+  scheduleNextEmotionReminderFromLastDate,
+} from '../services/reminderNotifications';
+import { getNotificationSettingsForUser } from '../services/notificationSettings';
+import { MOOD_SUGGESTIONS } from './SupportChatScreenClean';
 
 // Permite registrar el estado de animo solo una vez cada 24 horas.
-const COOL_DOWN_HOURS = 24;
-const COOL_DOWN_MS = COOL_DOWN_HOURS * 60 * 60 * 1000;
 const MAX_EMOJIS_PER_ENTRY = 3;
 
 const fallbackSuggestions = [
@@ -204,6 +209,7 @@ export default function MoodTrackerScreen({ navigation }) {
   const [agentSummary, setAgentSummary] = useState('');
   const [cooldownEndsAt, setCooldownEndsAt] = useState(null);
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [helperPrompts, setHelperPrompts] = useState(() => MOOD_SUGGESTIONS.slice(0, 3));
 
   const user = auth.currentUser;
 
@@ -240,9 +246,21 @@ export default function MoodTrackerScreen({ navigation }) {
         const createdAtTimestamp = data?.createdAt ?? data?.createdAtServer;
         const createdAtDate = createdAtTimestamp?.toDate ? createdAtTimestamp.toDate() : null;
         if (createdAtDate) {
-          const nextWindow = new Date(createdAtDate.getTime() + COOL_DOWN_MS);
-          setCooldownEndsAt(nextWindow > new Date() ? nextWindow : null);
+          const nextWindow = getNextEmotionEnableDate(createdAtDate);
+          setCooldownEndsAt(nextWindow && nextWindow > new Date() ? nextWindow : null);
           setLastSavedAt(createdAtDate);
+
+          // Notificaciones: reprograma el recordatorio de emociones si está habilitado.
+          try {
+            const settings = await getNotificationSettingsForUser(user.uid);
+            if (settings.emotionsReminderEnabled && nextWindow) {
+              await scheduleNextEmotionReminderFromLastDate(createdAtDate, user.uid);
+            } else {
+              await cancelEmotionReminder({ userUid: user.uid });
+            }
+          } catch {
+            // Si algo falla al programar el recordatorio, no bloqueamos la UI.
+          }
         }
         if (Array.isArray(data?.suggestions)) {
           setSuggestions(data.suggestions.slice(0, 3));
@@ -297,6 +315,14 @@ export default function MoodTrackerScreen({ navigation }) {
     }
     return `Podrás registrar un nuevo estado en ${hours} h ${minutes.toString().padStart(2, '0')} min.`;
   }, [cooldownEndsAt]);
+
+  const refreshHelperPrompts = () => {
+    if (!Array.isArray(MOOD_SUGGESTIONS) || !MOOD_SUGGESTIONS.length) {
+      return;
+    }
+    const shuffled = [...MOOD_SUGGESTIONS].sort(() => Math.random() - 0.5);
+    setHelperPrompts(shuffled.slice(0, 3));
+  };
 
   // Guarda el estado de ánimo y las sugerencias generadas en Firestore.
   const handleSave = async () => {
@@ -387,9 +413,22 @@ export default function MoodTrackerScreen({ navigation }) {
       setSelectedEmojis([]);
       setSuggestions(entrySuggestions);
       setAgentSummary(entrySummary);
-      setLastSavedAt(createdAt.toDate());
-      const nextWindow = new Date(createdAt.toMillis() + COOL_DOWN_MS);
+      const createdAtDate = createdAt.toDate();
+      setLastSavedAt(createdAtDate);
+      const nextWindow = getNextEmotionEnableDate(createdAtDate);
       setCooldownEndsAt(nextWindow);
+
+      // Notificaciones: reprograma el recordatorio de emociones si está habilitado.
+      try {
+        const settings = await getNotificationSettingsForUser(user.uid);
+        if (settings.emotionsReminderEnabled && nextWindow) {
+          await scheduleNextEmotionReminderFromLastDate(createdAtDate, user.uid);
+        } else {
+          await cancelEmotionReminder({ userUid: user.uid });
+        }
+      } catch {
+        // Si algo falla al programar el recordatorio, no bloqueamos la app.
+      }
 
       Alert.alert('Estado registrado', 'Tus emociones fueron guardadas correctamente.');
     } catch (error) {
@@ -436,38 +475,71 @@ export default function MoodTrackerScreen({ navigation }) {
               </View>
             }
           />
-          <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.surface, shadowColor: colors.outline },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Selecciona tus emojis</Text>
-          <View style={styles.emojiGrid}>
-            {emojiOptions.map((item) => {
-              const isSelected = selectedEmojis.includes(item.name);
-              const emojiChar = String.fromCodePoint(item.codePoint);
-              return (
-                <TouchableOpacity
-                  key={item.name}
-                  style={[
-                    styles.emojiButton,
-                    { borderColor: colors.muted, backgroundColor: colors.muted },
-                    isSelected && { borderColor: colors.primary, backgroundColor: colors.primary + '22' },
-                  ]}
-                  onPress={() => toggleEmoji(item.name)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.emojiLabel}>{emojiChar}</Text>
-                  <Text style={[styles.emojiText, { color: colors.text }]}>{item.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={[styles.counterText, { color: colors.subText }]}>Seleccionados: {selectedEmojis.length} / 3</Text>
-        </View>
 
-        <View
+          {helperPrompts.length ? (
+            <View
+              style={[
+                styles.card,
+                { backgroundColor: colors.surface, shadowColor: colors.outline },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Ideas para registrar tu ánimo
+              </Text>
+              {helperPrompts.map((text) => (
+                <View key={text} style={styles.tipRow}>
+                  <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+                  <Text style={[styles.tipText, { color: colors.subText }]}>{text}</Text>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={[styles.refreshButton, { borderColor: colors.muted }]}
+                onPress={refreshHelperPrompts}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="refresh" size={16} color={colors.text} />
+                <Text style={[styles.refreshText, { color: colors.text }]}>Ver otras ideas</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, shadowColor: colors.outline },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Selecciona tus emojis</Text>
+            <View style={styles.emojiGrid}>
+              {emojiOptions.map((item) => {
+                const isSelected = selectedEmojis.includes(item.name);
+                const emojiChar = String.fromCodePoint(item.codePoint);
+                return (
+                  <TouchableOpacity
+                    key={item.name}
+                    style={[
+                      styles.emojiButton,
+                      { borderColor: colors.muted, backgroundColor: colors.muted },
+                      isSelected && {
+                        borderColor: colors.primary,
+                        backgroundColor: colors.primary + '22',
+                      },
+                    ]}
+                    onPress={() => toggleEmoji(item.name)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.emojiLabel}>{emojiChar}</Text>
+                    <Text style={[styles.emojiText, { color: colors.text }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={[styles.counterText, { color: colors.subText }]}>
+              Seleccionados: {selectedEmojis.length} / 3
+            </Text>
+          </View>
+
+          <View
           style={[
             styles.card,
             { backgroundColor: colors.surface, shadowColor: colors.outline },
@@ -654,6 +726,21 @@ const styles = StyleSheet.create({
   savedTitle: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  refreshButton: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  refreshText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

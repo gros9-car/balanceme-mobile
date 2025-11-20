@@ -50,20 +50,10 @@ const handleNotificationNavigation = (response) => {
     return;
   }
 
-  // Recordatorios de emociones/hábitos.
-  if (data.type === "emotion-reminder") {
-    navigationRef.navigate("Mood");
-    return;
-  }
-  if (data.type === "habit-reminder") {
-    navigationRef.navigate("Habits");
-    return;
-  }
-
-  // Aquí podrías manejar otros tipos, por ejemplo solicitudes de amistad.
+  // Aqu�� podr��as manejar otros tipos, por ejemplo solicitudes de amistad.
 };
 
-// Escucha la respuesta a notificaciones y navega al destino correspondiente.
+// Escucha la respuesta a notificaciones y navega al chat correspondiente.
 export const useNotificationNavigation = () => {
   useEffect(() => {
     // En web, expo-notifications no está disponible: evitamos usar sus APIs.
@@ -82,7 +72,7 @@ export const useNotificationNavigation = () => {
       },
     );
 
-    // Maneja el caso en que la app se abre desde una notificación cuando estaba cerrada.
+    // Maneja el caso en que la app se abre desde una notificaci��n cuando estaba cerrada.
     try {
       Notifications.getLastNotificationResponseAsync().then((lastResponse) => {
         if (!isMounted || !lastResponse) {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
-import { db } from "../screens/firebase/config";
+import { auth, db } from "../screens/firebase/config";
 
 let ensureChannelPromise;
 let permissionGranted = false;
@@ -57,15 +58,8 @@ const requestPermissionsAsync = async () => {
 
 // Registra el dispositivo para recibir notificaciones push de Expo y devuelve el token.
 export const registerForPushNotificationsAsync = async () => {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== "granted") {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== "granted") {
+  // En simuladores/emuladores, Expo Push no funciona.
+  if (!Device.isDevice) {
     return null;
   }
 
@@ -86,6 +80,8 @@ const savePushTokenForUserAsync = async (userUid, token) => {
     return;
   }
 
+  // 1) Guardamos el token en la subcolección de dispositivos,
+  //    permitiendo varios dispositivos por usuario.
   const ref = doc(db, "users", userUid, "devices", token);
   await setDoc(
     ref,
@@ -93,6 +89,18 @@ const savePushTokenForUserAsync = async (userUid, token) => {
       token,
       platform: Platform.OS,
       updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  // 2) Además, lo almacenamos en el documento principal del usuario
+  //    como `expoPushToken`, alineado con el esquema de backend.
+  const userRef = doc(db, "users", userUid);
+  await setDoc(
+    userRef,
+    {
+      expoPushToken: token,
+      pushTokenUpdatedAt: serverTimestamp(),
     },
     { merge: true },
   );
@@ -158,4 +166,28 @@ export const useNotificationSetup = (userUid) => {
   }, [userUid]);
 
   return hasPermission;
+};
+
+// API directa equivalente al esquema "setupPushToken" descrito:
+// se llama tras tener un usuario autenticado y registra/guarda el token.
+export const setupPushToken = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    return;
+  }
+
+  const granted = await requestPermissionsAsync();
+  if (!granted) {
+    return;
+  }
+
+  try {
+    await ensureAndroidChannel();
+    const token = await registerForPushNotificationsAsync();
+    if (token) {
+      await savePushTokenForUserAsync(user.uid, token);
+    }
+  } catch {
+    // No bloqueamos la app si algo falla al registrar el token.
+  }
 };

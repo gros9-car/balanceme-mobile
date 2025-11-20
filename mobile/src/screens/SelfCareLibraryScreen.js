@@ -139,7 +139,7 @@ const BreathingCard = ({
 }) => (
   <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
     <View style={styles.cardHeader}>
-      <View>
+      <View style={styles.cardHeaderText}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>{exercise.title}</Text>
         <Text style={[styles.cardSubtitle, { color: colors.subText }]}>
           {exercise.duration} · {exercise.focus}
@@ -191,7 +191,7 @@ const ExpandableCard = ({ title, subtitle, children, colors }) => {
         onPress={() => setOpen((prev) => !prev)}
         activeOpacity={0.85}
       >
-        <View style={{ flex: 1 }}>
+        <View style={styles.cardHeaderText}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
           {subtitle ? (
             <Text style={[styles.cardSubtitle, { color: colors.subText }]}>{subtitle}</Text>
@@ -398,8 +398,14 @@ const styles = StyleSheet.create({
 
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  cardHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   /* 🔥 Caja uniforme para flechas */
@@ -430,6 +436,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
   },
   primaryButtonText: {
     fontSize: 12,

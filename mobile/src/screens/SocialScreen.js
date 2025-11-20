@@ -961,9 +961,7 @@ const styles = StyleSheet.create({
 
   resultInfo: {
     flexDirection: "row",
-
-    alignItems: "center",
-
+    alignItems: "flex-start",
     gap: 12,
   },
 
@@ -997,11 +995,9 @@ const styles = StyleSheet.create({
 
   friendRow: {
     flexDirection: "row",
-
-    alignItems: "center",
-
+    alignItems: "flex-start",
     justifyContent: "space-between",
-
+    flexWrap: "wrap",
     borderWidth: 1,
 
     borderRadius: 18,
@@ -1015,10 +1011,11 @@ const styles = StyleSheet.create({
 
   friendInfo: {
     flexDirection: "row",
-
-    alignItems: "center",
-
+    alignItems: "flex-start",
     gap: 12,
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
   },
 
   friendInfoButton: {
@@ -1049,14 +1046,14 @@ const styles = StyleSheet.create({
 
   friendName: {
     fontSize: 15,
-
     fontWeight: "600",
+    flexShrink: 1,
   },
 
   friendEmail: {
     fontSize: 13,
-
     color: "#6b7280",
+    flexShrink: 1,
   },
 
   acceptButton: {

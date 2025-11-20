@@ -32,6 +32,7 @@ const norm = (s) =>
       .replace(/\s+/g, ' '),
   )
     .trim()
+    // comprime repeticiones de letras ("holaaa" -> "hola")
     .replace(/([a-z])\1{1,}/g, '$1');
 
 const levenshtein = (a, b) => {
@@ -41,11 +42,11 @@ const levenshtein = (a, b) => {
   if (m === 0) return n;
   if (n === 0) return m;
   const dp = new Array(n + 1);
-  for (let j = 0; j <= n; j++) dp[j] = j;
-  for (let i = 1; i <= m; i++) {
+  for (let j = 0; j <= n; j += 1) dp[j] = j;
+  for (let i = 1; i <= m; i += 1) {
     let prev = i - 1;
     dp[0] = i;
-    for (let j = 1; j <= n; j++) {
+    for (let j = 1; j <= n; j += 1) {
       const temp = dp[j];
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
@@ -71,148 +72,202 @@ const fuzzy = (text, keywords) => {
   return false;
 };
 
-// ---------------- Intents y flujos guiados para la app ----------------
+// ---------------- Sugerencias guiadas para Balancito ----------------
+// Sugerencias pensadas para acompañar el registro diario de ánimo,
+// hábitos y diario personal dentro de la app (no son terapia).
+const MOOD_SUGGESTIONS = [
+  'Piensa en un momento de hoy que haya cambiado tu estado de ánimo de forma clara. ¿Qué ocurrió?',
+  'Describe una situación que te haya dado energía hoy, aunque haya sido algo pequeño.',
+  'Recuerda un momento incómodo del día y anota qué emoción predominó en ti.',
+  'Identifica qué hizo que tu día se sintiera más ligero o más pesado de lo normal.',
+  'Piensa en la última vez que te reíste hoy. ¿Qué estabas haciendo y con quién estabas?',
+  'Anota una situación que te haya generado tensión y cómo reaccionó tu cuerpo.',
+  'Piensa si hoy te sentiste más hacia la calma o hacia el estrés. ¿Qué factores influyeron?',
+  'Escribe qué emoción te acompaña justo ahora y qué crees que la está alimentando.',
+  'Recuerda un momento en que te sentiste orgulloso de ti hoy, aunque haya sido por algo pequeño.',
+  'Piensa en una decisión que tomaste hoy y cómo afectó tu estado de ánimo.',
+  '¿Hubo algo que te sorprendiera hoy de forma positiva o negativa? Describe esa emoción.',
+  'Anota qué te ayudó a regularte cuando te sentiste sobrepasado o molesto.',
+  'Piensa en alguien que influyó en tu estado de ánimo hoy. ¿De qué forma lo hizo?',
+  'Escribe qué te habría ayudado a sentirte un poco mejor en el momento más difícil del día.',
+  'Haz un breve balance: si tu día fuera una película, ¿cómo describirías su tono emocional?',
+  'Elige una sola palabra para resumir tu día y explica por qué la escogiste.',
+  'Piensa si hoy hubo un momento de calma. ¿Dónde estabas y qué estabas haciendo?',
+  'Anota qué cosas te quitaron energía hoy y cuáles te la devolvieron.',
+  'Describe cómo te sentiste al despertar y cómo te sientes ahora. ¿Qué cambió en el camino?',
+  'Identifica una emoción que quieras ver un poco más presente mañana.',
+];
+
+const HABIT_SUGGESTIONS = [
+  'Elige un solo hábito pequeño para hoy (por ejemplo, tomar un vaso de agua extra o estirarte 5 minutos).',
+  'Revisa qué hábito se te ha hecho más fácil mantener y piensa por qué funciona para ti.',
+  'Identifica un hábito que te cueste y anota qué podrías hacer para que sea más sencillo (menos tiempo, otro horario, etc.).',
+  'Piensa en un momento del día donde ya tengas una rutina y agrega ahí un hábito pequeño.',
+  'Anota un hábito que hoy no cumpliste y qué obstáculo principal apareció.',
+  'Registra un hábito que te haga sentir más descansado, no solo más productivo.',
+  'Elige un hábito de autocuidado que puedas hacer en menos de 5 minutos y márcalo hoy.',
+  'Revisa si hay hábitos que estás marcando solo por inercia y ajusta la lista para que tenga sentido para ti.',
+  'Piensa en un hábito que quieras retomar esta semana y define el día exacto para intentarlo de nuevo.',
+  'Anota qué hábito te ayudó más a estabilizar tu ánimo en los últimos días.',
+  'Identifica un hábito que quieras hacer con menos frecuencia y actualiza tus expectativas para que sean más realistas.',
+  'Registra un hábito relacionado con movimiento suave (caminar, estirarte, respirar) y pruébalo hoy.',
+  'Añade un hábito relacionado con tu descanso nocturno (desconectar pantallas, rutina antes de dormir).',
+  'Piensa en un hábito que te acerque a alguien importante para ti (enviar un mensaje, llamar, compartir algo).',
+  'Elige un hábito que puedas hacer incluso en un día difícil y márcalo como tu “mínimo viable”.',
+  'Revisa tus hábitos de los últimos días y detecta si hay algún patrón entre ellos y tu estado de ánimo.',
+  'Anota un hábito que quieras pausar por ahora porque no te está ayudando como pensabas.',
+  'Piensa en un hábito que te recuerde cuidar tu cuerpo (alimentación, hidratación, descanso).',
+  'Registra un pequeño hábito de orden o limpieza que te ayude a sentir tu entorno más liviano.',
+  'Define un hábito para mañana que sea tan simple que te resulte casi imposible no hacerlo.',
+];
+
+const JOURNAL_SUGGESTIONS = [
+  'Escribe tres cosas que hayan ocurrido hoy y que quieras recordar dentro de un año.',
+  'Describe un momento en el que te hayas sentido acompañado o comprendido recientemente.',
+  'Anota algo que te haya frustrado hoy y qué te hubiera gustado poder decir en ese momento.',
+  'Escribe sobre una situación donde mostraste más paciencia de la que pensabas que tenías.',
+  'Haz una lista de tres cosas por las que te sientas agradecido hoy, incluso si son muy pequeñas.',
+  'Cuenta una historia breve de tu día como si se la narraras a una persona de confianza.',
+  'Anota un logro de esta semana que quizás hayas pasado por alto.',
+  'Escribe qué te gustaría que tu “yo del futuro” recuerde sobre la persona que eres hoy.',
+  'Reflexiona sobre una decisión reciente: ¿qué aprendiste de ella, haya salido bien o mal?',
+  'Describe un lugar donde te sientas seguro y qué detalles lo hacen especial.',
+  'Escribe sobre una emoción que tiendes a evitar y qué la hace difícil de mirar.',
+  'Anota una conversación que haya sido importante para ti en los últimos días.',
+  'Haz una carta breve a alguien (no tienes que enviarla) contándole cómo te has sentido últimamente.',
+  'Escribe qué fue lo más difícil de esta semana y qué te ayudó a seguir adelante.',
+  'Imagina que hoy fue un capítulo de un libro sobre tu vida. ¿Cómo se titularía ese capítulo?',
+  'Describe un momento en el que te hayas sentido orgulloso de tu propia forma de reaccionar.',
+  'Anota algo que estés esperando con ganas, aunque aún falte tiempo para que ocurra.',
+  'Escribe sobre una pequeña rutina que te ayude a terminar el día con más calma.',
+  'Piensa en alguien que haya sido importante en tu historia y escribe un recuerdo que tengas con esa persona.',
+  'Haz una lista de aprendizajes que te haya dejado el último mes, aunque hayan surgido de situaciones difíciles.',
+];
+
+const SUGGESTION_POOLS = {
+  mood: MOOD_SUGGESTIONS,
+  habit: HABIT_SUGGESTIONS,
+  journal: JOURNAL_SUGGESTIONS,
+};
+
+// Devuelve una sugerencia aleatoria y un nuevo estado de
+// "últimas sugerencias" evitando repetir las últimas N.
+const getRandomSuggestion = (type, recentByType, windowSize = 4) => {
+  const pool = SUGGESTION_POOLS[type] || [];
+  if (!pool.length) {
+    return { suggestion: null, nextRecentByType: recentByType };
+  }
+
+  const recentForType = recentByType[type] || [];
+  const forbidden = recentForType.slice(-windowSize);
+  const candidates = pool.filter((s) => !forbidden.includes(s));
+  const base = candidates.length ? candidates : pool;
+  const suggestion = base[Math.floor(Math.random() * base.length)];
+  const updatedForType = [...forbidden, suggestion].slice(-windowSize);
+
+  return {
+    suggestion,
+    nextRecentByType: {
+      ...recentByType,
+      [type]: updatedForType,
+    },
+  };
+};
+
+// ---------------- Intents para la app ----------------
 const appIntents = [
   {
-    id: 'about_app',
+    id: 'help',
     keywords: [
-      'que es balanceme',
-      'que es la app',
-      'para que sirve la app',
-      'como funciona balanceme',
-      'conocenos',
-      'conócenos',
-      'balancito',
+      'ayuda',
+      'como usar la app',
+      'como usar balanceme',
+      'funcionalidades',
+      'que puedo hacer',
+      'comandos',
+      'menu de ayuda',
     ],
   },
   {
-    id: 'create_goal',
+    id: 'mood',
     keywords: [
-      'crear meta',
-      'nueva meta',
-      'nuevo habito',
-      'nuevo hábito',
-      'objetivo',
-      'configurar meta',
-    ],
-  },
-  {
-    id: 'log_mood',
-    keywords: [
-      'registrar animo',
-      'registrar ánimo',
+      'animo',
       'estado de animo',
-      'estado de ánimo',
-      'como me siento',
-      'diario emocional',
+      'registrar animo',
+      'registrar estado de animo',
+      'como registro mi animo',
+      'registro de animo',
+      'emocion',
+      'emociones',
     ],
   },
   {
-    id: 'view_report',
+    id: 'mood_locked',
     keywords: [
-      'ver reporte',
-      'reporte semanal',
-      'resumen',
-      'estadisticas',
-      'estadísticas',
-      'grafico',
-      'gráfico',
+      'no puedo registrar mi animo',
+      'no puedo registrar animo',
+      'no me deja registrar animo',
+      'no puedo registrar mi emocion',
+      'no puedo registrar emocion',
+      'por que no puedo registrar mi emocion',
+      'por que no puedo registrar mi animo',
+    ],
+  },
+  {
+    id: 'habits',
+    keywords: [
+      'habitos',
+      'mis habitos',
+      'habito diario',
+      'habitos diarios',
+      'registrar habitos',
+      'registro de habitos',
+    ],
+  },
+  {
+    id: 'journal',
+    keywords: [
+      'diario',
+      'diario personal',
+      'diario emocional',
+      'escribir diario',
+      'escribir en el diario',
+      'nota personal',
     ],
   },
   {
     id: 'notifications',
     keywords: [
       'recordatorio',
+      'recordatorios',
       'notificacion',
-      'notificación',
-      'alarma',
-      'avisos',
+      'notificaciones',
+      'configurar notificaciones',
+      'configurar recordatorios',
+      'recordatorios de habitos',
+      'recordatorios de emociones',
+      'no me aparecen los recordatorios',
+      'no me llegan las notificaciones',
+      'no recibo recordatorios',
     ],
   },
   {
-    id: 'profile',
+    id: 'about_app',
     keywords: [
-      'perfil',
-      'cuenta',
-      'cerrar sesion',
-      'cerrar sesión',
-      'tema oscuro',
-      'modo oscuro',
-      'modo claro',
-      'configuracion',
-      'configuración',
+      'que es balanceme',
+      'que es la app',
+      'para que sirve la app',
+      'sobre balanceme',
+      'conocenos',
+      'conocernos',
+      'balancito',
     ],
   },
 ];
 
-const flows = {
-  create_goal: {
-    start: 'askType',
-    nodes: {
-      askType: {
-        text:
-          'Perfecto, te ayudo a crear una meta. ¿Qué tipo de meta quieres crear? (por ejemplo: "hábito diario", "meta puntual" o "meta semanal")',
-        options: [
-          {
-            label: 'Hábito diario',
-            next: 'habitDaily',
-            keywords: ['habito', 'hábito', 'diario'],
-          },
-          {
-            label: 'Meta puntual',
-            next: 'singleGoal',
-            keywords: ['puntual', 'una vez'],
-          },
-          {
-            label: 'Meta semanal',
-            next: 'weekly',
-            keywords: ['semanal', 'semana'],
-          },
-        ],
-      },
-      habitDaily: {
-        text:
-          'Para crear un hábito diario:\n1) Ve a la sección "Metas".\n2) Toca el botón "Nueva meta".\n3) Elige el tipo "Hábito diario".\n4) Define nombre, frecuencia y horario.\n\nCuando termines, podrás marcar el hábito como completado cada día desde la misma pantalla.',
-        options: [],
-      },
-      singleGoal: {
-        text:
-          'Para crear una meta puntual:\n1) Ve a "Metas".\n2) Toca "Nueva meta".\n3) Selecciona "Meta puntual".\n4) Define qué quieres lograr y una fecha límite.\n\nAsí BalanceMe podrá recordarte y mostrar tu avance.',
-        options: [],
-      },
-      weekly: {
-        text:
-          'Para crear una meta semanal:\n1) Entra a "Metas".\n2) Pulsa "Nueva meta".\n3) Elige "Meta semanal".\n4) Indica cuántos días a la semana quieres cumplirla.\n\nTus reportes reflejarán cuántas veces la cumpliste cada semana.',
-        options: [],
-      },
-    },
-  },
-  log_mood: {
-    start: 'explain',
-    nodes: {
-      explain: {
-        text:
-          'Para registrar tu estado de ánimo:\n1) Ve a la sección "Ánimo" o "Diario".\n2) Elige el emoji o etiqueta que mejor te represente.\n3) (Opcional) Escribe una nota breve sobre lo que te pasó.\n\nAsí podrás ver cómo cambias con el tiempo en los reportes.',
-        options: [],
-      },
-    },
-  },
-  view_report: {
-    start: 'explain',
-    nodes: {
-      explain: {
-        text:
-          'Para ver tus reportes:\n1) Ve a la pestaña "Progreso" o "Reportes".\n2) Elige el rango de fechas (por ejemplo, esta semana).\n3) Revisa el gráfico de ánimo, hábitos cumplidos y metas avanzadas.\n\nSi quieres, dime qué quieres entender y te explico el gráfico.',
-        options: [],
-      },
-    },
-  },
-};
-
 // ---------------- Message generator ----------------
-const createMessageGenerator = () => {
-  let currentFlowId = null;
-  let currentNodeId = null;
+const createMessageGenerator = (options = {}) => {
+  const { getSuggestion } = options || {};
 
   const findIntent = (textNorm) => {
     for (const intent of appIntents) {
@@ -221,170 +276,141 @@ const createMessageGenerator = () => {
     return null;
   };
 
-  const replyForIntent = (intentId) => {
+  // Construye un bloque de texto con 1–2 sugerencias según el tipo.
+  const buildSuggestionSection = (type, count = 2) => {
+    if (!getSuggestion) return '';
+    const items = [];
+    const used = new Set();
+    for (let i = 0; i < count; i += 1) {
+      const suggestion = getSuggestion(type);
+      if (!suggestion || used.has(suggestion)) continue;
+      used.add(suggestion);
+      items.push(`- ${suggestion}`);
+    }
+    if (!items.length) return '';
+    return '\n\nAlgunas ideas para empezar:\n' + items.join('\n');
+  };
+
+  const helpMessage =
+    'Puedo ayudarte con BalanceMe (solo con la app, no ofrezco terapia):\n' +
+    '- Registrar tu estado de ánimo diario\n' +
+    '- Registrar y revisar tus hábitos\n' +
+    '- Escribir en tu diario emocional\n' +
+    '- Configurar los recordatorios en Ajustes\n\n' +
+    'Prueba escribiendo uno de estos comandos: "ánimo", "hábitos", "diario", "recordatorios" o "ayuda".';
+
+  const replyForIntent = (intentId, textNorm) => {
     switch (intentId) {
+      case 'help':
+        return (
+          'Soy Balancito, el asistente de producto de BalanceMe.\n\n' +
+          'Puedo guiarte para usar la app, por ejemplo:\n' +
+          '- Cómo registrar tu estado de ánimo\n' +
+          '- Cómo registrar o revisar tus hábitos\n' +
+          '- Cómo escribir en tu diario personal\n' +
+          '- Cómo funcionan los recordatorios\n\n' +
+          'Comandos útiles:\n' +
+          '- "animo" → registrar tu estado de ánimo\n' +
+          '- "habitos" → gestionar tus hábitos diarios\n' +
+          '- "diario" → escribir en tu diario personal\n' +
+          '- "recordatorios" → activar o revisar notificaciones\n' +
+          '- "ayuda" → volver a ver esta lista'
+        );
+      case 'mood':
+        return (
+          'Para registrar tu estado de ánimo diario:\n' +
+          '1) Desde la pantalla de inicio toca la tarjeta "Registrar ánimo".\n' +
+          '2) Elige hasta tres emojis que describan cómo te sientes.\n' +
+          '3) Opcional: escribe una nota breve sobre lo que está pasando.\n' +
+          '4) Pulsa "Guardar estado" para registrar el día.\n\n' +
+          'Solo puedes registrar tu ánimo una vez cada 24 horas. ' +
+          'Si ya registraste hoy, verás un mensaje indicando cuánto falta para el próximo registro. ' +
+          'Si tienes activado "Recordatorios de emociones" en Configuración → Notificaciones, la app te avisará cuando vuelva a estar disponible.'
+        ) + buildSuggestionSection('mood', 2);
+      case 'mood_locked':
+        return (
+          'Es normal que a veces no puedas registrar tu emoción de inmediato.\n\n' +
+          'BalanceMe permite un registro de ánimo cada 24 horas para que tengas un momento claro al día. ' +
+          'Cuando ya registraste tu estado de ánimo, la pantalla muestra un texto indicando cuánto falta para el próximo registro y el botón de guardar se desactiva.\n\n' +
+          'Cuando el contador llegue a 0, podrás volver a registrar. Si quieres, activa "Recordatorios de emociones" en Configuración → Notificaciones para que la app te avise cuando se vuelva a habilitar.'
+        );
+      case 'habits':
+        return (
+          'Para registrar o revisar tus hábitos diarios:\n' +
+          '1) Desde la pantalla de inicio entra a "Hábitos diarios".\n' +
+          '2) Marca los hábitos que realizaste hoy o escribe uno nuevo en la caja de texto.\n' +
+          '3) Pulsa el botón de guardar para registrar la entrada del día.\n\n' +
+          'El registro de hábitos también se desbloquea cada 24 horas. ' +
+          'Si ya guardaste tus hábitos, verás un mensaje con el tiempo restante para el próximo registro. ' +
+          'Con "Recordatorios de hábitos" activo en Configuración → Notificaciones, recibirás un aviso cuando puedas registrar de nuevo.'
+        ) + buildSuggestionSection('habit', 2);
+      case 'journal':
+        return (
+          'Para escribir en tu diario personal:\n' +
+          '1) Desde la pantalla de inicio entra a "Diario personal" (Diario emocional).\n' +
+          '2) Escribe lo que quieras registrar sobre tu día o sobre cómo te sientes.\n' +
+          '3) Añade al menos una etiqueta emocional para clasificar la entrada.\n' +
+          '4) Pulsa "Guardar" para que se sume a tu meta mensual de entradas.\n\n' +
+          'La idea es que tengas al menos un momento al día para escribir, de forma simple y sostenible.'
+        ) + buildSuggestionSection('journal', 2);
+      case 'notifications': {
+        const isMissing =
+          textNorm.includes('no me aparecen') ||
+          textNorm.includes('no recibo') ||
+          textNorm.includes('no me llegan');
+        if (isMissing) {
+          return (
+            'Si no te están llegando los recordatorios, revisa lo siguiente:\n' +
+            '1) Entra a la pantalla "Configuración" dentro de BalanceMe.\n' +
+            '2) En la sección "Notificaciones", activa:\n' +
+            '   - "Recordatorios de emociones".\n' +
+            '   - "Recordatorios de hábitos" (si quieres usarlos).\n' +
+            '3) Comprueba en los ajustes del sistema (Android / iOS) que las notificaciones estén permitidas para BalanceMe.\n' +
+            '4) Recuerda que los recordatorios se programan cuando guardas un registro de ánimo o de hábitos; ' +
+            'si hace mucho que no registras nada, puede que no haya un recordatorio pendiente.\n\n' +
+            'Si después de esto sigues sin ver avisos, intenta cerrar y volver a abrir la app para refrescar los recordatorios.'
+          );
+        }
+        return (
+          'Así funcionan los recordatorios en BalanceMe:\n\n' +
+          '1) Abre la pantalla "Configuración" desde el menú de la app.\n' +
+          '2) En la sección "Notificaciones" verás dos interruptores:\n' +
+          '   - "Recordatorios de emociones": te avisa cuando vuelva a estar disponible "Registrar ánimo".\n' +
+          '   - "Recordatorios de hábitos": te avisa cuando puedas registrar tus hábitos otra vez.\n' +
+          '3) Cada vez que guardas un registro, la app calcula el próximo momento disponible (24 horas después) y programa un recordatorio local para ese momento.\n\n' +
+          'Si el sistema tiene las notificaciones desactivadas para BalanceMe, la app no podrá mostrarte los avisos aunque estos interruptores estén encendidos.'
+        );
+      }
       case 'about_app':
         return (
-          'BalanceMe es una app para cuidar tu bienestar emocional.\n' +
-          'Con ella puedes:\n' +
-          '• Registrar cómo te sientes día a día.\n' +
-          '• Crear metas y hábitos saludables.\n' +
-          '• Ver reportes con tu progreso.\n\n' +
-          'Puedo guiarte para crear una meta, registrar tu ánimo o revisar tus reportes. ¿Qué te gustaría hacer?'
-        );
-      case 'notifications':
-        return (
-          'Para configurar recordatorios:\n' +
-          '1) Ve a la sección de "Configuración" o "Perfil".\n' +
-          '2) Entra a "Notificaciones" o "Recordatorios".\n' +
-          '3) Activa las alertas y ajusta horarios según tus metas.\n\n' +
-          'Así BalanceMe te avisará cuando sea momento de registrar tu ánimo o tus hábitos.'
-        );
-      case 'profile':
-        return (
-          'Desde tu perfil puedes:\n' +
-          '• Cambiar entre modo claro y oscuro.\n' +
-          '• Cerrar sesión.\n' +
-          '• Revisar datos de tu cuenta.\n\n' +
-          'Solo entra a "Perfil" desde el menú principal y ajusta lo que necesites.'
+          'BalanceMe es una app para organizar tu cuidado emocional del día a día.\n\n' +
+          'Dentro de la app puedes:\n' +
+          '- Registrar cómo te sientes con "Registrar ánimo".\n' +
+          '- Llevar tus "Hábitos diarios" de autocuidado.\n' +
+          '- Escribir en tu "Diario personal".\n' +
+          '- Ver resúmenes en la sección de Progreso y configurar recordatorios.\n\n' +
+          'Yo, Balancito, solo te ayudo a usar BalanceMe y a entender sus pantallas. No reemplazo a un profesional de la salud mental.'
         );
       default:
         return null;
     }
   };
 
-  const buildFlowReply = (node) => {
-    if (!node) {
-      return 'Hubo un problema al guiar el flujo. Intenta de nuevo, por favor.';
-    }
-    if (!node.options || node.options.length === 0) {
-      return node.text;
-    }
-    const optsText = node.options.map((o) => `• ${o.label}`).join('\n');
-    return `${node.text}\n\nOpciones:\n${optsText}`;
-  };
-
-  const startFlow = (flowId) => {
-    currentFlowId = flowId;
-    currentNodeId = flows[flowId].start;
-    const node = flows[flowId].nodes[currentNodeId];
-    return buildFlowReply(node);
-  };
-
-  const advanceFlow = (textNorm) => {
-    if (!currentFlowId || !currentNodeId) return null;
-    const flow = flows[currentFlowId];
-    const node = flow.nodes[currentNodeId];
-    if (!node || !node.options || node.options.length === 0) {
-      currentFlowId = null;
-      currentNodeId = null;
-      return null;
-    }
-
-    for (const opt of node.options) {
-      const kws = opt.keywords && opt.keywords.length ? opt.keywords : [opt.label];
-      if (fuzzy(textNorm, kws)) {
-        currentNodeId = opt.next;
-        const nextNode = flow.nodes[currentNodeId];
-        const reply = buildFlowReply(nextNode);
-        if (!nextNode.options || nextNode.options.length === 0) {
-          currentFlowId = null;
-          currentNodeId = null;
-        }
-        return reply;
-      }
-    }
-
-    return (
-      'No me quedó claro qué opción elegiste.\n' +
-      'Puedes responder, por ejemplo, "hábito diario", "meta puntual" o "meta semanal".'
-    );
-  };
-
-  const fallback = () =>
-    'Puedo ayudarte con:\n' +
-    '• Crear una meta u hábito\n' +
-    '• Registrar tu estado de ánimo\n' +
-    '• Ver tus reportes\n' +
-    '• Configurar notificaciones\n\n' +
-    'Escríbeme algo como: "quiero crear una meta" o "cómo registro mi ánimo".';
-
   return (input) => {
     const textNorm = norm(input);
     if (!textNorm) {
-      return 'Cuéntame qué quieres hacer en la app y te guío paso a paso.';
+      return (
+        'Cuéntame con qué parte de BalanceMe necesitas ayuda.\n' +
+        'Por ejemplo: "ánimo", "hábitos", "diario", "recordatorios" o "ayuda".'
+      );
     }
 
-    // Si ya estamos en un flujo, intentamos avanzar
-    if (currentFlowId && currentNodeId) {
-      const flowReply = advanceFlow(textNorm);
-      if (flowReply) return flowReply;
-    }
-
-    // Detectar nuevo intent
     const intentId = findIntent(textNorm);
+    const reply = replyForIntent(intentId, textNorm);
+    if (reply) return reply;
 
-    if (intentId === 'create_goal') {
-      return (
-        'Para crear una meta en BalanceMe:\n' +
-        '1) Desde la pantalla principal entra a "Progreso".\n' +
-        '2) Toca el boton "Nueva meta".\n' +
-        '3) Elige si quieres seguir tu estado de animo, tus habitos o una meta personalizada.\n' +
-        '4) Ajusta el objetivo semanal y guarda.\n\n' +
-        'Despues podras ver tus metas activas y registrarlas desde la misma pantalla de Progreso.'
-      );
-    }
-    if (intentId === 'log_mood') {
-      return (
-        'Para registrar tu estado de animo:\n' +
-        '1) En la pantalla de inicio toca "Registrar animo".\n' +
-        '2) Elige hasta tres emojis que describan como te sientes.\n' +
-        '3) Revisa las sugerencias y pulsa "Guardar estado".\n\n' +
-        'Solo puedes registrar tu animo una vez al dia; la pantalla te mostrara cuanto falta para el siguiente registro.'
-      );
-    }
-    if (intentId === 'view_report') {
-      return (
-        'Para ver tu progreso:\n' +
-        '1) Desde el inicio entra a la pantalla "Progreso semanal".\n' +
-        '2) Si aun no hay reporte de esta semana, toca "Generar reporte".\n' +
-        '3) Revisa el resumen de emociones, habitos y metas activas.\n\n' +
-        'Si quieres, dime que parte del reporte te gustaria entender mejor.'
-      );
-    }
-
-    const direct = (() => {
-      switch (intentId) {
-        case 'about_app':
-          return (
-            'BalanceMe es una app para cuidar tu bienestar emocional.\n' +
-            'Con ella puedes:\n' +
-            '- Registrar como te sientes dia a dia.\n' +
-            '- Registrar habitos diarios.\n' +
-            '- Crear metas y ver tu progreso semanal.\n' +
-            '- Escribir en tu diario y usar la red de apoyo.\n\n' +
-            'Puedo guiarte para registrar tu animo, tus habitos o entender la pantalla de Progreso. Que te gustaria hacer?'
-          );
-        case 'notifications':
-          return (
-            'Por ahora BalanceMe envia notificaciones automaticas cuando se generan reportes semanales o recibes mensajes en la red de apoyo.\n' +
-            'Te recomiendo mantener activadas las notificaciones del sistema para la app.\n\n' +
-            'Aun no hay un panel de recordatorios configurables, pero puedes crear el habito de revisar tus pantallas de Animo, Habitos y Progreso cada dia.'
-          );
-        case 'profile':
-          return (
-            'En tu perfil puedes revisar y actualizar tus datos basicos y, si lo necesitas, eliminar tu cuenta.\n' +
-            'Para cambiar entre modo claro y oscuro entra a la pantalla "Configuracion".\n\n' +
-            'Tambien puedes cerrar sesion desde el menu lateral de la pantalla de inicio.'
-          );
-        default:
-          return replyForIntent(intentId);
-      }
-    })();
-    if (direct) return direct;
-
-    // Fallback genérico
-    return fallback();
+    // Fallback genérico orientado a producto
+    return helpMessage;
   };
 };
 
@@ -506,12 +532,45 @@ export default function SupportChatScreenClean({ navigation }) {
     safeBottom,
   } = useResponsiveSupportChat();
 
-  const generateRef = useRef(createMessageGenerator());
+  // Estado para evitar repetir siempre las mismas sugerencias.
+  const [recentSuggestions, setRecentSuggestions] = useState({
+    mood: [],
+    habit: [],
+    journal: [],
+  });
+
+  // Ref que siempre apunta a la función más reciente que gestiona sugerencias.
+  const getSuggestionRef = useRef(() => null);
+  getSuggestionRef.current = (type) => {
+    const { suggestion, nextRecentByType } = getRandomSuggestion(
+      type,
+      recentSuggestions,
+    );
+    if (!suggestion) return null;
+    setRecentSuggestions(nextRecentByType);
+    return suggestion;
+  };
+
+  const generateRef = useRef(null);
+  if (!generateRef.current) {
+    generateRef.current = createMessageGenerator({
+      getSuggestion: (type) => getSuggestionRef.current(type),
+    });
+  }
+
   const [messages, setMessages] = useState([
     {
       id: 'intro',
       role: 'bot',
-      text: `Hola, soy ${botName}. Puedo guiarte para usar BalanceMe: crear metas, registrar tu ánimo o ver tus reportes. ¿Qué te gustaría hacer?`,
+      text:
+        'Hola, soy Balancito 😊.\n\n' +
+        'Soy el asistente de BalanceMe y puedo ayudarte a usar la app (solo temas de la app, no doy consejos terapéuticos).\n\n' +
+        'Prueba escribiendo uno de estos comandos:\n' +
+        '- "animo" → para ver cómo registrar tu estado de ánimo\n' +
+        '- "habitos" → para gestionar tus hábitos diarios\n' +
+        '- "diario" → para escribir en tu diario personal\n' +
+        '- "recordatorios" → para configurar o entender las notificaciones\n' +
+        '- "ayuda" → para ver todo lo que puedo hacer',
     },
   ]);
   const [draft, setDraft] = useState('');
@@ -710,3 +769,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export { MOOD_SUGGESTIONS, HABIT_SUGGESTIONS, JOURNAL_SUGGESTIONS };

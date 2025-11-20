@@ -25,6 +25,8 @@ import ReportDetailScreen from "./src/screens/ReportDetailScreen";
 import PrivacyPolicyScreen from "./src/screens/PrivacyPolicyScreen";
 import TermsAndConditionsScreen from "./src/screens/TermsAndConditionsScreen";
 import AboutBalanceMeScreen from "./src/screens/AboutBalanceMeScreen";
+import DailyGoalsScreen from "./src/screens/DailyGoalsScreen";
+import DailyGoalDetailScreen from "./src/screens/DailyGoalDetailScreen";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "./src/screens/firebase/config";
@@ -109,7 +111,9 @@ const AppNavigator = () => {
             <Stack.Screen name="Emergency" component={EmergencyResourcesScreen} />
             <Stack.Screen name="Journal" component={JournalScreen} />
             <Stack.Screen name="Habits" component={HabitsScreen} />
+            <Stack.Screen name="DailyGoals" component={DailyGoalsScreen} />
             <Stack.Screen name="Progress" component={ProgressScreen} />
+            <Stack.Screen name="DailyGoalDetail" component={DailyGoalDetailScreen} />
             <Stack.Screen name="SupportChat" component={SupportChatScreen} />
             <Stack.Screen name="HelpForum" component={HelpForumScreen} />
             <Stack.Screen name="Social" component={SocialScreen} />

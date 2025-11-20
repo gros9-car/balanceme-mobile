@@ -19,6 +19,7 @@ import { auth, db } from './firebase/config';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useTheme } from '../context/ThemeContext';
 import { useAppAlert } from '../context/AppAlertContext';
+import { makePhoneCall } from '../utils/phoneCall';
 
 // Pantalla principal que muestra resumen diario y accesos a herramientas clave.
 const emojiCodePoints = {
@@ -63,7 +64,7 @@ const quickActions = [
     target: 'Habits',
   },
   {
-    title: 'Progreso semanal',
+    title: 'Metas y progreso',
     description: 'Configura metas y revisa tu avance automáticamente.',
     icon: 'analytics-outline',
     color: '#0ea5e9',
@@ -279,18 +280,21 @@ useEffect(() => {
         return;
       }
 
-      const sortedKeys = Array.from(allDayKeysSet).sort((a, b) => b - a);
-      let streak = 0;
-      let expected = sortedKeys[0];
+      // La racha siempre debe terminar en hoy. Si hoy no tiene registros,
+      // la racha actual es 0.
+      const todayKey = startOfDay(new Date()).getTime();
+      if (!allDayKeysSet.has(todayKey)) {
+        setCurrentStreak(0);
+        return;
+      }
 
-      for (const dayKey of sortedKeys) {
-        const diff = Math.round((expected - dayKey) / dayMs);
-        if (diff === 0) {
-          streak += 1;
-          expected -= dayMs;
-        } else {
-          break;
-        }
+      let streak = 0;
+      let cursor = todayKey;
+
+      // Cuenta días consecutivos hacia atrás mientras haya actividad.
+      while (allDayKeysSet.has(cursor)) {
+        streak += 1;
+        cursor -= dayMs;
       }
 
       setCurrentStreak(streak);
@@ -334,27 +338,21 @@ useEffect(() => {
   const handleEmergencyContact = async ({ phone, url }) => {
     try {
       if (phone) {
-        const normalized = phone.replace(/\s+/g, '');
-        const telUrl = `tel:${normalized}`;
-        const supported = await Linking.canOpenURL(telUrl);
-        if (supported) {
-          await Linking.openURL(telUrl);
-          } else {
-          showAlert('No disponible', 'No se pudo iniciar la llamada en este dispositivo.');
-          }
+        await makePhoneCall(phone);
         return;
       }
+
       if (url) {
         const supported = await Linking.canOpenURL(url);
         if (supported) {
           await Linking.openURL(url);
-          } else {
+        } else {
           showAlert('No disponible', 'No pudimos abrir el enlace.');
-          }
+        }
       }
-      } catch (error) {
+    } catch (error) {
       showAlert('Error', 'Intenta nuevamente mas tarde.');
-      }
+    }
   };
 
   // Cierra la sesi├│n del usuario y devuelve a la pantalla de login.

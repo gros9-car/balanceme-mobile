@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -26,7 +25,6 @@ import PageHeader from '../components/PageHeader';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 const DAYS_TO_FETCH = 60;
-const EMOTIONS_PER_ENTRY_TARGET = 3;
 
 // -------------------- Helpers --------------------
 const round = (value, decimals = 2) => {
@@ -204,18 +202,14 @@ const Bar = ({ label, score, scoreLabel, colors, highlighted, hasData }) => {
               backgroundColor: hasData
                 ? highlighted
                   ? colors.primary
-                  : colors.primary + '77'
+                  : `${colors.primary}77`
                 : colors.muted,
             },
           ]}
         />
       </View>
-      <Text style={[styles.barValue, { color: colors.text }]}>
-        {scoreLabel}
-      </Text>
-      <Text style={[styles.barLabel, { color: colors.subText }]}>
-        {label}
-      </Text>
+      <Text style={[styles.barValue, { color: colors.text }]}>{scoreLabel}</Text>
+      <Text style={[styles.barLabel, { color: colors.subText }]}>{label}</Text>
     </View>
   );
 };
@@ -333,15 +327,6 @@ const MoodInsightsScreen = ({ navigation }) => {
   const averageScoreLabel =
     averageScore === null ? 'Sin registros aún' : scoreToLabel(averageScore);
 
-  const averagePerEntry = useMemo(() => {
-    if (!entries.length) return 0;
-    const totalEmotions = entries.reduce(
-      (acc, entry) => acc + (entry.emojis?.length ?? 0),
-      0,
-    );
-    return round(totalEmotions / entries.length, 2);
-  }, [entries]);
-
   return (
     <SafeAreaView
       style={[
@@ -456,34 +441,6 @@ const MoodInsightsScreen = ({ navigation }) => {
                         { color: colors.subText },
                       ]}
                     >
-                      Emociones por registro
-                    </Text>
-                    <Text
-                      style={[
-                        styles.summaryValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {averagePerEntry} / {EMOTIONS_PER_ENTRY_TARGET}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.summaryHelp,
-                        { color: colors.subText },
-                      ]}
-                    >
-                      Anotar varias emociones por día ayuda a entender mejor tus
-                      patrones.
-                    </Text>
-                  </View>
-
-                  <View style={styles.summaryItem}>
-                    <Text
-                      style={[
-                        styles.summaryLabel,
-                        { color: colors.subText },
-                      ]}
-                    >
                       Registros analizados
                     </Text>
                     <Text
@@ -506,9 +463,7 @@ const MoodInsightsScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                <Text
-                  style={[styles.summaryHint, { color: colors.subText }]}
-                >
+                <Text style={[styles.summaryHint, { color: colors.subText }]}>
                   Si algún día no registras nada, lo verás como "Sin registro"
                   en los gráficos.
                 </Text>
@@ -552,7 +507,7 @@ const MoodInsightsScreen = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* ÚLTIMOS 8 días */}
+              {/* ÚLTIMOS 8 DÍAS */}
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Tendencia de los últimos días
@@ -817,3 +772,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

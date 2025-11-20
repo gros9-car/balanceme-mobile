@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 import { useAppAlert } from '../context/AppAlertContext';
+import { makePhoneCall } from '../utils/phoneCall';
 
 const CRISIS_STRATEGIES = [
   {
@@ -118,14 +119,7 @@ const EmergencyResourcesScreen = ({ navigation }) => {
     }
 
     if (contact.action.kind === 'phone') {
-      const normalized = contact.action.value.replace(/\s+/g, '');
-      const url = `tel:${normalized}`;
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        showAlert('No disponible', 'No se pudo iniciar la llamada desde este dispositivo.');
-      }
+      await makePhoneCall(contact.action.value);
       return;
     }
 
