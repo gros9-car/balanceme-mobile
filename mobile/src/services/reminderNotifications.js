@@ -2,7 +2,10 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { getNextEmotionEnableDate, getNextHabitEnableDate } from "../utils/reminderRules";
+import {
+  getNextEmotionEnableDate,
+  getNextHabitEnableDate,
+} from "../utils/reminderRules";
 
 const EMOTION_REMINDER_KEY = "reminder:emotionNotificationId";
 const HABIT_REMINDER_KEY = "reminder:habitNotificationId";
@@ -30,30 +33,6 @@ const ensureReminderChannelAsync = async () => {
   }
 
   await ensureChannelPromise;
-};
-
-/**
- * Solicita permisos de notificaciones solo si es necesario.
- * Devuelve true si el permiso queda concedido o en estado provisional.
- */
-export const requestNotificationPermissionsIfNeeded = async () => {
-  if (Platform.OS === "web") {
-    return false;
-  }
-
-  const settings = await Notifications.getPermissionsAsync();
-  if (
-    settings.granted ||
-    settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-  ) {
-    return true;
-  }
-
-  const response = await Notifications.requestPermissionsAsync();
-  return (
-    response.granted ||
-    response.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-  );
 };
 
 const scheduleInternal = async (baseKey, date, content, userUid) => {
@@ -238,4 +217,3 @@ export const scheduleNextHabitReminderFromLastDate = async (
   }
   await scheduleHabitReminder(nextDate, { userUid });
 };
-

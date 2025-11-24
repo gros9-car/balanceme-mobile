@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   collection,
   doc,
@@ -10,12 +10,9 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../screens/firebase/config";
-import { sendLocalNotification } from "./useNotificationSetup";
 
-// Genera el identificador de chat privado en base a los UID ordenados.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
 
-// Monitorea los chats aceptados para enviar notificaciones de mensajes nuevos.
 export const useMessageNotifications = ({ enabled, userUid }) => {
   const subscriptionsRef = useRef({});
   const friendStateRef = useRef(new Map());
@@ -113,7 +110,6 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
             return;
           }
 
-          // Marca el chat como no leído para este usuario.
           const friendshipRef = doc(
             db,
             "users",
@@ -129,12 +125,6 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
             },
             { merge: true },
           ).catch(() => undefined);
-
-          sendLocalNotification({
-            title: `Nuevo mensaje de ${displayName}`,
-            body: payload.text?.slice(0, 140) ?? "Tienes un nuevo mensaje.",
-            data: { type: "direct-message", chatId, friendUid },
-          });
         });
 
         subscriptionsRef.current[friendUid] = unsubscribe;
@@ -147,3 +137,4 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
     };
   }, [enabled, userUid]);
 };
+

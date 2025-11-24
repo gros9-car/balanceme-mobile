@@ -152,3 +152,73 @@ exports.notifyOnNewMessage = functions.firestore
     return null;
   });
 
+/**
+ * Cloud Function:
+ * Escucha nuevas solicitudes de amistad en
+ * `users/{targetUid}/friendships/{friendUid}` y envía una notificación
+ * push al usuario que recibe la solicitud.
+ *
+ * Se asume que:
+ * - `status` === "pending" representa una solicitud pendiente.
+ * - `initiatedBy` es el UID del usuario que envió la solicitud.
+ */
+exports.notifyOnFriendRequest = functions.firestore
+  .document("users/{targetUid}/friendships/{friendUid}")
+  .onCreate(async (snap, context) => {
+    const friendship = snap.data() || {};
+    const { targetUid } = context.params;
+
+    const status = friendship.status || "pending";
+    const initiatedBy = friendship.initiatedBy;
+
+    if (status !== "pending") {
+      return null;
+    }
+
+    if (!initiatedBy || initiatedBy === targetUid) {
+      return null;
+    }
+
+    const db = admin.firestore();
+
+    const [senderSnap, receiverTokens] = await Promise.all([
+      db.collection("users").doc(initiatedBy).get(),
+      getUserPushTokens(targetUid),
+    ]);
+
+    if (!receiverTokens.length) {
+      return null;
+    }
+
+    const senderData = senderSnap.exists ? senderSnap.data() || {} : {};
+    const senderName = deriveDisplayName(senderData);
+    const senderEmail =
+      typeof senderData.email === "string" ? senderData.email : undefined;
+
+    const payloads = receiverTokens.map((token) => ({
+      to: token,
+      title: "Nueva solicitud de amistad",
+      body: `${senderName} quiere unirse a tu red.`,
+      data: {
+        type: "friend-request",
+        fromUserId: initiatedBy,
+        friendUid: initiatedBy,
+        targetUid,
+        friendEmail: senderEmail,
+      },
+    }));
+
+    let fetchImpl = global.fetch;
+    if (typeof fetchImpl !== "function") {
+      // eslint-disable-next-line global-require
+      fetchImpl = require("node-fetch");
+    }
+
+    await fetchImpl("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payloads),
+    });
+
+    return null;
+  });

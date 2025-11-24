@@ -126,7 +126,12 @@ export default function RegisterScreen({ navigation }) {
         setSuccessVisible(true);
       } else {
         Alert.alert('Bienvenid@ a BalanceMe', 'Tu cuenta está lista.', [
-          { text: 'Ir a iniciar sesión', onPress: () => navigation?.navigate?.('Login') },
+          {
+            text: 'Continuar',
+            onPress: () => {
+              navigation?.navigate?.('Home');
+            },
+          },
         ]);
       }
     } catch (error) {
@@ -353,6 +358,24 @@ export default function RegisterScreen({ navigation }) {
                 ) : null}
               </View>
 
+              {/* Link clickeable a Términos y Condiciones */}
+              <View style={styles.termsRow}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={16}
+                  color={colors.subText}
+                  style={styles.termsIcon}
+                />
+                <TouchableOpacity
+                  onPress={() => navigation?.navigate?.('TermsAndConditions')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.termsLinkText, { color: colors.accent }]}>
+                    Ver Términos y Condiciones
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
                 style={[
                   styles.submitButton,
@@ -383,6 +406,13 @@ export default function RegisterScreen({ navigation }) {
                   </Text>
                 )}
               </TouchableOpacity>
+
+              {/* Mensaje de aceptación de Términos y Condiciones */}
+              <Text
+                style={[styles.termsMessageText, { color: colors.subText }]}
+              >
+                Al registrarse, el usuario acepta los Términos y Condiciones.
+              </Text>
 
               <View style={styles.loginPrompt}>
                 <Text style={[styles.loginText, { color: colors.subText }]}>
@@ -514,6 +544,23 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
   },
+  termsRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  termsIcon: {
+    marginRight: 6,
+  },
+  termsLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  termsMessageText: {
+    marginTop: 8,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   loginPrompt: {
     marginTop: 12,
     flexDirection: 'row',
@@ -568,3 +615,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+

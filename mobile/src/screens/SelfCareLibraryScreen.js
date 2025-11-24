@@ -156,7 +156,7 @@ const BreathingCard = ({
           color={colors.primaryContrast}
         />
         <Text style={[styles.primaryButtonText, { color: colors.primaryContrast }]}>
-          {isActive ? 'Cerrar guia' : 'Iniciar guia'}
+          {isActive ? 'Cerrar guía' : 'Iniciar guía'}
         </Text>
       </TouchableOpacity>
     </View>
@@ -279,7 +279,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="leaf-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Respiracion guiada</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Respiración guiada</Text>
             <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
               Cinco ejercicios seleccionados para regular tu sistema nervioso sin necesidad de conexión.
             </Text>

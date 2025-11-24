@@ -35,6 +35,7 @@ import {
 } from '../services/reminderNotifications';
 import { getNotificationSettingsForUser } from '../services/notificationSettings';
 import { MOOD_SUGGESTIONS } from './SupportChatScreenClean';
+import { upsertDailyCheckin } from '../services/dailyCheckins';
 
 // Permite registrar el estado de animo solo una vez cada 24 horas.
 const MAX_EMOJIS_PER_ENTRY = 3;
@@ -287,7 +288,7 @@ export default function MoodTrackerScreen({ navigation }) {
         return prev.filter((item) => item !== name);
       }
       if (prev.length >= MAX_EMOJIS_PER_ENTRY) {
-        Alert.alert('Maximo alcanzado', 'Puedes seleccionar hasta 3 emociones.');
+        Alert.alert('Máximo alcanzado', 'Puedes seleccionar hasta 3 emociones.');
         return prev;
       }
       return [...prev, name];
@@ -410,6 +411,12 @@ export default function MoodTrackerScreen({ navigation }) {
         createdAtServer: serverTimestamp(),
       });
 
+      try {
+        await upsertDailyCheckin(user.uid, { moodLogged: true });
+      } catch {
+        // Si falla el registro de racha, no bloqueamos el flujo principal.
+      }
+
       setSelectedEmojis([]);
       setSuggestions(entrySuggestions);
       setAgentSummary(entrySummary);
@@ -462,7 +469,7 @@ export default function MoodTrackerScreen({ navigation }) {
       >
         <View style={[styles.content, contentWidthStyle]}>
           <PageHeader
-            title="Estado de animo"
+            title="Estado de ánimo"
             subtitle="Elige hasta 3 emociones que describan como te sientes hoy."
             rightContent={
               <View
@@ -586,7 +593,7 @@ export default function MoodTrackerScreen({ navigation }) {
         ) : null}
         {lastSavedAt ? (
           <Text style={[styles.cooldownText, { color: colors.subText }]}>
-            Ultimo registro: {formatDateTimeShort(lastSavedAt)}
+            Último registro: {formatDateTimeShort(lastSavedAt)}
           </Text>
         ) : null}
 
@@ -598,7 +605,7 @@ export default function MoodTrackerScreen({ navigation }) {
               { backgroundColor: colors.surface, borderColor: colors.muted },
             ]}
           >
-            <Text style={[styles.savedTitle, { color: colors.text }]}>Ultimas sugerencias guardadas</Text>
+            <Text style={[styles.savedTitle, { color: colors.text }]}>Últimas sugerencias guardadas</Text>
             {agentSummary ? (
               <Text style={[styles.agentSummary, { color: colors.text }]}>{agentSummary}</Text>
             ) : null}

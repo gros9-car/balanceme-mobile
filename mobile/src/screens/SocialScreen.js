@@ -826,7 +826,7 @@ export default function SocialScreen({ navigation }) {
             <ActivityIndicator size="small" color={colors.primary} />
           ) : connections.outgoing.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.subText }]}>
-              Aun no has enviado solicitudes.
+              Aún no has enviado solicitudes.
             </Text>
           ) : (
             connections.outgoing.map((friend) => {

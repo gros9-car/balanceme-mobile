@@ -59,9 +59,9 @@ const computeMoodScore = (entry) => {
 // 3 categorías: Semana difícil, Semana normal, Buena semana
 const scoreToLabel = (score) => {
   const s = Math.max(0, Math.min(100, score));
-  if (s <= 33) return 'Difícil';
-  if (s <= 66) return 'Normal';
-  return 'Bueno';
+  if (s <= 33) return 'Día difícil';
+  if (s <= 66) return 'Día normal';
+  return 'Buen día';
 };
 
 const buildDailyStatsMap = (entries) => {

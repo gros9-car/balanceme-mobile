@@ -27,6 +27,7 @@ import TermsAndConditionsScreen from "./src/screens/TermsAndConditionsScreen";
 import AboutBalanceMeScreen from "./src/screens/AboutBalanceMeScreen";
 import DailyGoalsScreen from "./src/screens/DailyGoalsScreen";
 import DailyGoalDetailScreen from "./src/screens/DailyGoalDetailScreen";
+import NotificationPermissionsScreen from "./src/screens/NotificationPermissionsScreen";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "./src/screens/firebase/config";
@@ -122,6 +123,10 @@ const AppNavigator = () => {
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
             <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
             <Stack.Screen name="AboutBalanceMe" component={AboutBalanceMeScreen} />
+            <Stack.Screen
+              name="NotificationPermissions"
+              component={NotificationPermissionsScreen}
+            />
           </>
         ) : (
           <>
@@ -131,6 +136,11 @@ const AppNavigator = () => {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="AboutBalanceMe" component={AboutBalanceMeScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen
+              name="TermsAndConditions"
+              component={TermsAndConditionsScreen}
+            />
           </>
         )}
       </Stack.Navigator>

@@ -2,7 +2,6 @@
 import { collection, onSnapshot } from "firebase/firestore";
 
 import { db } from "../screens/firebase/config";
-import { sendLocalNotification } from "./useNotificationSetup";
 
 // Escucha cambios en solicitudes de amistad para avisar al usuario.
 export const useFriendRequestNotifications = ({ enabled, userUid }) => {
@@ -36,16 +35,6 @@ export const useFriendRequestNotifications = ({ enabled, userUid }) => {
           }
         }
       });
-
-      if (newRequests.length) {
-        newRequests.forEach((request) => {
-          sendLocalNotification({
-            title: "Nueva solicitud de amistad",
-            body: `${request.name} quiere unirse a tu red.`,
-            data: { type: "friend-request", friendId: request.id },
-          });
-        });
-      }
 
       previousPending.current = nextPending;
       didLoad.current = true;

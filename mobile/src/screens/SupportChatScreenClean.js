@@ -639,6 +639,52 @@ export default function SupportChatScreenClean({ navigation }) {
           />
         </View>
 
+        <View
+          style={[
+            styles.quickActionsRow,
+            {
+              paddingHorizontal: horizontalPadding,
+              width: '100%',
+              maxWidth: maxContentWidth,
+              alignSelf: 'center',
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[styles.quickActionButton, { borderColor: colors.muted }]}
+            onPress={() => navigation?.navigate?.('AboutBalanceMe')}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={colors.primary}
+            />
+            <Text
+              style={[styles.quickActionText, { color: colors.primary }]}
+            >
+              Conócenos
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.quickActionButton, { borderColor: colors.muted }]}
+            onPress={() => navigation?.navigate?.('TermsAndConditions')}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name="document-text-outline"
+              size={16}
+              color={colors.primary}
+            />
+            <Text
+              style={[styles.quickActionText, { color: colors.primary }]}
+            >
+              Términos y Condiciones
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* MENSAJES RESPONSIVOS + AUTOSCROLL */}
         <FlatList
           ref={listRef}
@@ -748,6 +794,26 @@ const styles = StyleSheet.create({
   },
   messageAuthor: { marginBottom: 4 },
   messageText: {},
+  quickActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 8,
+    marginBottom: 4,
+  },
+  quickActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   composer: {
     flexDirection: 'row',
     alignItems: 'center',

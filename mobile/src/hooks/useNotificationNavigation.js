@@ -12,7 +12,6 @@ const handleNotificationNavigation = (response) => {
     return;
   }
 
-  // Mensajes de chat directo entre usuarios.
   if (
     (data.type === "chat" || data.type === "direct-message") &&
     data.friendUid
@@ -25,8 +24,6 @@ const handleNotificationNavigation = (response) => {
     return;
   }
 
-  // Fallback: si solo viene el chatId (como en el ejemplo de backend)
-  // derivamos el friendUid a partir del chatId + usuario autenticado.
   if (data.type === "chat" && data.chatId && !data.friendUid) {
     const currentUser = auth.currentUser;
     const currentUid = currentUser?.uid;
@@ -44,13 +41,11 @@ const handleNotificationNavigation = (response) => {
     }
   }
 
-  // Mensajes del chat de soporte.
   if (data.type === "support-chat") {
     navigationRef.navigate("SupportChat");
     return;
   }
 
-  // Recordatorios de emociones/hábitos.
   if (data.type === "emotion-reminder") {
     navigationRef.navigate("Mood");
     return;
@@ -60,13 +55,14 @@ const handleNotificationNavigation = (response) => {
     return;
   }
 
-  // Aquí podrías manejar otros tipos, por ejemplo solicitudes de amistad.
+  if (data.type === "friend-request") {
+    navigationRef.navigate("Social");
+    return;
+  }
 };
 
-// Escucha la respuesta a notificaciones y navega al destino correspondiente.
 export const useNotificationNavigation = () => {
   useEffect(() => {
-    // En web, expo-notifications no está disponible: evitamos usar sus APIs.
     if (Platform.OS === "web") {
       return undefined;
     }
@@ -82,7 +78,6 @@ export const useNotificationNavigation = () => {
       },
     );
 
-    // Maneja el caso en que la app se abre desde una notificación cuando estaba cerrada.
     try {
       Notifications.getLastNotificationResponseAsync().then((lastResponse) => {
         if (!isMounted || !lastResponse) {
@@ -91,7 +86,6 @@ export const useNotificationNavigation = () => {
         handleNotificationNavigation(lastResponse);
       });
     } catch {
-      // En plataformas donde no esté disponible, simplemente lo ignoramos.
     }
 
     return () => {

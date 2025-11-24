@@ -429,7 +429,7 @@ useEffect(() => {
             style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.outline, gap: cardSpacing }]}
           >
             <Text style={[styles.greetingText, { color: colors.subText }]}>{`${greeting}, ${displayName}`}</Text>
-            <Text style={[styles.questionText, { color: colors.text }]}>{'\u00bf'}Como te sientes hoy?</Text>
+            <Text style={[styles.questionText, { color: colors.text }]}>{'\u00bf'}Cómo te sientes hoy?</Text>
             <View style={[styles.horizontalDivider, { backgroundColor: colors.muted }]} />
             <View style={styles.summaryRow}>
               <View style={styles.summaryStat}>

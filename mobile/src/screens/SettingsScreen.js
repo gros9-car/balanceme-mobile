@@ -17,7 +17,6 @@ import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { auth, db } from './firebase/config';
 import { useAppAlert } from '../context/AppAlertContext';
 import {
-  requestNotificationPermissionsIfNeeded,
   scheduleNextEmotionReminderFromLastDate,
   scheduleNextHabitReminderFromLastDate,
   cancelEmotionReminder,
@@ -31,6 +30,10 @@ import {
   getNextEmotionEnableDate,
   getNextHabitEnableDate,
 } from '../utils/reminderRules';
+import {
+  getNotificationPermissionStatus,
+  requestNotificationPermissionsIfNeeded,
+} from '../hooks/useNotificationSetup';
 
 const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) => {
   const borderColor = isActive ? colors.accent : colors.muted;
@@ -86,6 +89,7 @@ export default function SettingsScreen({ navigation }) {
   const [emotionsReminderEnabled, setEmotionsReminderEnabled] = useState(false);
   const [habitsReminderEnabled, setHabitsReminderEnabled] = useState(false);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [systemPermissionStatus, setSystemPermissionStatus] = useState(null);
 
   const contentWidthStyle = useMemo(
     () => ({
@@ -103,9 +107,44 @@ export default function SettingsScreen({ navigation }) {
     return theme === 'dark' ? 'Oscuro' : 'Claro';
   }, [theme, effectiveTheme]);
 
+  const systemPermissionLabel = useMemo(() => {
+    if (!systemPermissionStatus) {
+      return 'Comprobando permisos del sistema...';
+    }
+
+    const granted =
+      systemPermissionStatus.granted ||
+      systemPermissionStatus.status === 'granted';
+
+    return granted ? 'Permitidas' : 'Bloqueadas o restringidas';
+  }, [systemPermissionStatus]);
+
   const handleThemeChange = (mode) => {
     setTheme(mode);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPermissionStatusAsync = async () => {
+      try {
+        const settings = await getNotificationPermissionStatus();
+        if (!cancelled) {
+          setSystemPermissionStatus(settings);
+        }
+      } catch {
+        if (!cancelled) {
+          setSystemPermissionStatus(null);
+        }
+      }
+    };
+
+    loadPermissionStatusAsync();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,7 +197,13 @@ export default function SettingsScreen({ navigation }) {
       if (!granted) {
         showAlert({
           title: 'Permiso requerido',
-          message: 'Activa las notificaciones en tu dispositivo para recibir recordatorios.',
+          message:
+            'Las notificaciones de BalanceMe están desactivadas a nivel de sistema. Actívalas en los ajustes del dispositivo para recibir recordatorios.',
+          confirmText: 'Ver cómo activarlas',
+          cancelText: 'Más tarde',
+          onConfirm: () => {
+            navigation.navigate('NotificationPermissions');
+          },
         });
         setEmotionsReminderEnabled(false);
         await updateNotificationSettingsForUser(userUid, {
@@ -216,7 +261,13 @@ export default function SettingsScreen({ navigation }) {
       if (!granted) {
         showAlert({
           title: 'Permiso requerido',
-          message: 'Activa las notificaciones en tu dispositivo para recibir recordatorios.',
+          message:
+            'Las notificaciones de BalanceMe estǭn desactivadas a nivel de sistema. Act�valas en los ajustes del dispositivo para recibir recordatorios.',
+          confirmText: 'Ver c��mo activarlas',
+          cancelText: 'Mǭs tarde',
+          onConfirm: () => {
+            navigation.navigate('NotificationPermissions');
+          },
         });
         setHabitsReminderEnabled(false);
         await updateNotificationSettingsForUser(userUid, {
@@ -286,7 +337,7 @@ export default function SettingsScreen({ navigation }) {
         ]}
       >
         <View style={contentWidthStyle}>
-          <PageHeader title="Configuracion" subtitle="Personaliza BalanceMe" />
+          <PageHeader title="Configuración" subtitle="Personaliza BalanceMe" />
         </View>
       </View>
 
@@ -357,6 +408,25 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.sectionHelper, { color: colors.subText }]}>
               Activa recordatorios diarios para mantener tus registros al dia.
             </Text>
+            <Text style={[styles.sectionHelper, { color: colors.subText }]}>
+              Estado del sistema: {systemPermissionLabel}
+            </Text>
+            <TouchableOpacity
+              style={[styles.linkButton, { borderColor: colors.muted }]}
+              onPress={() => navigation.navigate('NotificationPermissions')}
+              activeOpacity={0.85}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={16}
+                color={colors.primary}
+              />
+              <Text
+                style={[styles.linkButtonText, { color: colors.primary }]}
+              >
+                Revisar permisos de notificación
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.toggleRow}>
               <View style={styles.toggleTextBlock}>
@@ -379,10 +449,10 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.toggleRow}>
               <View style={styles.toggleTextBlock}>
                 <Text style={[styles.toggleTitle, { color: colors.text }]}>
-                  Recordatorios de habitos
+                  Recordatorios de hábitos
                 </Text>
                 <Text style={[styles.toggleHelper, { color: colors.subText }]}>
-                  Te avisaremos cuando vuelva a estar disponible "Ingresar habitos".
+                  Te avisaremos cuando vuelva a estar disponible "Ingresar hábitos".
                 </Text>
               </View>
               <Switch
@@ -492,4 +562,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

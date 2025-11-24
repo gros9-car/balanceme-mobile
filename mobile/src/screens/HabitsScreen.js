@@ -35,6 +35,7 @@ import {
 } from '../services/reminderNotifications';
 import { getNotificationSettingsForUser } from '../services/notificationSettings';
 import { HABIT_SUGGESTIONS } from './SupportChatScreenClean';
+import { upsertDailyCheckin } from '../services/dailyCheckins';
 
 const startOfDay = (value) => {
   const normalized = new Date(value);
@@ -176,9 +177,9 @@ export default function HabitsScreen({ navigation }) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     if (hours <= 0) {
-      return `Podras registrar nuevos habitos en ${minutes} min.`;
+      return `Podrás registrar nuevos hábitos en ${minutes} min.`;
     }
-    return `Podras registrar nuevos habitos en ${hours} h ${minutes
+    return `Podrás registrar nuevos hábitos en ${hours} h ${minutes
       .toString()
       .padStart(2, '0')} min.`;
   }, [cooldownEndsAt]);
@@ -248,6 +249,12 @@ export default function HabitsScreen({ navigation }) {
         agentCategories: agentResponse.categories ?? [],
         createdAt: serverTimestamp(),
       });
+
+      try {
+        await upsertDailyCheckin(user.uid, { habitsLogged: true });
+      } catch {
+        // Si falla el registro de racha, no bloqueamos el flujo principal.
+      }
       setDraft('');
       setSelectedHabits([]);
       showAlert({
