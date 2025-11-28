@@ -31,6 +31,10 @@ import {
 
 import { auth, db } from "./firebase/config";
 import { useTheme } from "../context/ThemeContext";
+import {
+  decryptChatMessage,
+  encryptChatMessage,
+} from "../utils/messageEncryption";
 
 // Genera un identificador de chat único ordenando ambos UID.
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
@@ -114,6 +118,10 @@ export default function DirectChatScreen({ navigation, route }) {
 
   const { colors } = useTheme();
   const user = auth.currentUser;
+  const chatId = useMemo(
+    () => (user?.uid && friendUid ? chatIdFor(user.uid, friendUid) : null),
+    [user?.uid, friendUid],
+  );
 
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
@@ -173,38 +181,53 @@ export default function DirectChatScreen({ navigation, route }) {
 
   useEffect(() => {
     // Suscribe la colección de mensajes para recibir actualizaciones en tiempo real.
-    if (!user?.uid || !friendUid) {
+    if (!chatId) {
       return undefined;
     }
 
-    const chatId = chatIdFor(user.uid, friendUid);
     const messagesRef = collection(db, "privateChats", chatId, "messages");
     const messagesQuery = query(messagesRef, orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const next = snapshot.docs.map((docSnapshot) => ({
-        id: docSnapshot.id,
-        ...(docSnapshot.data() ?? {}),
-      }));
+      const next = snapshot.docs.map((docSnapshot) => {
+        const data = docSnapshot.data() ?? {};
+        const decrypted =
+          decryptChatMessage(
+            { ciphertext: data.ciphertext, iv: data.iv },
+            chatId,
+          ) ?? (typeof data.text === "string" ? data.text : "");
+
+        return {
+          id: docSnapshot.id,
+          ...data,
+          text: decrypted,
+        };
+      });
       setMessages(next);
     });
 
     return unsubscribe;
-  }, [user?.uid, friendUid]);
+  }, [chatId]);
 
   // Publica un mensaje si ambos usuarios son válidos y hay texto.
   const handleSend = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || !user?.uid || !friendUid) {
+    if (!trimmed || !chatId || !user?.uid) {
       return;
     }
 
-    const chatId = chatIdFor(user.uid, friendUid);
     const messagesRef = collection(db, "privateChats", chatId, "messages");
 
     try {
+      const encrypted = encryptChatMessage(trimmed, chatId);
+      if (!encrypted) {
+        throw new Error("encryption_failed");
+      }
+
       await addDoc(messagesRef, {
-        text: trimmed,
+        ciphertext: encrypted.ciphertext,
+        iv: encrypted.iv,
+        version: encrypted.version,
         senderId: user.uid,
         createdAt: serverTimestamp(),
       });
