@@ -13,6 +13,17 @@ import { db } from "../screens/firebase/config";
 
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
 
+/**
+ * Hook que observa en tiempo real los chats privados con amistades aceptadas
+ * y marca el documento de amistad con flags de `unread` cuando llega un mensaje
+ * nuevo de la otra persona.
+ *
+ * No muestra el aviso directamente; solo actualiza Firestore para que la UI
+ * pueda reflejar contadores o badges de mensajes no leídos.
+ *
+ * @param {{ enabled: boolean, userUid?: string }} params
+ *   enabled controla si se suscribe; userUid es el UID del usuario.
+ */
 export const useMessageNotifications = ({ enabled, userUid }) => {
   const subscriptionsRef = useRef({});
   const friendStateRef = useRef(new Map());
@@ -137,4 +148,3 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
     };
   }, [enabled, userUid]);
 };
-

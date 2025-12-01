@@ -19,6 +19,13 @@ const getStatusColor = (met, colors) => {
   return colors.subText;
 };
 
+/**
+ * Tarjeta visual que resume el estado de una meta semanal:
+ * progreso actual vs objetivo, racha de semanas cumplidas,
+ * descripción y botones para editar/archivar/registrar actividad.
+ *
+ * @param {{ goal: any, snapshot?: any, onEdit?: Function, onArchive?: Function, onLogActivity?: Function, colors?: typeof defaultColors }} props
+ */
 export const GoalProgressCard = ({
   goal,
   snapshot,

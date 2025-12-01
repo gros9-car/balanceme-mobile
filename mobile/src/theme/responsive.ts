@@ -2,6 +2,10 @@ import { Dimensions, PixelRatio, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
+/**
+ * Puntos de corte de anchura usados para adaptar el layout
+ * entre teléfono, tablet y escritorio.
+ */
 export const breakpoints = {
   phone: 0,
   tablet: 768,
@@ -16,6 +20,10 @@ export const isTablet = width >= breakpoints.tablet && width < breakpoints.deskt
 export const isDesktop = width >= breakpoints.desktop;
 
 // Responsive typography helper based on a 375-width baseline
+/**
+ * Helper tipográfico que escala un tamaño base (definido para 375 px)
+ * según el ancho real de la pantalla.
+ */
 export const ms = (size: number) => {
   const scale = width / 375;
   const newSize = size * scale;
@@ -31,6 +39,10 @@ export const spacing = {
   xxl: 32,
 };
 
+/**
+ * Genera estilos de sombra coherentes entre plataformas
+ * a partir de un nivel de intensidad (1-3).
+ */
 export const shadow = (level: 1 | 2 | 3 = 1) => {
   const presets = {
     1: { elevation: 2, radius: 4, opacity: 0.1 },
@@ -63,6 +75,10 @@ export const shadow = (level: 1 | 2 | 3 = 1) => {
   };
 };
 
+/**
+ * Devuelve el número de columnas lógicas recomendado
+ * según el tipo de dispositivo (4, 8 o 12).
+ */
 export const columns = () => {
   if (isDesktop) return 12;
   if (isTablet) return 8;

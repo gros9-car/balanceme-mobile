@@ -16,6 +16,12 @@ const toNumber = (value, fallback = 1) => {
   return parsed;
 };
 
+/**
+ * Modal de registro rápido de actividad para una meta semanal.
+ * Permite introducir una cantidad y una nota opcional asociadas a la meta.
+ *
+ * @param {{ visible: boolean, onClose: () => void, onSubmit: Function, goal: any }} props
+ */
 export const GoalActivityModal = ({ visible, onClose, onSubmit, goal }) => {
   const [value, setValue] = useState('1');
   const [note, setNote] = useState('');

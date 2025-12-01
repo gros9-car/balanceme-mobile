@@ -68,6 +68,16 @@ const defaultMeasurementLabel = (category) => {
   }
 };
 
+/**
+ * Proveedor de metas de BalanceMe.
+ *
+ * Se encarga de:
+ * - Suscribirse en tiempo real a las colecciones `goals`, `goalSnapshots`
+ *   y `weeklyReports` del usuario en Firestore.
+ * - Exponer listas de metas activas/inactivas y sus resúmenes semanales.
+ * - Ofrecer helpers para crear/actualizar/archivar metas y generar
+ *   reportes semanales con datos de ánimo, hábitos y actividades.
+ */
 export const GoalProvider = ({ children }) => {
   const [userUid, setUserUid] = useState(auth.currentUser?.uid ?? null);
 
@@ -534,6 +544,12 @@ export const GoalProvider = ({ children }) => {
   return <GoalContext.Provider value={value}>{children}</GoalContext.Provider>;
 };
 
+/**
+ * Hook de acceso al contexto de metas.
+ *
+ * Devuelve el listado de metas, snapshots y reportes semanales, así como
+ * los métodos para modificarlas. Debe usarse dentro de `GoalProvider`.
+ */
 export const useGoals = () => {
   const context = useContext(GoalContext);
   if (!context) {

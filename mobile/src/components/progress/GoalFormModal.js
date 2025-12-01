@@ -80,6 +80,13 @@ const normalizeFilters = (filters = {}) => {
   };
 };
 
+/**
+ * Modal para crear o editar una meta semanal.
+ * Permite configurar categoría (ánimo/hábitos/personalizada), tipo de métrica,
+ * valor objetivo, filtros y descripción opcional antes de guardar.
+ *
+ * @param {{ visible: boolean, onClose: () => void, onSubmit: Function, initialGoal?: any }} props
+ */
 export const GoalFormModal = ({ visible, onClose, onSubmit, initialGoal }) => {
   const base = initialGoal ?? defaultGoal;
 

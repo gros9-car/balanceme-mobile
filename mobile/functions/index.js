@@ -12,6 +12,13 @@ admin.initializeApp();
  * - Campo plano `expoPushToken` en `users/{uid}`.
  * - Subcolección `users/{uid}/devices/{token}` (permite varios dispositivos).
  */
+/**
+ * Obtiene todos los tokens de push asociados a un usuario, tanto del campo
+ * plano `expoPushToken` como de la subcolección `devices` en `users/{uid}`.
+ *
+ * @param {string} userId UID del usuario destino.
+ * @returns {Promise<string[]>} Lista de tokens Expo Push únicos.
+ */
 async function getUserPushTokens(userId) {
   const db = admin.firestore();
   const tokens = new Set();
@@ -47,6 +54,13 @@ async function getUserPushTokens(userId) {
 
 /**
  * Deriva un nombre legible a partir de los datos de usuario.
+ */
+/**
+ * Deriva un nombre legible a partir de los datos de usuario
+ * para mostrarlo en notificaciones y mensajes.
+ *
+ * @param {Object} userData Documento del usuario en Firestore.
+ * @returns {string} Nombre legible para mostrar.
  */
 function deriveDisplayName(userData) {
   if (!userData || typeof userData !== "object") {

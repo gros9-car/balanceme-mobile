@@ -23,6 +23,13 @@ type AlertContextType = {
 
 const AppAlertContext = createContext<AlertContextType | null>(null);
 
+/**
+ * Hook para acceder al sistema de alertas global de la app.
+ * Envuelve `Alert.alert` de React Native y lo redirige a un modal
+ * consistente con el tema visual de BalanceMe.
+ *
+ * Debe usarse siempre dentro de un `AppAlertProvider`.
+ */
 export const useAppAlert = () => {
   const ctx = useContext(AppAlertContext);
   if (!ctx) {
@@ -35,6 +42,11 @@ type AppAlertProviderProps = {
   children: ReactNode;
 };
 
+/**
+ * Proveedor que sustituye el comportamiento por defecto de `Alert.alert`
+ * por un modal controlado, permitiendo personalizar títulos, mensajes
+ * y botones de confirmación/cancelación de forma centralizada.
+ */
 export const AppAlertProvider = ({ children }: AppAlertProviderProps) => {
   const { colors } = useTheme();
   const [visible, setVisible] = useState(false);

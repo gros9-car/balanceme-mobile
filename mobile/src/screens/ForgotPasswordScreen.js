@@ -68,6 +68,10 @@ const useResponsiveForgot = () => {
 };
 
 // Pantalla de recuperación que valida el correo y envía el enlace de restablecimiento.
+/**
+ * Pantalla para iniciar el flujo de recuperación de contraseña.
+ * Permite al usuario solicitar un correo de restablecimiento.
+ */
 export default function ForgotPasswordScreen({ navigation }) {
   const { colors } = useTheme();
   const { showAlert } = useAppAlert();

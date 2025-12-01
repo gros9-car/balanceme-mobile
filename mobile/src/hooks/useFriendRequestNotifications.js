@@ -3,7 +3,14 @@ import { collection, onSnapshot } from "firebase/firestore";
 
 import { db } from "../screens/firebase/config";
 
-// Escucha cambios en solicitudes de amistad para avisar al usuario.
+/**
+ * Hook que escucha en tiempo real la colección de amistades del usuario
+ * para detectar nuevas solicitudes pendientes. Por ahora solo mantiene
+ * un conjunto interno de IDs para poder saber cuáles son "nuevas".
+ *
+ * @param {{ enabled: boolean, userUid?: string }} params
+ *   enabled controla si el hook debe suscribirse; userUid es el UID del usuario.
+ */
 export const useFriendRequestNotifications = ({ enabled, userUid }) => {
   const previousPending = useRef(new Set());
   const didLoad = useRef(false);

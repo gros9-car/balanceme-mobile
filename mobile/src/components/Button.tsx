@@ -10,6 +10,10 @@ type Props = {
   style?: ViewStyle;
 };
 
+/**
+ * Botón primario reutilizable con estilos consistentes y soporte
+ * para ripple en Android. Recibe un título y un manejador de presión.
+ */
 export default function Button({ title, onPress, style }: Props) {
   return (
     <Pressable

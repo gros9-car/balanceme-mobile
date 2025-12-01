@@ -87,6 +87,13 @@ const HABIT_TAG_VALUE_MAP = HABIT_TAGS.reduce((acc, tag) => {
   return acc;
 }, {});
 
+/**
+ * Normaliza un valor de etiqueta de hábito libre (con acentos, espacios, etc.)
+ * a uno de los identificadores canónicos definidos en `HABIT_TAGS`.
+ *
+ * @param {string} value Texto introducido o guardado previamente.
+ * @returns {string|null} Clave normalizada del hábito, o null si no se reconoce.
+ */
 export const normalizeHabitTag = (value) => {
   if (typeof value !== 'string') {
     return null;
@@ -95,6 +102,10 @@ export const normalizeHabitTag = (value) => {
   return normalized ?? null;
 };
 
+/**
+ * Opciones pre-construidas para listas de selección de metas de hábitos
+ * (value + label legible).
+ */
 export const HABIT_GOAL_OPTIONS = HABIT_TAGS.map(({ value, label }) => ({
   value,
   label,

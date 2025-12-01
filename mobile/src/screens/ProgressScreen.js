@@ -45,6 +45,11 @@ const formatDate = (date) => {
   }
 };
 
+/**
+ * Pantalla de progreso general.
+ * Combina información de metas, estados de ánimo, hábitos y reportes
+ * semanales para mostrar la evolución del usuario a lo largo del tiempo.
+ */
 const ProgressScreen = ({ navigation }) => {
   const user = auth.currentUser;
   const userUid = user?.uid ?? null;

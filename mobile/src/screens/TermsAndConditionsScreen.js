@@ -6,6 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 
+/**
+ * Pantalla estática que muestra los términos y condiciones
+ * de uso del servicio BalanceMe.
+ */
 const TermsAndConditionsScreen = () => {
   const { colors } = useTheme();
 
@@ -145,4 +149,3 @@ const styles = StyleSheet.create({
 });
 
 export default TermsAndConditionsScreen;
-

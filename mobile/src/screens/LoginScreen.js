@@ -41,6 +41,10 @@ import { useAppAlert } from '../context/AppAlertContext';
 
 // Pantalla de inicio de sesión que valida credenciales y entra a la app.
 
+/**
+ * Pantalla de inicio de sesión.
+ * Gestiona la autenticación con Firebase Auth usando correo y contraseña.
+ */
 export default function LoginScreen({ navigation }) {
 
   const { colors } = useTheme();

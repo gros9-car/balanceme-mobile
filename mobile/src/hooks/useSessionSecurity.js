@@ -12,6 +12,16 @@ const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 90;
 const sessionStartKeyFor = (uid) => `session:startAt:${uid}`;
 const passwordVersionKeyFor = (uid) => `session:passwordChangedAt:${uid}`;
 
+/**
+ * Hook que aplica reglas de seguridad de sesión:
+ * - Limita la duración máxima de una sesión (auto logout tras 90 horas).
+ * - Cierra sesión en este dispositivo si la contraseña se cambia en otro.
+ *
+ * Usa AsyncStorage para recordar los tiempos locales y Firestore para
+ * escuchar cambios de contraseña en el documento de usuario.
+ *
+ * @param {import('firebase/auth').User | null} user Usuario autenticado actual.
+ */
 export const useSessionSecurity = (user) => {
   const uid = user?.uid ?? null;
   const timeoutRef = useRef(null);
@@ -199,4 +209,3 @@ export const useSessionSecurity = (user) => {
     };
   }, [uid]);
 };
-

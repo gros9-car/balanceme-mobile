@@ -1,5 +1,20 @@
 import { useWindowDimensions } from 'react-native';
 
+/**
+ * Hook de ayuda para obtener información de tamaño de pantalla
+ * y derivar flags (small/medium/large) junto con tamaños de fuente
+ * y espaciados recomendados.
+ *
+ * @returns {{
+ *   width: number,
+ *   height: number,
+ *   isSmall: boolean,
+ *   isMedium: boolean,
+ *   isLarge: boolean,
+ *   spacing: number,
+ *   font: { xs: number, sm: number, md: number, lg: number, xl: number }
+ * }}
+ */
 export function useResponsive() {
   const { width, height } = useWindowDimensions();
 

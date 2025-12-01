@@ -56,7 +56,13 @@ const createNavigationTheme = (mode, palette) => {
   };
 };
 
-// Sincroniza la preferencia de tema, calcula la paleta y la comparte via contexto.
+/**
+ * Proveedor de tema de la aplicación.
+ *
+ * Sincroniza la preferencia de tema del usuario con el modo del sistema,
+ * calcula la paleta de colores y construye el tema para React Navigation,
+ * compartiéndolos a través de un contexto React.
+ */
 export const ThemeProvider = ({ children }) => {
   const systemScheme = useColorScheme() ?? 'light';
   const [theme, setTheme] = useState('system');
@@ -83,7 +89,10 @@ export const ThemeProvider = ({ children }) => {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
-// Expone el contexto de tema y garantiza su uso dentro del proveedor.
+/**
+ * Hook para acceder a los colores, tema actual y `navigationTheme`.
+ * Lanza un error si se usa fuera de `ThemeProvider`.
+ */
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {

@@ -23,6 +23,10 @@ const formatDate = (date) => {
   }
 };
 
+/**
+ * Pantalla que muestra el detalle de un reporte semanal concreto,
+ * incluyendo metas, resultados y resúmenes de ánimo y hábitos.
+ */
 const ReportDetailScreen = ({ navigation, route }) => {
   const { colors } = useTheme();
   const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =

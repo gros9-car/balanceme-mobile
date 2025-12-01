@@ -18,6 +18,13 @@ type Props = {
   contentStyle?: ViewStyle;
 };
 
+/**
+ * Contenedor de pantalla de alto nivel.
+ *
+ * Envuelve el contenido en un `SafeAreaView`, configura la `StatusBar`
+ * y opcionalmente lo hace scrollable, aplicando paddings y sombras
+ * coherentes con el tema global.
+ */
 export default function Screen({
   children,
   padded = true,

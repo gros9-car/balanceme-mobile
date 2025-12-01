@@ -224,6 +224,11 @@ const EmotionRow = ({ emoji, value, colors }) => (
 );
 
 // -------------------- Componente principal --------------------
+/**
+ * Pantalla de insights de estado de ánimo.
+ * Analiza los registros recientes de emociones y muestra resúmenes,
+ * tendencias y recomendaciones basadas en los datos guardados.
+ */
 const MoodInsightsScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const {
@@ -772,4 +777,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

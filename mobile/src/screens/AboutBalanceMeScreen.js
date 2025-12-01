@@ -6,6 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 
+/**
+ * Pantalla informativa que explica qué es BalanceMe,
+ * su propósito y la tecnología que utiliza la aplicación.
+ */
 const AboutBalanceMeScreen = () => {
   const { colors } = useTheme();
 
@@ -102,4 +106,3 @@ const styles = StyleSheet.create({
 });
 
 export default AboutBalanceMeScreen;
-

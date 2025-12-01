@@ -1,6 +1,13 @@
 // Utilidades para formatear fechas y horas de forma consistente en la app.
 
 // Intenta convertir distintos tipos de valores (Date, Timestamp de Firestore, número, string) a Date.
+/**
+ * Intenta convertir distintos tipos de valores (Date, Timestamp de Firestore,
+ * número o string) a una instancia de Date. Si no puede, devuelve null.
+ *
+ * @param {*} value Valor a convertir a fecha.
+ * @returns {Date|null} Fecha normalizada o null si no es válida.
+ */
 const toDateOrNull = (value) => {
   if (!value) {
     return null;
@@ -30,6 +37,13 @@ const toDateOrNull = (value) => {
 };
 
 // Hora corta (24h) sin segundos, por ejemplo "12:04".
+/**
+ * Devuelve una hora corta (24h) sin segundos para mostrar en la interfaz,
+ * por ejemplo "12:04". Si el valor no es una fecha válida, usa la fecha actual.
+ *
+ * @param {*} value Fecha o timestamp a formatear.
+ * @returns {string} Hora formateada en formato HH:mm.
+ */
 export const formatTimeHM = (value) => {
   const date = toDateOrNull(value) ?? new Date();
 
@@ -47,6 +61,13 @@ export const formatTimeHM = (value) => {
 };
 
 // Fecha y hora corta sin segundos, por ejemplo "31/12/2025 12:04".
+/**
+ * Devuelve una fecha y hora corta sin segundos para mostrar en la interfaz,
+ * por ejemplo "31/12/2025 12:04". Si el valor no es válido, usa la fecha actual.
+ *
+ * @param {*} value Fecha o timestamp a formatear.
+ * @returns {string} Fecha y hora formateadas en formato DD/MM/YYYY HH:mm.
+ */
 export const formatDateTimeShort = (value) => {
   const date = toDateOrNull(value) ?? new Date();
 
@@ -68,4 +89,3 @@ export const formatDateTimeShort = (value) => {
     return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 };
-

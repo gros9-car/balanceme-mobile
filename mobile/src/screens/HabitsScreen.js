@@ -54,6 +54,11 @@ const formatDate = (date) => {
 const CATEGORY_BADGE_COLOR = '#22c55e';
 const MAX_PRESET_SELECTION = 3;
 
+/**
+ * Pantalla para registrar y revisar los hábitos diarios.
+ * Guarda las entradas en Firestore y usa análisis semántico
+ * para clasificar los hábitos en categorías útiles.
+ */
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();

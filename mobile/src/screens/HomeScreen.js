@@ -134,6 +134,11 @@ const emergencyContacts = [
   },
 ];
 
+/**
+ * Pantalla principal de inicio de BalanceMe.
+ * Resume el estado actual del usuario (ánimo, hábitos, metas, progreso)
+ * y actúa como hub para navegar al resto de secciones de la app.
+ */
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();

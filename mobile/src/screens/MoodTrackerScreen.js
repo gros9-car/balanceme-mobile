@@ -192,6 +192,11 @@ const buildAgentResponse = (selectedNames) => {
 };
 
 // Pantalla para registrar el estado de ánimo y recibir recomendaciones personalizadas.
+/**
+ * Pantalla para registrar el estado de ánimo diario.
+ * Permite seleccionar emojis, escribir notas y guarda cada registro
+ * en Firestore para usarlos luego en métricas e insights.
+ */
 export default function MoodTrackerScreen({ navigation }) {
   const { colors } = useTheme();
   const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =

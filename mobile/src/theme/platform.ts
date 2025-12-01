@@ -1,5 +1,9 @@
 import { Platform } from 'react-native';
 
+/**
+ * Estilos dependientes de la plataforma (Android, iOS, web)
+ * como altura de cabecera y configuración de ripple.
+ */
 export const platformStyles = Platform.select({
   ios: { ripple: undefined, headerHeight: 52 },
   android: {

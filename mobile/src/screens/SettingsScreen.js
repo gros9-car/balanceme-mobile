@@ -73,6 +73,11 @@ const ThemeOption = ({ mode, label, description, isActive, onPress, colors }) =>
   );
 };
 
+/**
+ * Pantalla de configuración de la cuenta y la app.
+ * Permite ajustar tema, notificaciones, privacidad y otras
+ * preferencias del usuario autenticado.
+ */
 export default function SettingsScreen({ navigation }) {
   const { colors, theme, setTheme, effectiveTheme } = useTheme();
   const {

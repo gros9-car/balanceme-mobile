@@ -50,6 +50,11 @@ const buildAlias = (uid) => {
   return `Anónimo-${suffix}`;
 };
 
+/**
+ * Pantalla de foro de ayuda comunitaria.
+ * Permite publicar, listar y filtrar mensajes de la comunidad
+ * usando colecciones de Firestore como backend.
+ */
 const HelpForumScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();

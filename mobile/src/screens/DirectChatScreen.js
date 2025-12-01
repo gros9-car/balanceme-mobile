@@ -176,6 +176,11 @@ const MessageRow = ({
 };
 
 // Chat directo entre dos usuarios que valida amistad y sincroniza mensajes.
+/**
+ * Pantalla de chat directo entre dos usuarios.
+ * Muestra el historial de mensajes en tiempo real usando Firestore
+ * y permite enviar, borrar y marcar mensajes como leídos.
+ */
 export default function DirectChatScreen({ navigation, route }) {
   const friendUid = route.params?.friendUid;
   const friendName = route.params?.friendName ?? "Amigo";

@@ -26,6 +26,10 @@ import { validatePasswordPolicy, passwordPolicySummary } from '../utils/password
 
 const EMAIL_REGEX = /\S+@\S+\.\S+/;
 
+/**
+ * Pantalla de registro de nuevos usuarios.
+ * Crea cuentas en Firebase Auth y guarda el perfil básico en Firestore.
+ */
 export default function RegisterScreen({ navigation }) {
   const { colors } = useTheme();
   const {

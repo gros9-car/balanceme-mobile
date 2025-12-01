@@ -66,6 +66,11 @@ const deriveProfile = (data = {}) => {
 };
 
 // Pantalla social que administra solicitudes, amistades y acceso al chat directo.
+/**
+ * Pantalla social que gestiona la red de amistades.
+ * Permite buscar usuarios, enviar y aceptar solicitudes y
+ * ver el estado de las conexiones (amigos, pendientes, etc.).
+ */
 export default function SocialScreen({ navigation }) {
   const { colors } = useTheme();
   const { horizontalPadding, verticalPadding, maxContentWidth, safeTop, safeBottom } =

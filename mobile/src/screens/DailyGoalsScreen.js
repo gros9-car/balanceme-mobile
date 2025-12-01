@@ -35,6 +35,11 @@ import {
   updateDailyGoal,
 } from '../services/dailyGoals';
 
+/**
+ * Pantalla principal de metas diarias del usuario.
+ * Permite crear, editar, marcar como hechas y archivar metas,
+ * mostrando su estado de cumplimiento semanal en tiempo real.
+ */
 const DailyGoalsScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { showAlert } = useAppAlert();

@@ -514,6 +514,11 @@ const MessageBubble = ({ item, colors, bubbleMaxWidth, baseFont }) => {
   );
 };
 
+/**
+ * Pantalla de chat de soporte asistido por bot.
+ * Simula una conversación guiada con "Balancito" para acompañar
+ * al usuario con respuestas empáticas y recursos de ayuda.
+ */
 export default function SupportChatScreenClean({ navigation }) {
   const { colors } = useTheme();
   const {

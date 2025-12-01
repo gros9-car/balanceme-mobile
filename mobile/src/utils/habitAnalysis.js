@@ -105,6 +105,13 @@ const fallbackAgentResponse = {
   ],
 };
 
+/**
+ * Analiza un texto libre donde el usuario describe sus hábitos
+ * y devuelve categorías detectadas, un resumen y hasta tres tips.
+ *
+ * @param {string} text Descripción de hábitos escrita por el usuario.
+ * @returns {{ summary: string, tips: string[], categories: string[] }} Análisis semántico básico.
+ */
 export const analyzeHabitsEntry = (text) => {
   const normalized = (text ?? '').toLowerCase();
   if (!normalized.trim()) {
@@ -139,6 +146,13 @@ export const analyzeHabitsEntry = (text) => {
   };
 };
 
+/**
+ * Convierte identificadores internos de categorías de hábitos en etiquetas
+ * legibles en español para mostrar en la interfaz.
+ *
+ * @param {string[]} [categories] Identificadores internos de categoría.
+ * @returns {string[]} Etiquetas legibles para la UI.
+ */
 export const mapHabitCategoriesToLabels = (categories = []) =>
   categories.map((category) => {
     switch (category) {
@@ -161,4 +175,8 @@ export const mapHabitCategoriesToLabels = (categories = []) =>
     }
   });
 
+/**
+ * Mapa de perfiles de agente de hábitos, con palabras clave,
+ * resúmenes y sugerencias asociadas a cada categoría.
+ */
 export const HABIT_AGENT_PROFILES = habitAgentProfiles;

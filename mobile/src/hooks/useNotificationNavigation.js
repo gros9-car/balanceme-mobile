@@ -5,6 +5,13 @@ import * as Notifications from "expo-notifications";
 import { navigationRef } from "../navigation/navigationRef";
 import { auth } from "../screens/firebase/config";
 
+/**
+ * Interpreta el contenido de una respuesta de notificación de Expo
+ * y navega a la pantalla correspondiente (chat directo, recordatorios,
+ * soporte, social, etc.) usando el navigationRef global.
+ *
+ * @param {import('expo-notifications').NotificationResponse} response
+ */
 const handleNotificationNavigation = (response) => {
   const data = response?.notification?.request?.content?.data;
 
@@ -61,6 +68,13 @@ const handleNotificationNavigation = (response) => {
   }
 };
 
+/**
+ * Hook que registra un listener global de respuestas a notificaciones push
+ * para redirigir al usuario a la pantalla adecuada cuando toca una notificación.
+ *
+ * Se ejecuta una sola vez al montar la app y también procesa la última
+ * notificación pendiente (si la app se abrió desde ella).
+ */
 export const useNotificationNavigation = () => {
   useEffect(() => {
     if (Platform.OS === "web") {
@@ -94,4 +108,3 @@ export const useNotificationNavigation = () => {
     };
   }, []);
 };
-

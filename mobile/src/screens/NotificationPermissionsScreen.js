@@ -16,6 +16,10 @@ import { useTheme } from "../context/ThemeContext";
 import PageHeader from "../components/PageHeader";
 import { getNotificationPermissionStatus } from "../hooks/useNotificationSetup";
 
+/**
+ * Pantalla que guía al usuario para conceder o revisar
+ * los permisos de notificaciones del sistema y de la app.
+ */
 const NotificationPermissionsScreen = () => {
   const { colors } = useTheme();
   const [statusLabel, setStatusLabel] = useState(
@@ -234,4 +238,3 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationPermissionsScreen;
-

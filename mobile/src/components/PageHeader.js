@@ -5,6 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../context/ThemeContext';
 
+/**
+ * Cabecera reutilizable para pantallas con título grande, subtítulo opcional
+ * y botón de "Volver" que integra con React Navigation.
+ */
 const PageHeader = ({
   title,
   subtitle,

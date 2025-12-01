@@ -18,6 +18,12 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/**
+ * Crea (si no existe) el canal de notificaciones por defecto en Android
+ * para que las notificaciones tengan alta prioridad y sonido.
+ *
+ * En iOS/web no hace nada.
+ */
 const ensureAndroidChannel = async () => {
   if (Platform.OS !== "android") {
     return;
@@ -37,6 +43,13 @@ const ensureAndroidChannel = async () => {
   await ensureChannelPromise;
 };
 
+/**
+ * Obtiene el estado actual de los permisos de notificaciones del sistema.
+ *
+ * En web devuelve un estado "unavailable".
+ *
+ * @returns {Promise<Notifications.NotificationPermissionsStatus>} Estado bruto de permisos.
+ */
 export const getNotificationPermissionStatus = async () => {
   if (Platform.OS === "web") {
     return {
@@ -58,6 +71,13 @@ export const getNotificationPermissionStatus = async () => {
   }
 };
 
+/**
+ * Solicita permisos de notificaciones si aún no han sido concedidos.
+ *
+ * Marca un flag global `permissionGranted` para reutilizar el estado.
+ *
+ * @returns {Promise<boolean>} true si se tienen permisos suficientes.
+ */
 export const requestNotificationPermissionsIfNeeded = async () => {
   const settings = await Notifications.getPermissionsAsync();
   if (
@@ -75,6 +95,12 @@ export const requestNotificationPermissionsIfNeeded = async () => {
   return permissionGranted;
 };
 
+/**
+ * Registra el dispositivo actual para recibir notificaciones push de Expo
+ * y devuelve el token Expo obtenido, o null en caso de fallo.
+ *
+ * @returns {Promise<string|null>} Token Expo Push o null.
+ */
 export const registerForPushNotificationsAsync = async () => {
   if (!Device.isDevice) {
     return null;
@@ -91,6 +117,13 @@ export const registerForPushNotificationsAsync = async () => {
   return tokenResponse?.data ?? null;
 };
 
+/**
+ * Guarda el token de push asociado al usuario tanto en la subcolección
+ * `users/{uid}/devices` como en campos planos del documento de usuario.
+ *
+ * @param {string} userUid UID del usuario autenticado.
+ * @param {string} token Token Expo Push que se quiere registrar.
+ */
 const savePushTokenForUserAsync = async (userUid, token) => {
   if (!userUid || !token) {
     return;
@@ -118,6 +151,12 @@ const savePushTokenForUserAsync = async (userUid, token) => {
   );
 };
 
+/**
+ * Programa una notificación local inmediata en el dispositivo.
+ * Si aún no hay permisos, intenta solicitarlos antes.
+ *
+ * @param {{ title: string, body: string, data?: object }} params
+ */
 export const sendLocalNotification = async ({ title, body, data }) => {
   if (!permissionGranted) {
     const granted = await requestNotificationPermissionsIfNeeded();
@@ -139,6 +178,16 @@ export const sendLocalNotification = async ({ title, body, data }) => {
   });
 };
 
+/**
+ * Hook que se encarga de solicitar permisos de notificación, registrar
+ * el token de push de Expo y guardarlo en Firestore para el usuario dado.
+ *
+ * Devuelve null mientras está verificando, true si hay permisos suficientes,
+ * o false si el usuario los ha denegado.
+ *
+ * @param {string|null} userUid UID del usuario autenticado.
+ * @returns {boolean|null} Estado de permisos de notificaciones.
+ */
 export const useNotificationSetup = (userUid) => {
   const [hasPermission, setHasPermission] = useState(null);
 
@@ -178,6 +227,10 @@ export const useNotificationSetup = (userUid) => {
   return hasPermission;
 };
 
+/**
+ * Helper para registrar manualmente el token de push del usuario actual
+ * sin usar el hook (por ejemplo en flujos específicos de configuración).
+ */
 export const setupPushToken = async () => {
   const user = auth.currentUser;
   if (!user) {
@@ -199,4 +252,3 @@ export const setupPushToken = async () => {
     // No bloqueamos la app si algo falla al registrar el token.
   }
 };
-

@@ -109,6 +109,10 @@ const PROFESSIONAL_CONTACTS = [
   },
 ];
 
+/**
+ * Pantalla que muestra recursos de ayuda en caso de emergencia,
+ * con contactos, teléfonos útiles y accesos rápidos a llamadas.
+ */
 const EmergencyResourcesScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { showAlert } = useAppAlert();

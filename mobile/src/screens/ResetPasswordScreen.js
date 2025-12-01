@@ -30,6 +30,10 @@ import { getDeviceIdAsync } from '../utils/deviceId';
 
 import { validatePasswordPolicy, passwordPolicySummary } from '../utils/passwordPolicy';
 
+/**
+ * Pantalla para completar el restablecimiento de contraseña
+ * usando un enlace/token enviado por correo desde Firebase.
+ */
 const ResetPasswordScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const {

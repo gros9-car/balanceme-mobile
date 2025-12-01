@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
 
+/**
+ * Pantalla estática que muestra la política de privacidad de BalanceMe.
+ */
 const PrivacyPolicyScreen = () => {
   const { colors } = useTheme();
 
@@ -170,4 +173,3 @@ const styles = StyleSheet.create({
 });
 
 export default PrivacyPolicyScreen;
-

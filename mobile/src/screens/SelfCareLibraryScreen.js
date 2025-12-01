@@ -213,6 +213,11 @@ const ExpandableCard = ({ title, subtitle, children, colors }) => {
   );
 };
 
+/**
+ * Biblioteca de recursos de autocuidado.
+ * Presenta ejercicios, prácticas y contenidos recomendados
+ * para apoyar el bienestar del usuario.
+ */
 const SelfCareLibraryScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();

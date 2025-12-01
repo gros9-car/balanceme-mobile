@@ -1,5 +1,9 @@
 import { ms, spacing } from './responsive';
 
+/**
+ * Objeto de tema base utilizado en componentes compartidos
+ * (colores, radios, espaciados y tamaños de texto).
+ */
 export const theme = {
   color: {
     bg: '#0B0B0F',

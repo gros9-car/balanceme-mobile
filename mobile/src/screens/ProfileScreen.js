@@ -47,6 +47,11 @@ const ProfileRow = ({ icon, label, value, colors }) => {
   );
 };
 
+/**
+ * Pantalla de perfil del usuario.
+ * Permite ver y actualizar datos básicos de la cuenta y configuración
+ * personal asociada al usuario autenticado en Firebase.
+ */
 export default function ProfileScreen({ navigation }) {
   const { colors, effectiveTheme } = useTheme();
   const { showAlert } = useAppAlert();

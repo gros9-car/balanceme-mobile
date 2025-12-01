@@ -16,6 +16,12 @@ const isoWeekNumber = (date) => {
   return Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
 };
 
+/**
+ * Calcula el inicio de la semana (lunes a las 00:00) para una fecha dada.
+ *
+ * @param {Date} date Fecha de referencia.
+ * @returns {Date} Fecha normalizada al lunes de esa semana.
+ */
 export const startOfWeek = (date) => {
   const base = new Date(date);
   const day = base.getDay();
@@ -25,6 +31,13 @@ export const startOfWeek = (date) => {
   return base;
 };
 
+/**
+ * Devuelve los límites de la semana ISO correspondiente a una fecha de referencia,
+ * junto con una clave corta de semana (por ejemplo "2025-W01").
+ *
+ * @param {Date} [reference] Fecha de referencia, por defecto hoy.
+ * @returns {{ weekStartDate: Date, weekEndDate: Date, weekKey: string }} Información de semana.
+ */
 export const getWeekBoundaries = (reference = new Date()) => {
   const weekStartDate = startOfWeek(reference);
   const weekEndDate = new Date(weekStartDate);
@@ -37,6 +50,15 @@ export const getWeekBoundaries = (reference = new Date()) => {
   return { weekStartDate, weekEndDate, weekKey };
 };
 
+/**
+ * Resume una colección de registros de estado de ánimo aplicando filtros opcionales,
+ * calculando el recuento y las medias de valencia y energía.
+ *
+ * @param {Array<{ emojis?: string[], scores?: { valence?: number, energy?: number } }>} [entries]
+ *   Registros de estado de ánimo del usuario.
+ * @param {{ emojis?: string[] }} [filters] Filtro por emojis incluidos.
+ * @returns {{ count: number, averageValence: number, averageEnergy: number }} Resumen agregado.
+ */
 export const summarizeMoodEntries = (entries = [], filters = {}) => {
   const { emojis } = filters;
   const filtered = Array.isArray(emojis) && emojis.length
@@ -86,6 +108,15 @@ const buildEntryHabitTags = (entry) => {
   return Array.from(tagSet);
 };
 
+/**
+ * Resume una colección de registros de hábitos, opcionalmente filtrando por categorías,
+ * y devuelve cuántas veces aparece cada categoría normalizada.
+ *
+ * @param {Array<{ presetHabits?: string[], categories?: string[] }>} [entries] Registros de hábitos.
+ * @param {{ categories?: string[] }} [filters] Lista de categorías a filtrar.
+ * @returns {{ count: number, categoryCounts: Array<{ category: string, count: number, label: string }> }}
+ *   Conteos agregados por categoría.
+ */
 export const summarizeHabitEntries = (entries = [], filters = {}) => {
   const categoryFilter = Array.isArray(filters?.categories)
     ? filters.categories
@@ -133,6 +164,28 @@ const evaluateComparison = (actual, target, comparison) => {
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
 
+/**
+ * Evalúa el progreso de una meta semanal combinando entradas de ánimo, hábitos
+ * y actividades personalizadas, aplicando las reglas definidas en la meta.
+ *
+ * @param {Object} params
+ * @param {Object} params.goal Meta a evaluar (categoría, tipo de métrica, objetivo, filtros).
+ * @param {Array} [params.moodEntries] Registros de ánimo de la semana.
+ * @param {Array} [params.habitEntries] Registros de hábitos de la semana.
+ * @param {Array} [params.activities] Actividades manuales asociadas a la meta.
+ * @param {Object} [params.previousSnapshot] Último snapshot semanal para calcular la racha.
+ * @returns {{
+ *   actualValue: number,
+ *   coverageCount: number,
+ *   met: boolean,
+ *   comparison: string,
+ *   targetValue: number,
+ *   delta: number,
+ *   streakAfterWeek: number,
+ *   progressPercent: number,
+ *   details: Object
+ * }} Resultado cuantitativo de la evaluación.
+ */
 export const evaluateGoalProgress = ({
   goal,
   moodEntries = [],

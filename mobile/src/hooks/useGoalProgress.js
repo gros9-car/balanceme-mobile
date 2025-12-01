@@ -1,5 +1,28 @@
-// Sistema de metas anterior desactivado.
-// Este hook queda como stub para evitar romper imports existentes.
+/**
+ * Hook legado de progreso de metas.
+ *
+ * El sistema de metas anterior está desactivado, así que este hook actúa
+ * como un "stub": mantiene la misma API pero devuelve estructuras vacías
+ * y funciones no operativas para no romper imports existentes.
+ *
+ * @returns {{
+ *   goals: any[],
+ *   activeGoals: any[],
+ *   latestReport: any,
+ *   snapshots: any[],
+ *   latestSnapshots: Object,
+ *   currentWeekSnapshots: any[],
+ *   weeklyReports: any[],
+ *   generateWeeklyReport: Function,
+ *   logGoalActivity: Function,
+ *   createGoal: Function,
+ *   updateGoal: Function,
+ *   archiveGoal: Function,
+ *   isLoading: boolean,
+ *   generatingReport: boolean,
+ *   currentWeekKey: string | null
+ * }}
+ */
 export const useGoalProgress = () => {
   return {
     goals: [],

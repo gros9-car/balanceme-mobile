@@ -45,6 +45,13 @@ import { useNotificationNavigation } from "./src/hooks/useNotificationNavigation
 
 const Stack = createNativeStackNavigator();
 
+/**
+ * Árbol principal de navegación de la app.
+ *
+ * Escucha el estado de autenticación de Firebase, inicializa hooks
+ * de notificaciones y decide si mostrar el flujo de login/registro
+ * o las pantallas principales para usuarios autenticados.
+ */
 const AppNavigator = () => {
   const { navigationTheme } = useTheme();
   const { width } = useWindowDimensions();
@@ -147,6 +154,13 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 }
+
+/**
+ * Componente raíz de BalanceMe.
+ *
+ * Envuelve la navegación en los proveedores de tema, alertas,
+ * metas y safe area necesarios para que el resto de la app funcione.
+ */
 export default function App() {
   return (
     <SafeAreaProvider>

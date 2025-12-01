@@ -59,6 +59,11 @@ const formatDate = (date) => {
 const sameMonth = (date, month, year) =>
   date.getMonth() === month && date.getFullYear() === year;
 
+/**
+ * Pantalla de diario personal.
+ * Permite al usuario escribir, guardar y revisar entradas de diario
+ * relacionadas con su estado emocional y sus hábitos.
+ */
 const JournalScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();

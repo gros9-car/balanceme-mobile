@@ -9,6 +9,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+// Configuración del proyecto Firebase utilizado por la app.
 const firebaseConfig = {
   apiKey: 'AIzaSyDS1K8BtBeoViQxmZ8lDQGx1YPe0Z3Kx9I',
   authDomain: 'balanceme-874de.firebaseapp.com',
@@ -39,7 +40,13 @@ if (Platform.OS === 'web') {
   auth = getAuth(app);
 }
 
+/**
+ * Instancia compartida de Firestore usada por la app móvil.
+ */
 const db = getFirestore(app);
+/**
+ * Instancia compartida de Cloud Storage usada para adjuntos y archivos.
+ */
 const storage = getStorage(app);
 
 export { auth, db, storage };

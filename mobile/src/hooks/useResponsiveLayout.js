@@ -1,6 +1,26 @@
 import { Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+/**
+ * Hook de layout adaptable que calcula paddings, anchura máxima de contenido,
+ * desplazamiento del teclado y tamaños de fuente según el tamaño de pantalla
+ * y los insets seguros del dispositivo.
+ *
+ * @param {Object} [options] Opciones para ajustar factores de padding y anchura.
+ * @returns {{
+ *   width: number,
+ *   height: number,
+ *   isSmall: boolean,
+ *   isTablet: boolean,
+ *   horizontalPadding: number,
+ *   verticalPadding: number,
+ *   maxContentWidth: number,
+ *   safeTop: number,
+ *   safeBottom: number,
+ *   keyboardVerticalOffset: number,
+ *   fonts: { xs: number, sm: number, md: number, lg: number, xl: number }
+ * }}
+ */
 const useResponsiveLayout = (options = {}) => {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();

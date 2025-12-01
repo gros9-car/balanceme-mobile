@@ -28,6 +28,11 @@ import {
   subscribeGoalCheckins,
 } from '../services/dailyGoals';
 
+/**
+ * Pantalla de detalle para una meta diaria concreta.
+ * Muestra la información semanal de cumplimiento y el historial
+ * de check-ins diarios usando datos de Firestore.
+ */
 const startOfDay = (value) => {
   const date = value instanceof Date ? new Date(value) : new Date();
   date.setHours(0, 0, 0, 0);
@@ -61,6 +66,11 @@ const formatDate = (date) => {
 
 const weekdayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
+/**
+ * Pantalla de detalle para una meta diaria concreta.
+ * Muestra información semanal de cumplimiento y el historial
+ * de check-ins diarios usando datos de Firestore.
+ */
 const DailyGoalDetailScreen = ({ route }) => {
   const { goalId, goalTitle: initialTitle } = route.params ?? {};
   const { colors } = useTheme();
@@ -625,4 +635,3 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
-

@@ -4,6 +4,12 @@ const DEVICE_ID_KEY = "device:id";
 
 let cachedDeviceId = null;
 
+/**
+ * Obtiene un identificador pseudo-único para el dispositivo actual.
+ * Se persiste en AsyncStorage para que sea estable entre sesiones.
+ *
+ * @returns {Promise<string>} ID de dispositivo estable para usar en la app.
+ */
 export const getDeviceIdAsync = async () => {
   if (cachedDeviceId) {
     return cachedDeviceId;
@@ -29,4 +35,3 @@ export const getDeviceIdAsync = async () => {
     return fallback;
   }
 };
-
