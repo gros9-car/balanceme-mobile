@@ -43,18 +43,11 @@ const FORUM_CATEGORIES = [
 const formatTimestamp = (value) => formatDateTimeShort(value);
 
 const buildAlias = (uid) => {
-  if (!uid) {
-    return 'Anónimo';
-  }
+  if (!uid) return 'Anónimo';
   const suffix = uid.slice(-4).toUpperCase();
   return `Anónimo-${suffix}`;
 };
 
-/**
- * Pantalla de foro de ayuda comunitaria.
- * Permite publicar, listar y filtrar mensajes de la comunidad
- * usando colecciones de Firestore como backend.
- */
 const HelpForumScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -72,21 +65,17 @@ const HelpForumScreen = ({ navigation }) => {
   const isTablet = width >= 768;
 
   const baseFont = isSmall ? 13 : 14;
-  const headerTitleFont = isSmall ? 18 : 20;
-  const headerSubtitleFont = isSmall ? 11 : 12;
 
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
   const maxContentWidth = Math.min(920, width * 0.95);
 
   const contentWidth = useMemo(
     () => ({
-      paddingHorizontal: horizontalPadding,
       width: '100%',
       maxWidth: maxContentWidth,
       alignSelf: 'center',
-      gap: 24,
     }),
-    [horizontalPadding, maxContentWidth],
+    [maxContentWidth],
   );
 
   const keyboardVerticalOffset = Platform.select({
@@ -132,7 +121,6 @@ const HelpForumScreen = ({ navigation }) => {
   const handlePublish = async () => {
     if (!user?.uid) {
       Alert.alert('Sesión requerida', 'Inicia sesión para participar en la comunidad.');
-      // Navegaci��n a Login la maneja el contenedor principal.
       return;
     }
 
@@ -168,9 +156,7 @@ const HelpForumScreen = ({ navigation }) => {
     }
     try {
       const postRef = doc(db, 'forumPosts', postId);
-      await updateDoc(postRef, {
-        reports: arrayUnion(user.uid),
-      });
+      await updateDoc(postRef, { reports: arrayUnion(user.uid) });
       Alert.alert(
         'Reporte enviado',
         'Gracias por ayudarnos a mantener un espacio seguro.',
@@ -191,7 +177,7 @@ const HelpForumScreen = ({ navigation }) => {
       >
         <View style={styles.postHeader}>
           <View style={styles.postAuthor}>
-            <Ionicons name="person-circle-outline" size={22} color={colors.primary} />
+            <Ionicons name="person-circle-outline" size={24} color={colors.primary} />
             <View>
               <Text style={[styles.postAlias, { color: colors.text }]}>
                 {item.alias}
@@ -212,9 +198,11 @@ const HelpForumScreen = ({ navigation }) => {
             </Text>
           </View>
         </View>
+
         <Text style={[styles.postMessage, { color: colors.text }]}>
           {item.message}
         </Text>
+
         <View style={styles.postFooter}>
           <TouchableOpacity
             style={[styles.reportButton, { borderColor: colors.muted }]}
@@ -245,6 +233,8 @@ const HelpForumScreen = ({ navigation }) => {
     );
   };
 
+  const aliasPreview = buildAlias(user?.uid);
+
   return (
     <SafeAreaView
       style={[
@@ -257,138 +247,162 @@ const HelpForumScreen = ({ navigation }) => {
       ]}
     >
       <StatusBar barStyle={colors.statusBarStyle} backgroundColor={colors.background} />
+
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <View
-          style={{
-            paddingHorizontal: horizontalPadding,
-            paddingVertical: isSmall ? 12 : 16,
-          }}
-        >
-          <PageHeader
-            title="Comunidad anónima"
-            subtitle="Comparte de forma segura. Recuerda que todo lo publicado se mantiene en anonimato."
-          />
-        </View>
-
-        {/* COMPOSER RESPONSIVO */}
-        <View
-          style={[
-            styles.composer,
-            {
-              borderBottomColor: colors.muted,
-              paddingHorizontal: horizontalPadding,
-              paddingVertical: isSmall ? 12 : 16,
-            },
-          ]}
-        >
-          <View style={styles.categorySelector}>
-            {FORUM_CATEGORIES.map((item) => {
-              const active = category === item.value;
-              return (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[
-                    styles.categoryChip,
-                    { borderColor: colors.muted },
-                    active && { backgroundColor: colors.primary, borderColor: 'transparent' },
-                  ]}
-                  onPress={() => setCategory(item.value)}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      {
-                        color: active ? colors.primaryContrast : colors.text,
-                        fontSize: baseFont - 1,
-                      },
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="Escribe un mensaje de apoyo, una duda o un recurso útil..."
-            placeholderTextColor={colors.subText}
-            style={[
-              styles.input,
+        <View style={styles.inner}>
+          {/* LISTA + HEADER DENTRO DEL SCROLL */}
+          <FlatList
+            data={messages}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={[
+              styles.listContent,
+              contentWidth,
               {
-                color: colors.text,
-                fontSize: baseFont,
-                minHeight: isSmall ? 72 : 80,
-                maxHeight: isTablet ? 220 : 160,
+                paddingHorizontal: horizontalPadding,
+                paddingTop: isSmall ? 8 : 12,
+                paddingBottom: isSmall ? 140 : 160, // espacio para el composer
               },
             ]}
-            multiline
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: colors.primary,
-                opacity: posting ? 0.7 : 1,
-              },
-            ]}
-            onPress={handlePublish}
-            disabled={posting}
-            activeOpacity={0.85}
-          >
-            {posting ? (
-              <ActivityIndicator size="small" color={colors.primaryContrast} />
-            ) : (
-              <Ionicons name="send" size={18} color={colors.primaryContrast} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* LISTA RESPONSIVA */}
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.list, contentWidth]}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            loading ? (
-              <View style={styles.loading}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text
-                  style={[
-                    styles.loadingText,
-                    { color: colors.subText, fontSize: baseFont - 1 },
-                  ]}
-                >
-                  Cargando mensajes...
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.loading}>
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={22}
-                  color={colors.subText}
+            renderItem={renderItem}
+            ListHeaderComponent={
+              <View style={styles.headerWrapper}>
+                <PageHeader
+                  title="Comunidad anónima"
+                  subtitle="Comparte de forma segura. Todo lo que publiques se mantiene en anonimato."
                 />
                 <Text
                   style={[
-                    styles.loadingText,
+                    styles.aliasHelper,
                     { color: colors.subText, fontSize: baseFont - 1 },
                   ]}
                 >
-                  Aún no hay publicaciones. ¡Se el primero en compartir algo!
+                  Publicas como <Text style={{ fontWeight: '600' }}>{aliasPreview}</Text>
                 </Text>
               </View>
-            )
-          }
-        />
+            }
+            ListEmptyComponent={
+              loading ? (
+                <View style={styles.loading}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.loadingText,
+                      { color: colors.subText, fontSize: baseFont - 1 },
+                    ]}
+                  >
+                    Cargando mensajes...
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.loading}>
+                  <Ionicons
+                    name="chatbubble-ellipses-outline"
+                    size={22}
+                    color={colors.subText}
+                  />
+                  <Text
+                    style={[
+                      styles.loadingText,
+                      { color: colors.subText, fontSize: baseFont - 1 },
+                    ]}
+                  >
+                    Aún no hay publicaciones. Sé la primera persona en compartir algo.
+                  </Text>
+                </View>
+              )
+            }
+          />
+
+          {/* COMPOSER ANCLADO ABAJO */}
+          <View
+            style={[
+              styles.composer,
+              {
+                borderTopColor: colors.muted,
+                backgroundColor: colors.background,
+                paddingHorizontal: horizontalPadding,
+                paddingVertical: isSmall ? 10 : 12,
+                shadowColor: colors.outline ?? '#000',
+              },
+            ]}
+          >
+            <View style={styles.categorySelector}>
+              {FORUM_CATEGORIES.map((item) => {
+                const active = category === item.value;
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.categoryChip,
+                      { borderColor: colors.muted },
+                      active && {
+                        backgroundColor: colors.primary,
+                        borderColor: 'transparent',
+                      },
+                    ]}
+                    onPress={() => setCategory(item.value)}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        {
+                          color: active ? colors.primaryContrast : colors.text,
+                          fontSize: baseFont - 1,
+                        },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.inputRow}>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Escribe un mensaje de apoyo, una duda o un recurso útil..."
+                placeholderTextColor={colors.subText}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    fontSize: baseFont,
+                    minHeight: isSmall ? 44 : 48,
+                    maxHeight: isTablet ? 140 : 110,
+                  },
+                ]}
+                multiline
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: posting ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handlePublish}
+                disabled={posting}
+                activeOpacity={0.85}
+              >
+                {posting ? (
+                  <ActivityIndicator size="small" color={colors.primaryContrast} />
+                ) : (
+                  <Ionicons name="send" size={18} color={colors.primaryContrast} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -400,41 +414,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  composer: {
-    gap: 12,
-    borderBottomWidth: 1,
+  inner: {
+    flex: 1,
   },
-  categorySelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  headerWrapper: {
+    marginBottom: 12,
+    gap: 6,
   },
-  categoryChip: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  aliasHelper: {
+    textAlign: 'left',
   },
-  categoryChipText: {
-    fontWeight: '600',
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: 'rgba(148,163,184,0.15)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    lineHeight: 20,
-  },
-  sendButton: {
-    alignSelf: 'flex-end',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  list: {
-    paddingVertical: 24,
+  listContent: {
+    flexGrow: 1,
     gap: 16,
   },
   loading: {
@@ -501,5 +492,52 @@ const styles = StyleSheet.create({
   },
   reportCount: {
     fontSize: 11,
+  },
+
+  // COMPOSER ABAJO
+  composer: {
+    borderTopWidth: 1,
+    gap: 8,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  categorySelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  categoryChipText: {
+    fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginTop: 4,
+  },
+  input: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(148,163,184,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    lineHeight: 20,
+  },
+  sendButton: {
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

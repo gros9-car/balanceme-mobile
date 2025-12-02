@@ -4,13 +4,15 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Alert,
   useWindowDimensions,
+  KeyboardAvoidingView,
+  Platform,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -59,11 +61,6 @@ const formatDate = (date) => {
 const sameMonth = (date, month, year) =>
   date.getMonth() === month && date.getFullYear() === year;
 
-/**
- * Pantalla de diario personal.
- * Permite al usuario escribir, guardar y revisar entradas de diario
- * relacionadas con su estado emocional y sus hábitos.
- */
 const JournalScreen = ({ navigation }) => {
   const { colors } = useTheme();
   const { width, height } = useWindowDimensions();
@@ -81,21 +78,23 @@ const JournalScreen = ({ navigation }) => {
   const isTablet = width >= 768;
 
   const baseFont = isSmall ? 13 : 14;
-  const titleFont = isSmall ? 22 : isTablet ? 28 : 26;
-  const subtitleFont = isSmall ? 13 : 14;
-
-  const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
-  const textAreaMinHeight = Math.max(130, height * 0.2);
+  const horizontalPadding = Math.max(12, Math.min(24, width * 0.05));
+  const textAreaMinHeight = isSmall ? 50 : 42;
 
   const contentStyle = useMemo(
     () => ({
-      paddingHorizontal: horizontalPadding,
       width: '100%',
       maxWidth: Math.min(920, width * 0.95),
       alignSelf: 'center',
     }),
-    [horizontalPadding, width],
+    [width],
   );
+
+  const keyboardVerticalOffset = Platform.select({
+    ios: 80,
+    android: 0,
+    default: 0,
+  });
 
   useEffect(() => {
     if (!user?.uid) {
@@ -201,6 +200,75 @@ const JournalScreen = ({ navigation }) => {
   const monthlyProgress = Math.min(1, monthlyCount / MONTHLY_TARGET);
   const entriesRemaining = Math.max(0, MONTHLY_TARGET - monthlyCount);
 
+  const renderEntry = ({ item }) => {
+    const formattedDate = formatDate(item.createdAt);
+    return (
+      <View
+        style={[
+          styles.entryCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.muted,
+          },
+        ]}
+      >
+        <View style={styles.entryHeader}>
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={colors.primary}
+          />
+          <Text
+            style={[
+              styles.entryDate,
+              { color: colors.subText, fontSize: baseFont - 1 },
+            ]}
+          >
+            {formattedDate}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.entryContent,
+            { color: colors.text, fontSize: baseFont },
+          ]}
+        >
+          {item.content}
+        </Text>
+        {item.tags?.length ? (
+          <View style={styles.entryTagRow}>
+            {item.tags.map((tag) => {
+              const tagMeta = EMOTIONAL_TAGS.find(
+                (t) => t.value === tag,
+              );
+              return (
+                <View
+                  key={tag}
+                  style={[
+                    styles.entryTagChip,
+                    { borderColor: colors.muted },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.entryTagText,
+                      {
+                        color: colors.subText,
+                        fontSize: baseFont - 2,
+                      },
+                    ]}
+                  >
+                    {tagMeta?.label ?? tag}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -209,323 +277,257 @@ const JournalScreen = ({ navigation }) => {
         barStyle={colors.statusBarStyle}
         backgroundColor={colors.background}
       />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContainer,
-          contentStyle,
-          { paddingVertical: isSmall ? 24 : 32 },
-        ]}
-        showsVerticalScrollIndicator={false}
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
-        <PageHeader
-          title="Diario emocional"
-          subtitle="Lleva el registro de tus experiencias y etiqueta tus emociones para analizarlas luego."
-        />
-
-        {/* PROGRESO MENSUAL */}
-        <View
-          style={[
-            styles.progressCard,
-            { borderColor: colors.muted, backgroundColor: colors.surface },
-          ]}
-        >
-          <View style={styles.progressHeader}>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: colors.primary + '22' },
-              ]}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={18}
-                color={colors.primary}
-              />
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.progressTitle,
-                  { color: colors.text, fontSize: baseFont + 1 },
-                ]}
-              >
-                Meta mensual: {MONTHLY_TARGET} entradas
-              </Text>
-              <Text
-                style={[
-                  styles.progressSubtitle,
-                  { color: colors.subText, fontSize: baseFont - 1 },
-                ]}
-              >
-                Te faltan {entriesRemaining} para alcanzar el objetivo este mes.
-              </Text>
-            </View>
-          </View>
-          <View
-            style={[styles.progressBar, { backgroundColor: colors.muted }]}
-          >
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${monthlyProgress * 100}%`,
-                  backgroundColor: colors.primary,
-                },
-              ]}
-            />
-          </View>
-        </View>
-
-        {/* EDITOR */}
-        <View
-          style={[
-            styles.editorCard,
-            { backgroundColor: colors.surface, shadowColor: colors.outline },
-          ]}
-        >
-          <View style={styles.editorHeader}>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: colors.primary + '22' },
-              ]}
-            >
-              <Ionicons name="book-outline" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.badgeTextBlock}>
-              <Text
-                style={[
-                  styles.badgeLabel,
-                  { color: colors.subText, fontSize: baseFont - 1 },
-                ]}
-              >
-                Nueva entrada
-              </Text>
-              <Text
-                style={[
-                  styles.badgeValue,
-                  { color: colors.text, fontSize: baseFont + 2 },
-                ]}
-              >
-                {formatDate(new Date())}
-              </Text>
-            </View>
-          </View>
-          <Text
-            style={[
-              styles.infoText,
-              { color: colors.subText, fontSize: baseFont - 1 },
-            ]}
-          >
-            Comparte lo que sentiste, lo que te ayudó o aquello que te gustaría
-            cambiar.
-          </Text>
-
-          {/* TAGS */}
-          <View style={styles.tagSection}>
-            <Text
-              style={[
-                styles.tagLabel,
-                { color: colors.text, fontSize: baseFont },
-              ]}
-            >
-              Etiquetas emocionales
-            </Text>
-            <Text
-              style={[
-                styles.tagHelper,
-                { color: colors.subText, fontSize: baseFont - 1 },
-              ]}
-            >
-              Selecciona hasta {MAX_TAGS_PER_ENTRY} etiquetas. Esto facilitará
-              tus análisis posteriores.
-            </Text>
-            <View style={styles.tagGrid}>
-              {EMOTIONAL_TAGS.map((tag) => {
-                const active = selectedTags.includes(tag.value);
-                return (
-                  <TouchableOpacity
-                    key={tag.value}
-                    style={[
-                      styles.tagChip,
-                      { borderColor: colors.muted },
-                      active && {
-                        backgroundColor: colors.primary,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                    onPress={() => handleToggleTag(tag.value)}
-                    activeOpacity={0.85}
-                  >
-                    <Text
-                      style={[
-                        styles.tagChipText,
-                        {
-                          color: active ? colors.primaryContrast : colors.text,
-                          fontSize: baseFont - 1,
-                        },
-                      ]}
-                    >
-                      {tag.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="Describe tu día, tus emociones, lo que aprendiste o aquello que deseas liberar..."
-            placeholderTextColor={colors.subText}
-            multiline
-            textAlignVertical="top"
-            style={[
-              styles.textArea,
+        <View style={styles.inner}>
+          {/* LISTA + HEADER */}
+          <FlatList
+            data={entries}
+            keyExtractor={(item) => item.id}
+            renderItem={renderEntry}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={[
+              styles.listContent,
+              contentStyle,
               {
-                borderColor: colors.muted,
-                color: colors.text,
-                backgroundColor: colors.muted,
-                minHeight: textAreaMinHeight,
-                fontSize: baseFont,
+                paddingHorizontal: horizontalPadding,
+                paddingTop: isSmall ? 16 : 20,
+                paddingBottom: isSmall ? 150 : 170, // espacio para el composer
               },
             ]}
-            editable={!saving}
-          />
+            ListHeaderComponent={
+              <View style={styles.headerWrapper}>
+                <PageHeader
+                  title="Diario emocional"
+                  subtitle="Lleva el registro de tus experiencias y etiqueta tus emociones para analizarlas luego."
+                />
 
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              {
-                backgroundColor: colors.primary,
-                shadowColor: colors.primary,
-                opacity: saving ? 0.7 : 1,
-              },
-            ]}
-            onPress={handleSave}
-            disabled={saving}
-            activeOpacity={0.9}
-          >
-            {saving ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={colors.primaryContrast} />
-                <Text
+                {/* PROGRESO MENSUAL */}
+                <View
                   style={[
-                    styles.saveButtonText,
-                    { color: colors.primaryContrast, fontSize: baseFont },
+                    styles.progressCard,
+                    {
+                      borderColor: colors.muted,
+                      backgroundColor: colors.surface,
+                    },
                   ]}
                 >
-                  Guardando…
-                </Text>
+                  <View style={styles.progressHeader}>
+                    <View
+                      style={[
+                        styles.badge,
+                        { backgroundColor: colors.primary + '22' },
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={18}
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View>
+                      <Text
+                        style={[
+                          styles.progressTitle,
+                          { color: colors.text, fontSize: baseFont + 1 },
+                        ]}
+                      >
+                        Meta mensual: {MONTHLY_TARGET} entradas
+                      </Text>
+                      <Text
+                        style={[
+                          styles.progressSubtitle,
+                          { color: colors.subText, fontSize: baseFont - 1 },
+                        ]}
+                      >
+                        Te faltan {entriesRemaining} para alcanzar el objetivo
+                        este mes.
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      { backgroundColor: colors.muted },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${monthlyProgress * 100}%`,
+                          backgroundColor: colors.primary,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
               </View>
-            ) : (
-              <Text
-                style={[
-                  styles.saveButtonText,
-                  { color: colors.primaryContrast, fontSize: baseFont },
-                ]}
-              >
-                Guardar entrada
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* LISTA DE ENTRADAS */}
-        {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text
-              style={[
-                styles.centeredText,
-                { color: colors.subText, fontSize: baseFont - 1 },
-              ]}
-            >
-              Cargando entradas...
-            </Text>
-          </View>
-        ) : entries.length === 0 ? (
-          <View style={styles.centered}>
-            <Ionicons name="book-outline" size={24} color={colors.subText} />
-            <Text
-              style={[
-                styles.centeredText,
-                { color: colors.subText, fontSize: baseFont - 1 },
-              ]}
-            >
-              Empieza a escribir tu primer recuerdo del mes.
-            </Text>
-          </View>
-        ) : (
-          entries.map((entry) => {
-            const formattedDate = formatDate(entry.createdAt);
-            return (
-              <View
-                key={entry.id}
-                style={[
-                  styles.entryCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.muted,
-                  },
-                ]}
-              >
-                <View style={styles.entryHeader}>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={18}
-                    color={colors.primary}
-                  />
+            }
+            ListEmptyComponent={
+              loading ? (
+                <View style={styles.centered}>
+                  <ActivityIndicator size="small" color={colors.primary} />
                   <Text
                     style={[
-                      styles.entryDate,
+                      styles.centeredText,
                       { color: colors.subText, fontSize: baseFont - 1 },
                     ]}
                   >
-                    {formattedDate}
+                    Cargando entradas...
                   </Text>
                 </View>
+              ) : (
+                <View style={styles.centered}>
+                  <Ionicons name="book-outline" size={24} color={colors.subText} />
+                  <Text
+                    style={[
+                      styles.centeredText,
+                      { color: colors.subText, fontSize: baseFont - 1 },
+                    ]}
+                  >
+                    Empieza a escribir tu primer recuerdo del mes.
+                  </Text>
+                </View>
+              )
+            }
+          />
+
+          {/* COMPOSER ABAJO (editor) */}
+          <View
+            style={[
+              styles.composer,
+              {
+                backgroundColor: colors.background,
+                borderTopColor: colors.muted,
+                shadowColor: colors.outline ?? '#000',
+                paddingHorizontal: horizontalPadding,
+                paddingVertical: isSmall ? 10 : 12,
+              },
+            ]}
+          >
+            <View style={styles.composerHeader}>
+              <View
+                style={[
+                  styles.badgeSmall,
+                  { backgroundColor: colors.primary + '22' },
+                ]}
+              >
+                <Ionicons name="book-outline" size={18} color={colors.primary} />
+              </View>
+              <View>
                 <Text
                   style={[
-                    styles.entryContent,
+                    styles.badgeLabel,
+                    { color: colors.subText, fontSize: baseFont - 1 },
+                  ]}
+                >
+                  Nueva entrada
+                </Text>
+                <Text
+                  style={[
+                    styles.badgeValue,
                     { color: colors.text, fontSize: baseFont },
                   ]}
                 >
-                  {entry.content}
+                  {formatDate(new Date())}
                 </Text>
-                {entry.tags?.length ? (
-                  <View style={styles.entryTagRow}>
-                    {entry.tags.map((tag) => {
-                      const tagMeta = EMOTIONAL_TAGS.find(
-                        (item) => item.value === tag,
-                      );
-                      return (
-                        <View
-                          key={tag}
-                          style={[
-                            styles.entryTagChip,
-                            { borderColor: colors.muted },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.entryTagText,
-                              { color: colors.subText, fontSize: baseFont - 2 },
-                            ]}
-                          >
-                            {tagMeta?.label ?? tag}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : null}
               </View>
-            );
-          })
-        )}
-      </ScrollView>
+            </View>
+
+            <View style={styles.tagSection}>
+              <Text
+                style={[
+                  styles.tagLabel,
+                  { color: colors.text, fontSize: baseFont },
+                ]}
+              >
+                Etiquetas emocionales
+              </Text>
+              <View style={styles.tagGrid}>
+                {EMOTIONAL_TAGS.map((tag) => {
+                  const active = selectedTags.includes(tag.value);
+                  return (
+                    <TouchableOpacity
+                      key={tag.value}
+                      style={[
+                        styles.tagChip,
+                        { borderColor: colors.muted },
+                        active && {
+                          backgroundColor: colors.primary,
+                          borderColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => handleToggleTag(tag.value)}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={[
+                          styles.tagChipText,
+                          {
+                            color: active ? colors.primaryContrast : colors.text,
+                            fontSize: baseFont - 1,
+                          },
+                        ]}
+                      >
+                        {tag.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.inputRow}>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder="Describe tu día, tus emociones, lo que aprendiste o aquello que deseas liberar..."
+                placeholderTextColor={colors.subText}
+                multiline
+                textAlignVertical="top"
+                style={[
+                  styles.textArea,
+                  {
+                    borderColor: 'transparent',
+                    color: colors.text,
+                    backgroundColor: 'rgba(148,163,184,0.15)',
+                    minHeight: textAreaMinHeight,
+                    maxHeight: isTablet ? 110 : 100,
+                    fontSize: baseFont,
+                    paddingVertical: 3,
+                  },
+                ]}
+                editable={!saving}
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: saving ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+                activeOpacity={0.9}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.primaryContrast} />
+                ) : (
+                  <Ionicons name="save-outline" size={18} color={colors.primaryContrast} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -536,11 +538,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContainer: {
-    flexGrow: 1,
-    gap: 24,
-    alignItems: 'stretch',
+  inner: {
+    flex: 1,
   },
+  listContent: {
+    flexGrow: 1,
+    gap: 16,
+  },
+  headerWrapper: {
+    gap: 16,
+    marginBottom: 4,
+  },
+  // Progreso mensual
   progressCard: {
     borderWidth: 1,
     borderRadius: 20,
@@ -565,23 +574,16 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 6,
   },
-  editorCard: {
-    borderRadius: 24,
-    padding: 20,
-    gap: 16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  editorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
   badge: {
     width: 48,
     height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeSmall: {
+    width: 40,
+    height: 40,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -597,33 +599,8 @@ const styles = StyleSheet.create({
   badgeValue: {
     fontWeight: '600',
   },
-  infoText: {
-    lineHeight: 20,
-  },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
-    lineHeight: 20,
-  },
-  saveButton: {
-    height: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  saveButtonText: {
-    fontWeight: '600',
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
+
+  // Entradas
   centered: {
     alignItems: 'center',
     gap: 12,
@@ -662,25 +639,58 @@ const styles = StyleSheet.create({
   entryTagText: {
     fontWeight: '600',
   },
+
+  // Composer abajo
+  composer: {
+    borderTopWidth: 1,
+    gap: 10,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  composerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   tagSection: {
-    gap: 8,
+    gap: 6,
   },
   tagLabel: {
     fontWeight: '600',
   },
-  tagHelper: {},
   tagGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   tagChip: {
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   tagChipText: {
     fontWeight: '600',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  textArea: {
+    flex: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    lineHeight: 20,
+  },
+  saveButton: {
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

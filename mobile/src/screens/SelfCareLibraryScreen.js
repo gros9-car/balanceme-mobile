@@ -19,24 +19,24 @@ const BREATHING_EXERCISES = [
     id: 'box',
     title: 'Respiración cuadrada',
     duration: '4 minutos',
-    focus: 'Calma rápida y estabilidad',
+    focus: 'Calma rápida y estabilidad emocional',
     steps: [
-      'Inhala por la nariz contando cuatro segundos.',
-      'Mantiene el aire en los pulmones durante cuatro segundos.',
-      'Exhala por la boca otros cuatro segundos.',
-      'Permanece con los pulmones vacíos por cuatro segundos y repite el ciclo.',
+      'Inhala por la nariz mientras cuentas hasta cuatro.',
+      'Retén el aire en los pulmones durante cuatro segundos.',
+      'Exhala suavemente por la boca durante cuatro segundos.',
+      'Permanece con los pulmones vacíos otros cuatro segundos y repite el ciclo.',
     ],
   },
   {
     id: '478',
     title: 'Respiración 4-7-8',
     duration: '3 minutos',
-    focus: 'Preparación para el descanso',
+    focus: 'Preparación para el descanso y conciliación del sueño',
     steps: [
-      'Coloca la lengua detras de los dientes superiores.',
-      'Inhala por la nariz contando cuatro segundos.',
-      'Sostiene el aire durante siete segundos.',
-      'Exhala suavemente por la boca en ocho segundos y repite.',
+      'Coloca la lengua detrás de los dientes superiores.',
+      'Inhala por la nariz contando hasta cuatro.',
+      'Retén el aire durante siete segundos.',
+      'Exhala suavemente por la boca en ocho segundos y repite el ciclo.',
     ],
   },
   {
@@ -47,7 +47,7 @@ const BREATHING_EXERCISES = [
     steps: [
       'Inhala por la nariz durante cinco segundos.',
       'Exhala por la boca durante cinco segundos.',
-      'Mantiene el ritmo continuo durante veinte ciclos.',
+      'Mantén este ritmo continuo durante veinte ciclos.',
     ],
   },
   {
@@ -57,8 +57,8 @@ const BREATHING_EXERCISES = [
     focus: 'Claridad y enfoque mental',
     steps: [
       'Cierra la fosa nasal derecha con el pulgar e inhala por la izquierda durante cuatro segundos.',
-      'Cierra la izquierda con el anular y exhala por la derecha durante cuatro segundos.',
-      'Inhala por la derecha y exhala por la izquierda. Continua alternando sin prisa.',
+      'Cierra la fosa nasal izquierda con el anular y exhala por la derecha durante cuatro segundos.',
+      'Inhala por la derecha y exhala por la izquierda, alternando sin prisa y manteniendo un ritmo constante.',
     ],
   },
   {
@@ -70,7 +70,7 @@ const BREATHING_EXERCISES = [
       'Coloca una mano en el pecho y otra sobre el abdomen.',
       'Inhala por la nariz inflando el abdomen y manteniendo el pecho relajado.',
       'Exhala por la boca contrayendo suavemente el abdomen.',
-      'Permanece atenta a la sensacion de calma mientras repites el ciclo.',
+      'Permanece presente y observa la sensación de calma mientras repites el ciclo.',
     ],
   },
 ];
@@ -80,25 +80,25 @@ const MEDITATIONS = [
     id: 'meditation-5',
     title: 'Meditación guiada breve',
     duration: '5 minutos',
-    summary: 'Enfoca tu atención en la respiración y regresa cuando la mente divague.',
+    summary: 'Enfoca tu atención en la respiración y vuelve a ella cada vez que la mente se disperse.',
     description:
-      'Busca una postura cómoda, cierra los ojos y sigue el ritmo de la respiración. Cuando aparezca un pensamiento, reconócelo y vuelve a la respiración sin juicio.',
+      'Busca una postura cómoda, cierra los ojos y sigue el ritmo de tu respiración. Cuando aparezca un pensamiento, reconócelo con amabilidad y vuelve a la respiración sin juzgarte.',
   },
   {
     id: 'meditation-10',
     title: 'Meditación de compasión',
     duration: '10 minutos',
-    summary: 'Cultiva amabilidad contigo misma y luego hacia otras personas.',
+    summary: 'Cultiva amabilidad contigo y luego hacia otras personas.',
     description:
-      'Inicia deseándote bienestar: “Que esté en paz, que esté a salvo, que esté en equilibrio”. Luego extiende el mismo deseo a personas cercanas y finalmente a toda la comunidad.',
+      'Comienza deseándote bienestar: “Que esté en paz, que esté a salvo, que esté en equilibrio”. Luego extiende el mismo deseo a personas cercanas y, finalmente, a la comunidad en general.',
   },
   {
     id: 'meditation-15',
     title: 'Escaneo corporal consciente',
     duration: '15 minutos',
-    summary: 'Explora sensaciones fisicas para relajar y reconocer emociones acumuladas.',
+    summary: 'Explora sensaciones físicas para relajar el cuerpo y reconocer emociones acumuladas.',
     description:
-      'Recorre mentalmente el cuerpo desde los pies hasta la cabeza. Observa sensaciones, tensiones y temperatura, inhalando para suavizar y exhalando para soltar.',
+      'Recorre mentalmente tu cuerpo desde los pies hasta la cabeza. Observa sensaciones, tensiones y temperatura. Inhala para suavizar la zona y exhala para soltar, sin forzar nada.',
   },
 ];
 
@@ -107,26 +107,27 @@ const RELAXATION_TECHNIQUES = [
     id: 'pmr-seated',
     title: 'Relajación progresiva sentada',
     duration: '8 minutos',
-    summary: 'Practica gradualmente desde los pies hasta el rostro para soltar tensión.',
+    summary: 'Libera tensión de forma gradual desde los pies hasta el rostro.',
     steps: [
       'Siéntate con la espalda recta y los pies firmes en el suelo.',
       'Tensa los músculos de los pies durante cinco segundos y libera de golpe.',
-      'Continua con pantorrillas, muslos, abdomen, manos, brazos y rostro.',
-      'Respira profundo entre cada zona para notar la diferencia.',
+      'Continúa con pantorrillas, muslos, abdomen, manos, brazos y rostro.',
+      'Respira profundo entre cada zona para notar la diferencia entre tensión y relajación.',
     ],
   },
   {
     id: 'pmr-lying',
     title: 'Relajación progresiva acostada',
     duration: '12 minutos',
-    summary: 'Ideal antes de dormir o posterior a una jornada demandante.',
+    summary: 'Ideal antes de dormir o después de una jornada demandante.',
     steps: [
       'Acuéstate boca arriba con los brazos a los costados y las palmas hacia arriba.',
       'Tensa cada grupo muscular al inhalar y suéltalo al exhalar, avanzando desde los pies hasta la cabeza.',
-      'Permanece dos minutos en silencio prestando atencion al ritmo de tu respiracion.',
+      'Permanece dos minutos en silencio, prestando atención al ritmo de tu respiración.',
     ],
   },
 ];
+
 
 const BreathingCard = ({
   exercise,
@@ -330,7 +331,7 @@ const SelfCareLibraryScreen = ({ navigation }) => {
         <View style={[styles.sectionIntro, { backgroundColor: colors.surface, borderColor: colors.muted }]}>
           <Ionicons name="body-outline" size={22} color={colors.primary} />
           <View style={styles.sectionIntroText}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Relajacion progresiva</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Relajación progresiva</Text>
             <Text style={[styles.sectionSubtitle, { color: colors.subText }]}>
               Dos rutinas sin audio para liberar tension muscular en cualquier espacio.
             </Text>
