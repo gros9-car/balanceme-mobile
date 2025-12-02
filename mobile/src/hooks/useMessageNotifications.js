@@ -1,25 +1,53 @@
+import { AppState } from "react-native";
 import { useEffect, useRef } from "react";
 import {
   collection,
   doc,
+  increment,
   limit,
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
   setDoc,
 } from "firebase/firestore";
 
+import { navigationRef } from "../navigation/navigationRef";
+import { sendLocalNotification } from "./useNotificationSetup";
 import { db } from "../screens/firebase/config";
 
 const chatIdFor = (uidA, uidB) => [uidA, uidB].sort().join("_");
+const PREVIEW_LIMIT = 120;
+
+const buildPreview = (text) => {
+  if (typeof text !== "string") {
+    return "Tienes un nuevo mensaje";
+  }
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return "Tienes un nuevo mensaje";
+  }
+  if (trimmed.length <= PREVIEW_LIMIT) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, PREVIEW_LIMIT)}…`;
+};
+
+const isChatOpen = (friendUid) => {
+  const route = navigationRef.getCurrentRoute?.();
+  if (!route || route.name !== "DirectChat") {
+    return false;
+  }
+  const routeFriendUid = route.params?.friendUid;
+  return Boolean(routeFriendUid && routeFriendUid === friendUid);
+};
+
+const shouldShowLocalNotification = () => AppState.currentState === "active";
 
 /**
- * Hook que observa en tiempo real los chats privados con amistades aceptadas
- * y marca el documento de amistad con flags de `unread` cuando llega un mensaje
- * nuevo de la otra persona.
- *
- * No muestra el aviso directamente; solo actualiza Firestore para que la UI
- * pueda reflejar contadores o badges de mensajes no leídos.
+ * Hook que observa en tiempo real los chats privados con amistades aceptadas,
+ * actualiza flags de no leido/unreadCount y dispara notificaciones locales
+ * cuando llegan mensajes nuevos del otro usuario.
  *
  * @param {{ enabled: boolean, userUid?: string }} params
  *   enabled controla si se suscribe; userUid es el UID del usuario.
@@ -52,6 +80,7 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
         if (data.status === "accepted") {
           nextAccepted.set(docSnapshot.id, {
             name: data.name ?? "Amigo",
+            email: data.email ?? "",
           });
         }
       });
@@ -66,11 +95,12 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
       });
 
       nextAccepted.forEach((meta, friendUid) => {
+        const existing = friendStateRef.current.get(friendUid);
         if (subscriptionsRef.current[friendUid]) {
-          const state = friendStateRef.current.get(friendUid);
           friendStateRef.current.set(friendUid, {
-            ...state,
+            ...existing,
             name: meta.name,
+            email: meta.email,
           });
           return;
         }
@@ -80,62 +110,85 @@ export const useMessageNotifications = ({ enabled, userUid }) => {
         const messagesQuery = query(
           messagesRef,
           orderBy("createdAt", "desc"),
-          limit(1),
+          limit(20),
         );
 
         const unsubscribe = onSnapshot(messagesQuery, (messagesSnapshot) => {
-          if (messagesSnapshot.empty) {
-            const existing = friendStateRef.current.get(friendUid);
-            friendStateRef.current.set(friendUid, {
-              ...existing,
-              loaded: true,
-              lastMessageId: null,
-              name: meta.name,
-            });
-            return;
-          }
-
-          const docSnapshot = messagesSnapshot.docs[0];
-          const payload = docSnapshot.data() ?? {};
           const state = friendStateRef.current.get(friendUid) ?? {};
-          const displayName = state.name ?? meta.name;
-          const previousMessageId = state.lastMessageId ?? null;
-          const wasLoaded = Boolean(state.loaded);
-
-          friendStateRef.current.set(friendUid, {
+          const latest = messagesSnapshot.docs[0];
+          const nextState = {
             ...state,
             loaded: true,
-            lastMessageId: docSnapshot.id,
-            name: displayName,
+            lastMessageId: latest?.id ?? state.lastMessageId ?? null,
+            name: meta.name,
+            email: meta.email,
+          };
+
+          messagesSnapshot.docChanges().forEach((change) => {
+            if (change.type !== "added") {
+              return;
+            }
+
+            const payload = change.doc.data() ?? {};
+            const senderId = payload.senderId;
+            const messageId = change.doc.id;
+
+            if (!senderId || senderId === userUid) {
+              nextState.lastMessageId = messageId;
+              return;
+            }
+
+            // Evita duplicados por la primera carga del listener.
+            if (!state.loaded) {
+              nextState.lastMessageId = messageId;
+              return;
+            }
+
+            const chatVisible = isChatOpen(friendUid);
+            if (!chatVisible) {
+              const friendshipRef = doc(
+                db,
+                "users",
+                userUid,
+                "friendships",
+                friendUid,
+              );
+
+              setDoc(
+                friendshipRef,
+                {
+                  unread: true,
+                  unreadCount: increment(1),
+                  lastUnreadMessageId: messageId,
+                  lastMessagePreview: buildPreview(payload.text),
+                  lastMessageAt: payload.createdAt ?? serverTimestamp(),
+                },
+                { merge: true },
+              ).catch(() => undefined);
+
+              if (shouldShowLocalNotification()) {
+                const displayName = state.name ?? meta.name ?? "Amigo";
+                sendLocalNotification({
+                  title: displayName,
+                  body: buildPreview(payload.text),
+                  data: {
+                    type: "NEW_MESSAGE",
+                    chatId,
+                    friendUid,
+                    senderId,
+                    senderName: displayName,
+                    friendName: displayName,
+                    friendEmail: state.email ?? meta.email ?? "",
+                    messageId,
+                  },
+                });
+              }
+            }
+
+            nextState.lastMessageId = messageId;
           });
 
-          if (!payload.senderId || payload.senderId === userUid) {
-            return;
-          }
-
-          if (!wasLoaded) {
-            return;
-          }
-
-          if (previousMessageId === docSnapshot.id) {
-            return;
-          }
-
-          const friendshipRef = doc(
-            db,
-            "users",
-            userUid,
-            "friendships",
-            friendUid,
-          );
-          setDoc(
-            friendshipRef,
-            {
-              unread: true,
-              lastUnreadMessageId: docSnapshot.id,
-            },
-            { merge: true },
-          ).catch(() => undefined);
+          friendStateRef.current.set(friendUid, nextState);
         });
 
         subscriptionsRef.current[friendUid] = unsubscribe;

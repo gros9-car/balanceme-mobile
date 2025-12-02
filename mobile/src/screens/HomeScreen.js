@@ -44,7 +44,7 @@ const emojiCodePoints = {
 const quickActions = [
   {
     title: 'Registrar ánimo',
-    description: 'Elige hasta cinco emociones y recibe sugerencias personalizadas.',
+    description: 'Elige hasta 3 emociones y recibe sugerencias personalizadas.',
     icon: 'happy-outline',
     color: '#8b5cf6',
     target: 'Mood',
@@ -93,7 +93,7 @@ const quickActions = [
   },
   {
     title: 'Red de apoyo',
-    description: 'Gestiona amistades y conversa con quienes confias.',
+    description: 'Gestiona amistades y conversa con quiénes confías.',
     icon: 'chatbubbles-outline',
     color: '#6366f1',
     target: 'Social',

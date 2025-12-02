@@ -207,6 +207,10 @@ export default function SocialScreen({ navigation }) {
           const status = data.status ?? "pending";
 
           const targetUid = docSnapshot.id;
+          const unreadCount = Number.isFinite(data.unreadCount)
+            ? Number(data.unreadCount)
+            : 0;
+          const hasUnread = Boolean(data.unread) || unreadCount > 0;
 
           seenUids.add(targetUid);
 
@@ -221,7 +225,9 @@ export default function SocialScreen({ navigation }) {
 
             email: data.email ?? "",
 
-            hasUnread: Boolean(data.unread),
+            unreadCount,
+
+            hasUnread,
           };
 
           if (status === "accepted") {
@@ -635,8 +641,6 @@ export default function SocialScreen({ navigation }) {
 
               const friendEmail = profile.email ?? friend.email;
 
-              const hasUnread = Boolean(friend.hasUnread);
-
               return (
                 <View
                   key={friend.uid}
@@ -715,7 +719,12 @@ export default function SocialScreen({ navigation }) {
 
               const friendEmail = profile.email ?? friend.email;
 
-              const hasUnread = Boolean(friend.hasUnread);
+              const unreadCount = Math.max(
+                0,
+                Number.isFinite(friend.unreadCount) ? Number(friend.unreadCount) : 0,
+              );
+
+              const hasUnread = unreadCount > 0 || Boolean(friend.hasUnread);
 
               return (
                 <View
@@ -743,13 +752,20 @@ export default function SocialScreen({ navigation }) {
                           </Text>
                           {hasUnread ? (
                             <View
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: 4,
-                                backgroundColor: colors.primary,
-                              }}
-                            />
+                              style={[
+                                styles.unreadBadge,
+                                { backgroundColor: colors.primary },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.unreadBadgeText,
+                                  { color: colors.primaryContrast },
+                                ]}
+                              >
+                                {unreadCount > 9 ? "9+" : String(unreadCount)}
+                              </Text>
+                            </View>
                           ) : null}
                         </View>
 
@@ -1059,6 +1075,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6b7280",
     flexShrink: 1,
+  },
+
+  unreadBadge: {
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 5,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  unreadBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
 
   acceptButton: {

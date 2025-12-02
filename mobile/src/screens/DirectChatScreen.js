@@ -307,6 +307,7 @@ export default function DirectChatScreen({ navigation, route }) {
       friendshipRef,
       {
         unread: false,
+        unreadCount: 0,
         lastReadMessageId: latest.id,
         lastReadAt: serverTimestamp(),
       },

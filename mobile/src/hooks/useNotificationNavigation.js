@@ -5,75 +5,97 @@ import * as Notifications from "expo-notifications";
 import { navigationRef } from "../navigation/navigationRef";
 import { auth } from "../screens/firebase/config";
 
+const normalizeType = (value) =>
+  typeof value === "string" ? value.toLowerCase() : "";
+
+const navigateToChat = (data) => {
+  const currentUser = auth.currentUser;
+  const currentUid = currentUser?.uid;
+  const friendUid = data.friendUid || data.senderId || data.fromUserId;
+
+  if (friendUid) {
+    navigationRef.navigate("DirectChat", {
+      friendUid,
+      friendName: data.friendName || data.senderName,
+      friendEmail: data.friendEmail || data.senderEmail,
+    });
+    return true;
+  }
+
+  if (data.chatId && currentUid) {
+    const parts = String(data.chatId).split("_");
+    const derivedFriendUid = parts.find((id) => id && id !== currentUid);
+
+    if (derivedFriendUid) {
+      navigationRef.navigate("DirectChat", {
+        friendUid: derivedFriendUid,
+      });
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const navigateToFriendRequests = (data) => {
+  navigationRef.navigate("Social", {
+    focus: "requests",
+    requestId: data.requestId || data.friendUid || data.fromUserId,
+    senderId: data.senderId || data.friendUid || data.fromUserId,
+    senderName: data.senderName || data.friendName,
+  });
+};
+
 /**
- * Interpreta el contenido de una respuesta de notificación de Expo
+ * Interpreta el contenido de una respuesta de notificacion de Expo
  * y navega a la pantalla correspondiente (chat directo, recordatorios,
- * soporte, social, etc.) usando el navigationRef global.
+ * soporte, social, etc.) usando la referencia global de navegacion.
  *
  * @param {import('expo-notifications').NotificationResponse} response
  */
 const handleNotificationNavigation = (response) => {
   const data = response?.notification?.request?.content?.data;
+  const type = normalizeType(data?.type || data?.legacyType);
 
   if (!data || !navigationRef.isReady()) {
     return;
   }
 
   if (
-    (data.type === "chat" || data.type === "direct-message") &&
-    data.friendUid
+    type === "chat" ||
+    type === "direct-message" ||
+    type === "new_message" ||
+    type === "new-message"
   ) {
-    navigationRef.navigate("DirectChat", {
-      friendUid: data.friendUid,
-      friendName: data.friendName,
-      friendEmail: data.friendEmail,
-    });
+    navigateToChat(data);
     return;
   }
 
-  if (data.type === "chat" && data.chatId && !data.friendUid) {
-    const currentUser = auth.currentUser;
-    const currentUid = currentUser?.uid;
-
-    if (currentUid) {
-      const parts = String(data.chatId).split("_");
-      const friendUid = parts.find((id) => id && id !== currentUid);
-
-      if (friendUid) {
-        navigationRef.navigate("DirectChat", {
-          friendUid,
-        });
-        return;
-      }
-    }
-  }
-
-  if (data.type === "support-chat") {
+  if (type === "support-chat") {
     navigationRef.navigate("SupportChat");
     return;
   }
 
-  if (data.type === "emotion-reminder") {
+  if (type === "emotion-reminder") {
     navigationRef.navigate("Mood");
     return;
   }
-  if (data.type === "habit-reminder") {
+  if (type === "habit-reminder") {
     navigationRef.navigate("Habits");
     return;
   }
 
-  if (data.type === "friend-request") {
-    navigationRef.navigate("Social");
+  if (type === "friend-request" || type === "friend_request") {
+    navigateToFriendRequests(data);
     return;
   }
 };
 
 /**
  * Hook que registra un listener global de respuestas a notificaciones push
- * para redirigir al usuario a la pantalla adecuada cuando toca una notificación.
+ * para redirigir al usuario a la pantalla adecuada cuando toca una notificacion.
  *
- * Se ejecuta una sola vez al montar la app y también procesa la última
- * notificación pendiente (si la app se abrió desde ella).
+ * Tambien procesa la ultima notificacion pendiente (si la app se abrio desde ella).
  */
 export const useNotificationNavigation = () => {
   useEffect(() => {
@@ -100,6 +122,7 @@ export const useNotificationNavigation = () => {
         handleNotificationNavigation(lastResponse);
       });
     } catch {
+      // noop
     }
 
     return () => {

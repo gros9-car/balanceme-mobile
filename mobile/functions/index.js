@@ -142,11 +142,16 @@ exports.notifyOnNewMessage = functions.firestore
       title: `Nuevo mensaje de ${senderName}`,
       body: preview,
       data: {
-        type: "chat",
+        type: "NEW_MESSAGE",
+        legacyType: "chat",
         chatId,
+        senderId,
+        senderName,
+        senderEmail,
         friendUid: senderId,
         friendName: senderName,
         friendEmail: senderEmail,
+        preview,
       },
     }));
 
@@ -214,8 +219,13 @@ exports.notifyOnFriendRequest = functions.firestore
       title: "Nueva solicitud de amistad",
       body: `${senderName} quiere unirse a tu red.`,
       data: {
-        type: "friend-request",
+        type: "FRIEND_REQUEST",
+        legacyType: "friend-request",
         fromUserId: initiatedBy,
+        senderId: initiatedBy,
+        senderName,
+        senderEmail,
+        requestId: initiatedBy,
         friendUid: initiatedBy,
         targetUid,
         friendEmail: senderEmail,
