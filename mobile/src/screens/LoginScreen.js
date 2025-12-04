@@ -800,19 +800,3 @@ const styles = StyleSheet.create({
   },
 
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

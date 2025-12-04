@@ -34,8 +34,6 @@ import {
   scheduleNextHabitReminderFromLastDate,
 } from '../services/reminderNotifications';
 import { getNotificationSettingsForUser } from '../services/notificationSettings';
-import { HABIT_SUGGESTIONS } from './SupportChatScreenClean';
-import { upsertDailyCheckin } from '../services/dailyCheckins';
 
 const startOfDay = (value) => {
   const normalized = new Date(value);
@@ -54,11 +52,6 @@ const formatDate = (date) => {
 const CATEGORY_BADGE_COLOR = '#22c55e';
 const MAX_PRESET_SELECTION = 3;
 
-/**
- * Pantalla para registrar y revisar los hábitos diarios.
- * Guarda las entradas en Firestore y usa análisis semántico
- * para clasificar los hábitos en categorías útiles.
- */
 export default function HabitsScreen({ navigation }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
@@ -72,7 +65,6 @@ export default function HabitsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [hasTodayEntry, setHasTodayEntry] = useState(false);
   const [cooldownEndsAt, setCooldownEndsAt] = useState(null);
-  const [helperPrompts, setHelperPrompts] = useState(() => HABIT_SUGGESTIONS.slice(0, 3));
 
   const todayLabel = useMemo(() => formatDate(new Date()), []);
   const horizontalPadding = Math.max(16, Math.min(32, width * 0.05));
@@ -85,14 +77,6 @@ export default function HabitsScreen({ navigation }) {
     }),
     [horizontalPadding, width],
   );
-
-  const refreshHelperPrompts = () => {
-    if (!Array.isArray(HABIT_SUGGESTIONS) || !HABIT_SUGGESTIONS.length) {
-      return;
-    }
-    const shuffled = [...HABIT_SUGGESTIONS].sort(() => Math.random() - 0.5);
-    setHelperPrompts(shuffled.slice(0, 3));
-  };
 
   useEffect(() => {
     if (!user?.uid) {
@@ -139,20 +123,6 @@ export default function HabitsScreen({ navigation }) {
           const nextWindow = getNextHabitEnableDate(latestEntry.createdAt);
           setCooldownEndsAt(nextWindow);
           setHasTodayEntry(Boolean(nextWindow && nextWindow.getTime() > Date.now()));
-
-          // Notificaciones: reprograma el recordatorio de hábitos si está habilitado.
-          (async () => {
-            try {
-              const settings = await getNotificationSettingsForUser(user.uid);
-              if (settings.habitsReminderEnabled && nextWindow) {
-                await scheduleNextHabitReminderFromLastDate(latestEntry.createdAt, user.uid);
-              } else {
-                await cancelHabitReminder({ userUid: user.uid });
-              }
-            } catch {
-              // Si algo falla al programar el recordatorio, no bloqueamos la app.
-            }
-          })();
         } else {
           setCooldownEndsAt(null);
           setHasTodayEntry(false);
@@ -254,16 +224,10 @@ export default function HabitsScreen({ navigation }) {
         agentCategories: agentResponse.categories ?? [],
         createdAt: serverTimestamp(),
       });
-
-      try {
-        await upsertDailyCheckin(user.uid, { habitsLogged: true });
-      } catch {
-        // Si falla el registro de racha, no bloqueamos el flujo principal.
-      }
       setDraft('');
       setSelectedHabits([]);
       showAlert({
-        title: 'Hábitos registrados',
+        title: 'HABITS_TITLE',
         message: 'Tu entrada fue analizada y guardada correctamente.',
       });
     } catch (error) {
@@ -283,7 +247,7 @@ export default function HabitsScreen({ navigation }) {
         <View style={styles.centered}>
           <Ionicons name="lock-closed-outline" size={28} color={colors.subText} />
           <Text style={[styles.centeredText, { color: colors.subText }]}>
-            Inicia sesion para gestionar tus habitos.
+            Inicia sesión para gestionar tus hábitos.
           </Text>
         </View>
       </SafeAreaView>
@@ -710,3 +674,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
