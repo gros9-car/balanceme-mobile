@@ -235,7 +235,7 @@ const DailyGoalDetailScreen = ({ route }) => {
               { color: colors.subText },
             ]}
           >
-            Inicia sesion para ver los detalles de tus metas diarias.
+            Inicia sesión para ver los detalles de tus metas diarias.
           </Text>
         </View>
       </SafeAreaView>
@@ -314,7 +314,7 @@ const DailyGoalDetailScreen = ({ route }) => {
                   { color: colors.subText },
                 ]}
               >
-                No encontramos informacion para esta meta.
+                No encontramos información para esta meta.
               </Text>
             </View>
           ) : (
@@ -404,7 +404,7 @@ const DailyGoalDetailScreen = ({ route }) => {
                         { color: colors.subText },
                       ]}
                     >
-                      Dǭas completados
+                      Días completados
                     </Text>
                     <Text
                       style={[
@@ -519,7 +519,7 @@ const DailyGoalDetailScreen = ({ route }) => {
                       { color: colors.subText },
                     ]}
                   >
-                    Aun no has completado esta meta en una semana.
+                    Aún no has completado esta meta en una semana.
                   </Text>
                 )}
               </View>

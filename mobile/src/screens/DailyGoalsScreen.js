@@ -180,7 +180,7 @@ const DailyGoalsScreen = ({ navigation }) => {
     if (!user?.uid) {
       showAlert({
         title: 'Sesion requerida',
-        message: 'Inicia sesion para gestionar tus metas diarias.',
+        message: 'Inicia sesión para gestionar tus metas diarias.',
       });
       return;
     }
@@ -190,7 +190,7 @@ const DailyGoalsScreen = ({ navigation }) => {
     if (!trimmedTitle) {
       showAlert({
         title: 'Titulo requerido',
-        message: 'Escribe un titulo para la meta diaria.',
+        message: 'Escribe un título para la meta diaria.',
       });
       return;
     }
@@ -224,9 +224,9 @@ const DailyGoalsScreen = ({ navigation }) => {
   const handleToggleToday = async (goal, doneToday) => {
     if (!user?.uid) {
       showAlert({
-        title: 'Sesion requerida',
+        title: 'Sesión requerida',
         message:
-          'Inicia sesion para registrar el progreso de tus metas diarias.',
+          'Inicia sesión para registrar el progreso de tus metas diarias.',
       });
       return;
     }
@@ -289,7 +289,7 @@ const DailyGoalsScreen = ({ navigation }) => {
 
     Alert.alert(
       'Eliminar meta',
-      'Esta accion eliminara la meta y su historial de check-ins. Esta operacion no se puede deshacer.',
+      'Esta acción eliminará la meta y su historial de check-ins. Esta operación no se puede deshacer.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -342,7 +342,7 @@ const DailyGoalsScreen = ({ navigation }) => {
               { color: colors.subText },
             ]}
           >
-            Inicia sesion para gestionar tus metas diarias.
+            Inicia sesión para gestionar tus metas diarias.
           </Text>
         </View>
       </SafeAreaView>
@@ -381,7 +381,7 @@ const DailyGoalsScreen = ({ navigation }) => {
         <View style={[styles.content, contentWidthStyle]}>
           <PageHeader
             title="Metas diarias"
-            subtitle="Marca tus acciones clave cada dǭa y sigue tu racha semanal."
+            subtitle="Marca tus acciones clave cada día y sigue tu racha semanal."
           />
 
           <View
@@ -607,7 +607,7 @@ const DailyGoalsScreen = ({ navigation }) => {
                   { color: colors.subText },
                 ]}
               >
-                Todavia no tienes metas diarias. Crea la primera para comenzar.
+                Todavía no tienes metas diarias. Crea la primera para comenzar.
               </Text>
             </View>
           ) : (
